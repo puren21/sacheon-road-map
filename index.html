@@ -422,7 +422,7 @@
       left: 0;
       z-index: 24;
       display: none;
-      width: 30px;
+      width: 16px;
       height: 64px;
       padding: 0;
       border: 0;
@@ -441,7 +441,7 @@
       bottom: 0;
       left: 0;
       z-index: 21;
-      width: 280px;
+      width: 190px;
       display: block;
       overflow: visible;
       background: white;
@@ -461,9 +461,9 @@
     #listClose {
       position: absolute;
       top: 50%;
-      right: -30px;
+      right: -16px;
       z-index: 25;
-      width: 30px;
+      width: 16px;
       height: 64px;
       padding: 0;
       border: 0;
@@ -550,8 +550,81 @@
       font-size: 13px;
     }
 
+    .sidebar-tools {
+      padding: 8px 10px;
+      border-bottom: 1px solid #ddd;
+      background: #fff;
+      font-size: 12px;
+    }
+
+    .sidebar-tool-title { margin-bottom: 6px; font-weight: 800; }
+    .status-filter-row { display: flex; flex-wrap: wrap; gap: 5px 10px; }
+    .status-filter-row label { display: flex; align-items: center; gap: 3px; cursor: pointer; }
+
+    .road-legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 8px;
+      margin-top: 9px;
+      color: #555;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .legend-line {
+      position: relative;
+      width: 30px;
+      height: 6px;
+      flex: 0 0 30px;
+      background: var(--legend-color, #555);
+    }
+    .legend-line:not(.unopened):not(.unexpanded)::after {
+      content: "";
+      position: absolute;
+      top: 1.5px;
+      right: 0;
+      left: 0;
+      height: 3px;
+      background: #fff;
+    }
+    .legend-line.unexpanded {
+      height: 4px;
+      background: repeating-linear-gradient(90deg, #555 0 6px, transparent 6px 10px);
+    }
+    .legend-line.unopened {
+      height: 5px;
+      background: radial-gradient(circle, #555 0 2px, transparent 2.2px) 0 50% / 7px 5px repeat-x;
+    }
+
+    #appError {
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(245,247,250,.94);
+      box-sizing: border-box;
+    }
+
+    .app-error-card {
+      width: min(460px, 100%);
+      padding: 22px;
+      border: 1px solid #d8dde5;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 8px 28px #0002;
+      color: #222;
+    }
+
+    .app-error-title { margin-bottom: 10px; font-size: 20px; font-weight: 800; }
+    .app-error-message { line-height: 1.65; white-space: pre-line; }
+    .app-error-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 16px; }
+    .app-error-actions button { padding: 8px 12px; border: 0; border-radius: 5px; cursor: pointer; }
+    .app-error-reload { color: #fff; background: #258fff; }
+
     #listContent {
-      height: calc(100vh - 111px);
+      height: calc(100vh - 246px);
       padding: 8px;
       overflow-y: auto;
     }
@@ -642,8 +715,22 @@
       color: white;
       background: #333d;
       font-size: 12px;
-      pointer-events: none;
+      pointer-events: auto;
+      align-items: center;
+      gap: 6px;
     }
+
+    #measureHint button {
+      padding: 4px 7px;
+      border: 1px solid #ffffff66;
+      border-radius: 4px;
+      color: #fff;
+      background: #ffffff18;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    #measureHint button:hover { background: #ffffff33; }
 
     .measure-point {
       width: 14px;
@@ -1073,13 +1160,15 @@
         bottom: 8px;
       }
 
-      #listPanel { width: min(280px, 86vw); }
-      #listClose { right: -28px; width: 28px; }
-      #listOpen { width: 28px; }
+      #listPanel { width: min(250px, 82vw); }
+      #listClose { right: -14px; width: 14px; }
+      #listOpen { width: 14px; }
 
-      #mapTools { right: 8px; top: 57%; }
+      #mapTools { right: 8px; top: 59%; }
       #scaleControl { right: 8px; bottom: 8px; }
       .road-popup { max-width: calc(100vw - 24px); }
+      #measureHint { top: auto; right: 8px; bottom: 66px; max-width: calc(100vw - 16px); }
+      .top-toolbar { max-width: calc(100vw - 16px); flex-wrap: wrap; justify-content: flex-end; }
     }
 
     /* 공간파일(GeoJSON / SHP) 불러오기 */
@@ -1158,6 +1247,17 @@
 <body>
   <div id="map"></div>
 
+  <div id="appError" role="alertdialog" aria-live="assertive">
+    <div class="app-error-card">
+      <div id="appErrorTitle" class="app-error-title">지도를 불러오지 못했습니다</div>
+      <div id="appErrorMessage" class="app-error-message"></div>
+      <div class="app-error-actions">
+        <button type="button" onclick="hideAppError()">닫기</button>
+        <button class="app-error-reload" type="button" onclick="location.reload()">다시 시도</button>
+      </div>
+    </div>
+  </div>
+
   <div id="scaleControl">
     <div id="scaleBar"></div>
     <div id="scaleDistance">-</div>
@@ -1193,7 +1293,12 @@
       </svg>
     </button>
   </div>
-  <div id="measureHint">지점을 클릭하고 마우스 오른쪽 버튼으로 완료하세요.</div>
+  <div id="measureHint">
+    <span class="measure-guide">지점을 클릭하고 마우스 오른쪽 버튼으로 완료하세요.</span>
+    <button id="measureUndoBtn" type="button">한 단계 취소</button>
+    <button id="measureFinishBtn" type="button">완료</button>
+    <button id="measureClearBtn" type="button">삭제</button>
+  </div>
 
   <button id="listOpen" title="노선목록 펼치기" aria-label="노선목록 펼치기">▶</button>
 
@@ -1211,6 +1316,23 @@
         autocomplete="off"
       >
       <button id="addressSearchBtn" type="button">검색</button>
+    </div>
+
+    <div class="sidebar-tools">
+      <div class="sidebar-tool-title">개설여부</div>
+      <div class="status-filter-row">
+        <label><input class="road-status-filter" type="checkbox" value="NORMAL" checked>개설</label>
+        <label><input class="road-status-filter" type="checkbox" value="UNEXPANDED" checked>미확장</label>
+        <label><input class="road-status-filter" type="checkbox" value="UNOPENED" checked>미개설</label>
+      </div>
+      <div class="road-legend" aria-label="도로 범례">
+        <div class="legend-item"><span id="legendCity" class="legend-line"></span>시도</div>
+        <div class="legend-item"><span id="legendMyeon" class="legend-line"></span>면도</div>
+        <div class="legend-item"><span id="legendRi" class="legend-line"></span>리도</div>
+        <div class="legend-item"><span id="legendFarm" class="legend-line"></span>농도</div>
+        <div class="legend-item"><span class="legend-line unexpanded"></span>미확장</div>
+        <div class="legend-item"><span class="legend-line unopened"></span>미개설</div>
+      </div>
     </div>
 
     <div id="listContent">
@@ -1422,10 +1544,29 @@
 
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/shpjs@latest/dist/shp.js"></script>
-  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"></script>
+  <script>
+    function showAppError(title, message) {
+      const panel = document.getElementById("appError");
+      if (!panel) return;
+      document.getElementById("appErrorTitle").textContent = title || "오류가 발생했습니다";
+      document.getElementById("appErrorMessage").textContent = message || "잠시 후 다시 시도해 주세요.";
+      panel.style.display = "flex";
+    }
+    function hideAppError() {
+      const panel = document.getElementById("appError");
+      if (panel) panel.style.display = "none";
+    }
+  </script>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
+    onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
   <script>
-    kakao.maps.load(function () {
+    if (!window.kakao || !window.kakao.maps) {
+      showAppError(
+        "카카오 지도를 시작할 수 없습니다",
+        "카카오 지도 SDK가 응답하지 않습니다. 인터넷 연결과 API 키·쿼터·도메인 설정을 확인한 뒤 다시 시도해 주세요."
+      );
+    } else kakao.maps.load(function () {
       /*
        * 도로 두께와 색상
        */
@@ -1628,6 +1769,10 @@
       const distanceBtn = document.getElementById("distanceBtn");
       const areaBtn = document.getElementById("areaBtn");
       const measureHint = document.getElementById("measureHint");
+      const measureGuide = measureHint.querySelector(".measure-guide");
+      const measureUndoBtn = document.getElementById("measureUndoBtn");
+      const measureFinishBtn = document.getElementById("measureFinishBtn");
+      const measureClearBtn = document.getElementById("measureClearBtn");
 
       let currentLocationOverlay = null;
       let currentLocationAccuracy = null;
@@ -1701,6 +1846,9 @@
 
       distanceBtn.onclick = function () { toggleMeasure("distance"); };
       areaBtn.onclick = function () { toggleMeasure("area"); };
+      measureUndoBtn.onclick = function (event) { event.stopPropagation(); undoMeasurePoint(); };
+      measureFinishBtn.onclick = function (event) { event.stopPropagation(); finishMeasure(); };
+      measureClearBtn.onclick = function (event) { event.stopPropagation(); clearMeasure(); };
 
       function toggleMeasure(mode) {
         if (measureMode === mode) {
@@ -1710,8 +1858,8 @@
         clearMeasure();
         measureMode = mode;
         document.getElementById(mode + "Btn").classList.add("active");
-        measureHint.textContent = "지점을 클릭하고 마우스 오른쪽 버튼으로 완료하세요.";
-        measureHint.style.display = "block";
+        measureGuide.textContent = "지점을 클릭하고 우클릭 또는 완료 버튼을 누르세요.";
+        measureHint.style.display = "flex";
         map.setCursor("crosshair");
       }
 
@@ -1994,6 +2142,19 @@
         updateLiveMeasurePanel(event.latLng);
       });
 
+      /* 측정 중 우클릭하면 거리·면적 측정을 완료합니다. */
+      kakao.maps.event.addListener(map, "rightclick", function () {
+        if (measureMode) finishMeasure();
+      });
+
+      /* 지도 내부 객체 위에서도 우클릭 완료가 동작하고 기본 메뉴는 열리지 않게 합니다. */
+      document.getElementById("map").addEventListener("contextmenu", function (event) {
+        if (!measureMode) return;
+        event.preventDefault();
+        event.stopPropagation();
+        finishMeasure();
+      }, true);
+
       document.addEventListener("keydown", function (event) {
         if (!measureMode) return;
         if (event.key === "Backspace") {
@@ -2021,6 +2182,12 @@
       const groups = new Map();
       const ruralTotalLengths = new Map();
       const allBounds = new kakao.maps.LatLngBounds();
+      const allRoads = [];
+      const roadStatusFilters = {
+        NORMAL: true,
+        UNOPENED: true,
+        UNEXPANDED: true
+      };
 
       let selectedKey = null;
       let roadviewMode = false;
@@ -2489,6 +2656,10 @@
               strokeOpacity: style.baseOpacity / 100
             });
 
+            road.hitLine.setOptions({
+              strokeWeight: Math.max(18, style.base + 10)
+            });
+
             road.roadLine.setOptions({
               strokeWeight:
                 getRoadStrokeWeight(
@@ -2503,6 +2674,7 @@
             });
           });
         });
+        updateLegendStyles();
       }
 
       function applyStatusStyles() {
@@ -2517,7 +2689,23 @@
             });
           });
         });
+        updateLegendStyles();
       }
+
+      function updateLegendStyles() {
+        const legendStyles = {
+          legendCity: ROAD_STYLES.CITY.baseColor,
+          legendMyeon: ROAD_STYLES.MYEON.baseColor,
+          legendRi: ROAD_STYLES.RI.baseColor,
+          legendFarm: ROAD_STYLES.FARM.baseColor
+        };
+        Object.keys(legendStyles).forEach(function (id) {
+          const element = document.getElementById(id);
+          if (element) element.style.setProperty("--legend-color", legendStyles[id]);
+        });
+      }
+
+      updateLegendStyles();
 
       /*
        * 지적편집도
@@ -2549,6 +2737,10 @@
         document.body.classList.add("list-collapsed");
       };
 
+      if (window.matchMedia("(max-width: 700px)").matches) {
+        document.body.classList.add("list-collapsed");
+      }
+
       const roadSearch = document.getElementById("roadSearch");
 
       roadSearch.addEventListener("input", function () {
@@ -2566,6 +2758,15 @@
       document.getElementById("addressSearchBtn").onclick =
         runIntegratedSearch;
 
+      document.querySelectorAll(".road-status-filter").forEach(function (input) {
+        input.addEventListener("change", function () {
+          roadStatusFilters[this.value] = this.checked;
+          applyRoadVisibility();
+          updateLabels();
+          filterRoadList(roadSearch.value);
+        });
+      });
+
       function filterRoadList(value) {
         const query = String(value)
           .toLowerCase()
@@ -2579,7 +2780,11 @@
             .toLowerCase()
             .replace(/\s+/g, "");
 
-          const visible = text.includes(query);
+          const group = groups.get(item.dataset.key);
+          const statusVisible = !group || group.roads.some(function (road) {
+            return roadStatusFilters[road.statusKey];
+          });
+          const visible = text.includes(query) && statusVisible;
           item.style.display = visible ? "block" : "none";
 
           if (visible) {
@@ -2604,6 +2809,11 @@
         return count;
       }
 
+      const integratedSearchCache = new Map();
+      let integratedSearchSequence = 0;
+      let lastIntegratedSearchAt = 0;
+      let delayedSearchTimer = null;
+
       function runIntegratedSearch() {
         const query = roadSearch.value.trim();
 
@@ -2618,10 +2828,30 @@
           return;
         }
 
+        const cacheKey = query.toLowerCase().replace(/\s+/g, " ");
+        if (integratedSearchCache.has(cacheKey)) {
+          renderAddressResults(integratedSearchCache.get(cacheKey));
+          return;
+        }
+
+        const elapsed = Date.now() - lastIntegratedSearchAt;
+        if (elapsed < 900) {
+          clearTimeout(delayedSearchTimer);
+          delayedSearchTimer = setTimeout(runIntegratedSearch, 900 - elapsed);
+          return;
+        }
+
+        lastIntegratedSearchAt = Date.now();
+        const requestSequence = ++integratedSearchSequence;
+        const searchButton = document.getElementById("addressSearchBtn");
+        searchButton.disabled = true;
+        searchButton.textContent = "검색 중";
+
         Promise.all([
           searchAddress(query),
           searchPlace(query)
         ]).then(function (resultSets) {
+          if (requestSequence !== integratedSearchSequence) return;
           const combined = [];
           const used = new Set();
 
@@ -2642,7 +2872,18 @@
             return;
           }
 
-          renderAddressResults(combined.slice(0, 12));
+          const results = combined.slice(0, 12);
+          integratedSearchCache.set(cacheKey, results);
+          renderAddressResults(results);
+        }).catch(function () {
+          if (requestSequence === integratedSearchSequence) {
+            showAppError("검색 서비스를 사용할 수 없습니다", "잠시 후 다시 검색해 주세요. 같은 검색어는 반복 호출하지 않는 것이 좋습니다.");
+          }
+        }).finally(function () {
+          if (requestSequence === integratedSearchSequence) {
+            searchButton.disabled = false;
+            searchButton.textContent = "검색";
+          }
         });
       }
 
@@ -2749,10 +2990,7 @@
         const layer = LAYERS[layerId];
 
         layer.visible = visible;
-
-        layer.shapes.forEach(function (shape) {
-          shape.setMap(visible ? map : null);
-        });
+        applyRoadVisibility();
 
         if (
           !visible &&
@@ -2764,6 +3002,22 @@
 
         infoWindow.close();
         updateLabels();
+      }
+
+      function applyRoadVisibility() {
+        allRoads.forEach(function (road) {
+          const visible = LAYERS[road.layerId].visible && roadStatusFilters[road.statusKey];
+          road.baseLine.setMap(visible ? map : null);
+          road.roadLine.setMap(visible ? map : null);
+          road.hitLine.setMap(visible ? map : null);
+        });
+
+        if (selectedKey) {
+          const selected = groups.get(selectedKey);
+          if (selected && !selected.roads.some(function (road) {
+            return LAYERS[road.layerId].visible && roadStatusFilters[road.statusKey];
+          })) resetSelection();
+        }
       }
 
       /*
@@ -2784,11 +3038,11 @@
       })
       .catch(function (error) {
         console.error(error);
-
-        alert(
-          "GeoJSON 파일을 불러오지 못했습니다.\n" +
-          "index.html, city_roads.geojson, roads.geojson이\n" +
-          "같은 폴더에 있는지 확인하세요."
+        showAppError(
+          "도로 데이터를 불러오지 못했습니다",
+          "index.html, city_roads.geojson, roads.geojson이 같은 폴더에 있는지 확인하세요.\n" +
+          "파일은 file://가 아니라 http://localhost:8080 또는 GitHub Pages에서 실행해야 합니다.\n\n" +
+          "상세 원인: " + (error && error.message ? error.message : "알 수 없는 오류")
         );
       });
 
@@ -2804,6 +3058,10 @@
         }
 
         const data = await response.json();
+
+        if (!data || data.type !== "FeatureCollection" || !Array.isArray(data.features)) {
+          throw new Error(LAYERS[layerId].file + " 형식이 올바른 GeoJSON FeatureCollection이 아닙니다.");
+        }
 
         data.features.forEach(function (feature) {
           addFeature(feature, layerId);
@@ -2941,21 +3199,37 @@
           zIndex: 5
         });
 
+        /* 보이는 선보다 넓은 투명 클릭 영역으로 선택 감도를 높입니다. */
+        const hitLine = new kakao.maps.Polyline({
+          map: map,
+          path: path,
+          strokeWeight: Math.max(18, style.base + 10),
+          strokeColor: "#000000",
+          strokeOpacity: 0.01,
+          strokeStyle: "solid",
+          zIndex: 6
+        });
+
         LAYERS[layerId].shapes.push(
           baseLine,
-          roadLine
+          roadLine,
+          hitLine
         );
 
           const road = {
           baseLine,
           roadLine,
+          hitLine,
           color: style.color,
           styleKey,
           statusKey,
+          layerId,
           groupKey
         };
 
-        [baseLine, roadLine].forEach(function (line) {
+        allRoads.push(road);
+
+        [hitLine, baseLine, roadLine].forEach(function (line) {
           kakao.maps.event.addListener(
             line,
             "click",
@@ -3069,7 +3343,10 @@
           zIndex: 3
         });
 
-        LAYERS[layerId].labels.push(label);
+        LAYERS[layerId].labels.push({
+          overlay: label,
+          statusKey: getRoadStatusKey(properties, layerId)
+        });
       }
 
       function updateLabels() {
@@ -3080,9 +3357,9 @@
               currentScaleDenominator <= 50000;
 
             layer.labels.forEach(
-              function (label) {
-                label.setMap(
-                  layer.visible && scaleVisible ? map : null
+              function (labelItem) {
+                labelItem.overlay.setMap(
+                  layer.visible && scaleVisible && roadStatusFilters[labelItem.statusKey] ? map : null
                 );
               }
             );
