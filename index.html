@@ -1186,15 +1186,61 @@
         bottom: 8px;
       }
 
+      /* 모바일: 노선목록을 좌측 사이드바가 아닌 하단 바텀시트로 표시 */
       #listPanel {
-        width: min(260px, calc(100vw - 52px));
-        max-width: calc(100vw - 52px);
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100% !important;
+        max-width: none;
+        height: min(52dvh, 520px);
+        min-height: 190px;
+        max-height: 82dvh;
+        display: flex;
+        flex-direction: column;
         box-sizing: border-box;
         overflow: visible;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -4px 18px #0005;
       }
+
+      /* 모바일에서는 패널 위쪽을 잡아 위·아래로 높이 조절 */
       #listResizeHandle {
-        right: -5px;
-        width: 10px;
+        top: -18px;
+        right: 0;
+        bottom: auto;
+        left: 0;
+        width: 100%;
+        height: 36px;
+        z-index: 26;
+        cursor: ns-resize;
+        touch-action: none;
+        background: transparent;
+      }
+
+      #listResizeHandle::after {
+        content: "";
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        width: 58px;
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(37, 143, 255, 0.82);
+        box-shadow: 0 1px 4px rgba(0,0,0,.22);
+        transform: translateX(-50%);
+        pointer-events: none;
+      }
+
+      body.list-resizing #listResizeHandle::after {
+        width: 70px;
+        height: 7px;
+        background: rgba(37, 143, 255, 1);
+      }
+
+      body.list-resizing {
+        cursor: ns-resize;
       }
       .list-header {
         min-height: 46px;
@@ -1204,8 +1250,28 @@
         font-size: 15px;
         white-space: nowrap;
       }
-      #listClose { right: -14px; width: 14px; }
-      #listOpen { width: 14px; }
+      #listClose {
+        top: 10px;
+        right: 10px;
+        width: 32px;
+        height: 28px;
+        border-radius: 7px;
+        box-shadow: none;
+        transform: none;
+        font-size: 15px;
+      }
+
+      #listOpen {
+        top: auto;
+        right: auto;
+        bottom: 0;
+        left: 50%;
+        width: 72px;
+        height: 30px;
+        border-radius: 9px 9px 0 0;
+        transform: translateX(-50%);
+        box-shadow: 0 -2px 8px #0004;
+      }
 
       .road-search-wrap {
         display: grid;
@@ -1228,12 +1294,15 @@
       .legend-item { gap: 4px; white-space: nowrap; }
       .legend-line { width: 24px; flex-basis: 24px; }
       #listContent {
-        height: calc(100dvh - 220px);
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
         padding: 6px;
+        overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }
 
-      body:not(.list-collapsed) .top-toolbar,
+      /* 하단 패널이 열려 있어도 상단 지도 메뉴는 계속 사용 가능 */
       body:not(.list-collapsed) #mapTools,
       body:not(.list-collapsed) #scaleControl {
         visibility: hidden;
@@ -2958,6 +3027,21 @@
       const listPanel = document.getElementById("listPanel");
       const listResizeHandle = document.getElementById("listResizeHandle");
       const mobileListMedia = window.matchMedia("(max-width: 700px)");
+      const listOpenBtn = document.getElementById("listOpen");
+      const listCloseBtn = document.getElementById("listClose");
+
+      function updateListButtonSymbols() {
+        if (mobileListMedia.matches) {
+          listOpenBtn.textContent = "▲";
+          listOpenBtn.title = "노선목록 펼치기";
+          listCloseBtn.textContent = "▼";
+          listCloseBtn.title = "노선목록 접기";
+        } else {
+          listOpenBtn.textContent = "▶";
+          listCloseBtn.textContent = "◀";
+        }
+      }
+      updateListButtonSymbols();
 
       // 모바일은 첫 접속 시 좌측 메뉴를 기본적으로 접어 둡니다.
       if (mobileListMedia.matches) {
@@ -2976,18 +3060,17 @@
         document.body.classList.add("list-collapsed");
       };
 
-      // 패널 오른쪽 가장자리를 마우스/터치로 드래그하여 폭을 조절합니다.
+      // 데스크톱은 폭, 모바일은 하단 패널 높이를 드래그로 조절합니다.
       let listResizePointerId = null;
 
       function clampListWidth(width) {
-        const minWidth = mobileListMedia.matches ? 150 : 150;
-        const maxWidth = mobileListMedia.matches
-          ? Math.max(minWidth, window.innerWidth - 52)
-          : Math.min(480, Math.max(minWidth, window.innerWidth - 120));
+        const minWidth = 150;
+        const maxWidth = Math.min(480, Math.max(minWidth, window.innerWidth - 120));
         return Math.max(minWidth, Math.min(maxWidth, width));
       }
 
       function applyListWidth(width) {
+        if (mobileListMedia.matches) return;
         const nextWidth = clampListWidth(width);
         listPanel.style.width = nextWidth + "px";
         try {
@@ -2995,10 +3078,32 @@
         } catch (e) {}
       }
 
+      function clampListHeight(height) {
+        const minHeight = 190;
+        const maxHeight = Math.max(minHeight, window.innerHeight * 0.82);
+        return Math.max(minHeight, Math.min(maxHeight, height));
+      }
+
+      function applyListHeight(height) {
+        if (!mobileListMedia.matches) return;
+        const nextHeight = clampListHeight(height);
+        listPanel.style.height = nextHeight + "px";
+        try {
+          localStorage.setItem("roadListPanelHeight", String(Math.round(nextHeight)));
+        } catch (e) {}
+      }
+
       try {
-        const savedListWidth = Number(localStorage.getItem("roadListPanelWidth"));
-        if (Number.isFinite(savedListWidth) && savedListWidth > 0) {
-          applyListWidth(savedListWidth);
+        if (mobileListMedia.matches) {
+          const savedListHeight = Number(localStorage.getItem("roadListPanelHeight"));
+          if (Number.isFinite(savedListHeight) && savedListHeight > 0) {
+            applyListHeight(savedListHeight);
+          }
+        } else {
+          const savedListWidth = Number(localStorage.getItem("roadListPanelWidth"));
+          if (Number.isFinite(savedListWidth) && savedListWidth > 0) {
+            applyListWidth(savedListWidth);
+          }
         }
       } catch (e) {}
 
@@ -3007,12 +3112,20 @@
         listResizePointerId = event.pointerId;
         listResizeHandle.setPointerCapture(event.pointerId);
         document.body.classList.add("list-resizing");
+        // 모바일에서는 드래그 시작을 짧은 진동으로 알려 줍니다(지원 기기만).
+        if (mobileListMedia.matches && navigator.vibrate) {
+          try { navigator.vibrate(12); } catch (e) {}
+        }
         event.preventDefault();
       });
 
       listResizeHandle.addEventListener("pointermove", function (event) {
         if (event.pointerId !== listResizePointerId) return;
-        applyListWidth(event.clientX);
+        if (mobileListMedia.matches) {
+          applyListHeight(window.innerHeight - event.clientY);
+        } else {
+          applyListWidth(event.clientX);
+        }
         event.preventDefault();
       });
 
@@ -3032,8 +3145,19 @@
       listResizeHandle.addEventListener("pointercancel", finishListResize);
 
       window.addEventListener("resize", function () {
-        const currentWidth = listPanel.getBoundingClientRect().width;
-        if (currentWidth) applyListWidth(currentWidth);
+        updateListButtonSymbols();
+        if (mobileListMedia.matches) {
+          // 데스크톱에서 지정한 인라인 폭은 모바일 바텀시트에서 제거
+          listPanel.style.removeProperty("width");
+          const currentHeight = listPanel.getBoundingClientRect().height;
+          if (currentHeight) applyListHeight(currentHeight);
+        } else {
+          // 모바일에서 지정한 인라인 높이는 데스크톱 사이드바에서 제거
+          listPanel.style.removeProperty("height");
+          let savedListWidth = 0;
+          try { savedListWidth = Number(localStorage.getItem("roadListPanelWidth")); } catch (e) {}
+          applyListWidth(Number.isFinite(savedListWidth) && savedListWidth > 0 ? savedListWidth : 190);
+        }
       });
 
       const roadSearch = document.getElementById("roadSearch");
