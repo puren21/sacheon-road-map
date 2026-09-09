@@ -448,6 +448,29 @@
       box-shadow: 2px 0 12px #0006;
     }
 
+    /* 좌측 노선목록 폭 조절 손잡이 */
+    #listResizeHandle {
+      position: absolute;
+      top: 0;
+      right: -4px;
+      bottom: 0;
+      z-index: 23;
+      width: 8px;
+      cursor: ew-resize;
+      touch-action: none;
+      background: transparent;
+    }
+
+    #listResizeHandle:hover,
+    body.list-resizing #listResizeHandle {
+      background: rgba(37, 143, 255, 0.22);
+    }
+
+    body.list-resizing {
+      cursor: ew-resize;
+      user-select: none;
+    }
+
     .list-header {
       display: flex;
       justify-content: flex-start;
@@ -1169,6 +1192,10 @@
         box-sizing: border-box;
         overflow: visible;
       }
+      #listResizeHandle {
+        right: -5px;
+        width: 10px;
+      }
       .list-header {
         min-height: 46px;
         padding: 11px 12px;
@@ -1374,6 +1401,7 @@
       <span>도로 노선목록</span>
       <button id="listClose" title="노선목록 접기" aria-label="노선목록 접기">◀</button>
     </div>
+    <div id="listResizeHandle" title="드래그하여 메뉴 폭 조절" aria-label="메뉴 폭 조절"></div>
 
     <div class="road-search-wrap">
       <input
@@ -2927,14 +2955,86 @@
       /*
        * 노선목록
        */
+      const listPanel = document.getElementById("listPanel");
+      const listResizeHandle = document.getElementById("listResizeHandle");
+      const mobileListMedia = window.matchMedia("(max-width: 700px)");
+
+      // 모바일은 첫 접속 시 좌측 메뉴를 기본적으로 접어 둡니다.
+      if (mobileListMedia.matches) {
+        document.body.classList.add("list-collapsed");
+      }
+
       document.getElementById("listOpen").onclick = function () {
         document.body.classList.remove("list-collapsed");
-        document.getElementById("roadSearch").focus();
+        // 모바일에서는 키보드가 갑자기 뜨지 않도록 자동 포커스를 하지 않습니다.
+        if (!mobileListMedia.matches) {
+          document.getElementById("roadSearch").focus();
+        }
       };
 
       document.getElementById("listClose").onclick = function () {
         document.body.classList.add("list-collapsed");
       };
+
+      // 패널 오른쪽 가장자리를 마우스/터치로 드래그하여 폭을 조절합니다.
+      let listResizePointerId = null;
+
+      function clampListWidth(width) {
+        const minWidth = mobileListMedia.matches ? 150 : 150;
+        const maxWidth = mobileListMedia.matches
+          ? Math.max(minWidth, window.innerWidth - 52)
+          : Math.min(480, Math.max(minWidth, window.innerWidth - 120));
+        return Math.max(minWidth, Math.min(maxWidth, width));
+      }
+
+      function applyListWidth(width) {
+        const nextWidth = clampListWidth(width);
+        listPanel.style.width = nextWidth + "px";
+        try {
+          localStorage.setItem("roadListPanelWidth", String(Math.round(nextWidth)));
+        } catch (e) {}
+      }
+
+      try {
+        const savedListWidth = Number(localStorage.getItem("roadListPanelWidth"));
+        if (Number.isFinite(savedListWidth) && savedListWidth > 0) {
+          applyListWidth(savedListWidth);
+        }
+      } catch (e) {}
+
+      listResizeHandle.addEventListener("pointerdown", function (event) {
+        if (document.body.classList.contains("list-collapsed")) return;
+        listResizePointerId = event.pointerId;
+        listResizeHandle.setPointerCapture(event.pointerId);
+        document.body.classList.add("list-resizing");
+        event.preventDefault();
+      });
+
+      listResizeHandle.addEventListener("pointermove", function (event) {
+        if (event.pointerId !== listResizePointerId) return;
+        applyListWidth(event.clientX);
+        event.preventDefault();
+      });
+
+      function finishListResize(event) {
+        if (listResizePointerId === null) return;
+        if (event && event.pointerId !== listResizePointerId) return;
+        try {
+          if (listResizeHandle.hasPointerCapture(listResizePointerId)) {
+            listResizeHandle.releasePointerCapture(listResizePointerId);
+          }
+        } catch (e) {}
+        listResizePointerId = null;
+        document.body.classList.remove("list-resizing");
+      }
+
+      listResizeHandle.addEventListener("pointerup", finishListResize);
+      listResizeHandle.addEventListener("pointercancel", finishListResize);
+
+      window.addEventListener("resize", function () {
+        const currentWidth = listPanel.getBoundingClientRect().width;
+        if (currentWidth) applyListWidth(currentWidth);
+      });
 
       const roadSearch = document.getElementById("roadSearch");
 
