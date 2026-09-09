@@ -25,40 +25,6 @@
       cursor: pointer;
     }
 
-    /* 지도 중심 행정구역 표시 */
-    #centerRegionBar {
-      position: absolute;
-      top: 15px;
-      left: 295px;
-      z-index: 35;
-      display: flex;
-      align-items: center;
-      min-height: 47px;
-      padding: 0 16px;
-      border: 1px solid #d7dce2;
-      border-radius: 7px;
-      color: #333;
-      background: rgba(255,255,255,.96);
-      box-shadow: 0 2px 8px #0003;
-      font-size: 14px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    body.list-collapsed #centerRegionBar {
-      left: 15px;
-    }
-
-    #centerRegionBar .region-part + .region-part::before {
-      content: "›";
-      margin: 0 11px;
-      color: #a0a6ad;
-      font-size: 18px;
-      font-weight: normal;
-    }
-    @media (max-width: 900px) {
-      #centerRegionBar { left: 15px; top: 70px; max-width: calc(100vw - 30px); overflow: hidden; text-overflow: ellipsis; }
-    }
-
     /* =========================
        오른쪽 상단 메뉴
        ========================= */
@@ -452,17 +418,21 @@
 
     #listOpen {
       position: absolute;
-      top: 15px;
-      left: 15px;
-      z-index: 20;
+      top: 50%;
+      left: 0;
+      z-index: 24;
       display: none;
-      padding: 10px 15px;
+      width: 30px;
+      height: 64px;
+      padding: 0;
       border: 0;
-      border-radius: 5px;
+      border-radius: 0 7px 7px 0;
       color: white;
       background: #258fff;
-      box-shadow: 0 2px 7px #0005;
+      box-shadow: 2px 0 7px #0004;
+      font-size: 16px;
       font-weight: bold;
+      transform: translateY(-50%);
     }
 
     #listPanel {
@@ -473,14 +443,14 @@
       z-index: 21;
       width: 280px;
       display: block;
-      overflow: hidden;
+      overflow: visible;
       background: white;
       box-shadow: 2px 0 12px #0006;
     }
 
     .list-header {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       padding: 12px 14px;
       border-bottom: 1px solid #ddd;
       color: white;
@@ -488,11 +458,22 @@
       font-weight: bold;
     }
 
-    .list-header button {
+    #listClose {
+      position: absolute;
+      top: 50%;
+      right: -30px;
+      z-index: 25;
+      width: 30px;
+      height: 64px;
+      padding: 0;
       border: 0;
+      border-radius: 0 7px 7px 0;
       color: white;
-      background: transparent;
+      background: #258fff;
+      box-shadow: 2px 0 7px #0004;
+      font-size: 16px;
       font-weight: bold;
+      transform: translateY(-50%);
     }
 
     .road-search-wrap {
@@ -809,7 +790,7 @@
       padding: calc(3px * var(--label-scale)) calc(7px * var(--label-scale));
       color: #111;
       background: white;
-      border: max(1px, calc(2px * var(--label-scale))) solid black;
+      border: 0;
       border-radius: calc(4px * var(--label-scale));
       box-shadow: 0 1px 3px #0006;
       font-size: calc(13px * var(--label-scale));
@@ -1092,27 +1073,48 @@
         bottom: 8px;
       }
 
-      #listPanel { width: min(280px, 82vw); }
+      #listPanel { width: min(280px, 86vw); }
+      #listClose { right: -28px; width: 28px; }
+      #listOpen { width: 28px; }
 
-      #mapTools { right: 8px; }
+      #mapTools { right: 8px; top: 57%; }
       #scaleControl { right: 8px; bottom: 8px; }
+      .road-popup { max-width: calc(100vw - 24px); }
     }
 
     /* 공간파일(GeoJSON / SHP) 불러오기 */
     #spatialPanel {
-      display: none; position: absolute; top: 46px; right: 0; width: 360px;
-      max-height: calc(100vh - 80px); overflow: auto; background: rgba(255,255,255,.98);
-      border: 1px solid #bbb; border-radius: 8px; box-shadow: 0 3px 12px rgba(0,0,0,.22);
-      padding: 12px; box-sizing: border-box; color: #222; z-index: 50;
+      display: none; position: fixed; top: 70px; right: 15px; width: 380px;
+      max-height: calc(100vh - 90px); overflow: hidden; background: rgba(255,255,255,.98);
+      border: 1px solid #b8b8b8; border-radius: 9px; box-shadow: 0 5px 22px rgba(0,0,0,.28);
+      box-sizing: border-box; color: #222; z-index: 120;
     }
-    .spatial-title { font-weight: 700; font-size: 15px; margin-bottom: 5px; }
+    #spatialPanel.minimized { width: 250px; max-height: none; }
+    #spatialPanel.minimized .spatial-body { display:none; }
+    .spatial-header { height: 42px; display:flex; align-items:center; gap:8px; padding:0 8px 0 12px; border-bottom:1px solid #ddd; background:#f7f7f7; box-sizing:border-box; }
+    #spatialPanel.minimized .spatial-header { border-bottom:0; }
+    .spatial-title { flex:1; min-width:0; font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .spatial-window-btn { width:28px; height:28px; border:0; border-radius:4px; background:transparent; cursor:pointer; font-size:18px; line-height:28px; color:#444; }
+    .spatial-window-btn:hover { background:#e7e7e7; }
+    #spatialMinBtn { font-size:20px; padding-bottom:7px; }
+    .spatial-body { padding:12px; max-height:calc(100vh - 132px); overflow:auto; box-sizing:border-box; }
     .spatial-note { font-size: 11px; line-height: 1.45; color: #666; margin-bottom: 10px; }
     #spatialFileInput { display:none; }
-    #spatialOpenBtn { width:100%; padding:9px; border:1px solid #888; border-radius:5px; background:#f7f7f7; cursor:pointer; font-weight:700; }
-    #spatialOpenBtn:hover { background:#eee; }
+    #spatialActions { display:grid; grid-template-columns:1fr 88px; gap:6px; }
+    #spatialOpenBtn, #spatialResetBtn { padding:9px; border:1px solid #888; border-radius:5px; background:#f7f7f7; cursor:pointer; font-weight:700; }
+    #spatialOpenBtn:hover, #spatialResetBtn:hover { background:#eee; }
+    #spatialResetBtn { color:#444; }
     #spatialLayerList { margin-top:10px; display:grid; gap:8px; }
-    .import-layer { border:1px solid #d4d4d4; border-radius:6px; padding:9px; background:#fff; }
-    .import-layer-head { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+    .import-layer { border:1px solid #d4d4d4; border-radius:6px; background:#fff; overflow:hidden; }
+    .import-layer-head { display:flex; align-items:center; gap:7px; padding:9px; margin:0; cursor:pointer; user-select:none; }
+    .import-layer-head:hover { background:#f4f7fb; }
+    .import-layer.active .import-layer-head { background:#eef5ff; border-bottom:1px solid #e1e5ea; }
+    .import-layer-toggle { width:16px; color:#777; font-size:12px; text-align:center; transition:transform .15s ease; }
+    .import-layer.active .import-layer-toggle { transform:rotate(90deg); }
+    .import-layer-detail { display:none; padding:9px; }
+    .import-layer.active .import-layer-detail { display:block; }
+    .import-visible-wrap { display:inline-flex; align-items:center; gap:3px; font-size:11px; color:#444; cursor:pointer; white-space:nowrap; }
+    .import-visible-wrap input { margin:0; }
     .import-layer-name { flex:1; min-width:0; font-size:12px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .import-delete { border:0; background:#eee; border-radius:4px; cursor:pointer; padding:3px 7px; }
     .import-style-grid { display:grid; grid-template-columns:82px 1fr; gap:6px 8px; align-items:center; font-size:11px; }
@@ -1122,16 +1124,39 @@
     .import-label-row { display:flex; gap:5px; align-items:center; }
     .import-label-row select { flex:1; min-width:0; }
     .import-status { font-size:11px; color:#555; margin-top:7px; }
-    .imported-map-label { white-space:nowrap; padding:2px 5px; border-radius:3px; background:rgba(255,255,255,.88); border:1px solid rgba(0,0,0,.25); font-weight:700; text-shadow:0 1px 1px #fff; pointer-events:none; }
+    .imported-map-label {
+      white-space: nowrap;
+      padding: 0;
+      background: transparent;
+      color: #fff;
+      border: 0;
+      outline: 0;
+      box-shadow: none;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.2px;
+      text-shadow:
+        -1px -1px 0 #000,
+         0   -1px 0 #000,
+         1px -1px 0 #000,
+        -1px  0   0 #000,
+         1px  0   0 #000,
+        -1px  1px 0 #000,
+         0    1px 0 #000,
+         1px  1px 0 #000,
+         0    2px 2px rgba(0,0,0,.35);
+      pointer-events: none;
+    }
+    @media (max-width: 640px) {
+      #spatialPanel { top: 62px; right: 8px; width: min(380px, calc(100vw - 16px)); max-height: calc(100vh - 72px); }
+      #spatialPanel.minimized { width: 220px; }
+      .spatial-body { max-height: calc(100vh - 114px); }
+    }
   </style>
 </head>
 
 <body>
   <div id="map"></div>
-
-  <div id="centerRegionBar" aria-live="polite" title="지도 중심 행정구역">
-    <span class="region-part">행정구역 확인 중</span>
-  </div>
 
   <div id="scaleControl">
     <div id="scaleBar"></div>
@@ -1170,12 +1195,12 @@
   </div>
   <div id="measureHint">지점을 클릭하고 마우스 오른쪽 버튼으로 완료하세요.</div>
 
-  <button id="listOpen">☰ 노선목록</button>
+  <button id="listOpen" title="노선목록 펼치기" aria-label="노선목록 펼치기">▶</button>
 
   <div id="listPanel">
     <div class="list-header">
       <span>도로 노선목록</span>
-      <button id="listClose">◀ 접기</button>
+      <button id="listClose" title="노선목록 접기" aria-label="노선목록 접기">◀</button>
     </div>
 
     <div class="road-search-wrap">
@@ -1210,13 +1235,28 @@
 
     <!-- 공간파일 불러오기 -->
     <div class="tool-wrap">
-      <button id="spatialBtn" class="tool-button" title="GeoJSON / SHP 불러오기">파일</button>
-      <div id="spatialPanel">
-        <div class="spatial-title">공간파일 불러오기</div>
-        <div class="spatial-note">GeoJSON(.geojson/.json), SHP ZIP 또는 SHP 세트(.shp+.shx+.dbf+.prj)를 선택할 수 있습니다. SHP 세트는 관련 파일을 한 번에 선택하세요.</div>
-        <button id="spatialOpenBtn" type="button">GeoJSON / SHP 파일 선택</button>
-        <input id="spatialFileInput" type="file" multiple accept=".geojson,.json,.zip,.shp,.shx,.dbf,.prj,.cpg">
-        <div id="spatialLayerList"></div>
+      <button id="spatialBtn" class="tool-button" title="공간파일 불러오기" aria-label="공간파일 불러오기">
+        <svg viewBox="0 0 24 24" aria-hidden="true" style="width:25px;height:25px;display:block;margin:auto">
+          <path d="M3.5 6.5h6l2 2h9v9.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M3.5 8.5V6a2 2 0 0 1 2-2h4l2 2h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M12 11v5m0-5-2 2m2-2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div id="spatialPanel" role="dialog" aria-label="공간파일 관리">
+        <div class="spatial-header">
+          <div class="spatial-title">공간파일 관리</div>
+          <button id="spatialMinBtn" class="spatial-window-btn" type="button" title="최소화" aria-label="최소화">−</button>
+          <button id="spatialCloseBtn" class="spatial-window-btn" type="button" title="닫기" aria-label="닫기">×</button>
+        </div>
+        <div class="spatial-body">
+          <div class="spatial-note">GeoJSON(.geojson/.json), SHP ZIP 또는 SHP 세트(.shp+.shx+.dbf+.prj)를 선택할 수 있습니다. SHP 세트는 관련 파일을 한 번에 선택하세요.</div>
+          <div id="spatialActions">
+            <button id="spatialOpenBtn" type="button">GeoJSON / SHP 파일 선택</button>
+            <button id="spatialResetBtn" type="button" title="불러온 공간파일 전체 삭제">초기화</button>
+          </div>
+          <input id="spatialFileInput" type="file" multiple accept=".geojson,.json,.zip,.shp,.shx,.dbf,.prj,.cpg">
+          <div id="spatialLayerList"></div>
+        </div>
       </div>
     </div>
 
@@ -1382,7 +1422,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/shpjs@latest/dist/shp.js"></script>
-  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=28421f6917a018f0097983c23e04865e&libraries=services&autoload=false"></script>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"></script>
 
   <script>
     kakao.maps.load(function () {
@@ -1412,7 +1452,7 @@
 
       const DEFAULT_STATUS_STYLES = {
         UNOPENED_SIZE: 4,
-        UNOPENED_GAP: "shortdash",
+        UNOPENED_GAP: "shortdot",
         UNEXPANDED: "shortdash"
       };
 
@@ -1420,7 +1460,7 @@
         SCALE: 70
       };
 
-      const STYLE_DEFAULTS_VERSION = "2026-09-09-3";
+      const STYLE_DEFAULTS_VERSION = "2026-09-09-5";
 
       if (
         localStorage.getItem("styleDefaultsVersion") !==
@@ -1954,10 +1994,6 @@
         updateLiveMeasurePanel(event.latLng);
       });
 
-      kakao.maps.event.addListener(map, "rightclick", function () {
-        if (measureMode) finishMeasure();
-      });
-
       document.addEventListener("keydown", function (event) {
         if (!measureMode) return;
         if (event.key === "Backspace") {
@@ -1975,85 +2011,6 @@
       });
 
       const geocoder = new kakao.maps.services.Geocoder();
-
-      let regionRequestSeq = 0;
-
-      function renderCenterRegion(parts) {
-        const bar = document.getElementById("centerRegionBar");
-        if (!bar) return;
-
-        const cleanParts = (parts || []).filter(function (value) {
-          return value && String(value).trim();
-        });
-
-        if (!cleanParts.length) {
-          bar.innerHTML = '<span class="region-part">행정구역 정보 없음</span>';
-          bar.title = "행정구역 정보 없음";
-          return;
-        }
-
-        bar.innerHTML = cleanParts.map(function (part) {
-          return '<span class="region-part">' + escapeHTML(part) + '</span>';
-        }).join("");
-        bar.title = cleanParts.join(" ");
-      }
-
-      function updateCenterRegion() {
-        const center = map.getCenter();
-        const requestSeq = ++regionRequestSeq;
-
-        geocoder.coord2RegionCode(
-          center.getLng(),
-          center.getLat(),
-          function (result, status) {
-            if (requestSeq !== regionRequestSeq) return;
-
-            if (status === kakao.maps.services.Status.OK && result && result.length) {
-              const region =
-                result.find(function (item) { return item.region_type === "H"; }) ||
-                result.find(function (item) { return item.region_type === "B"; }) ||
-                result[0];
-
-              renderCenterRegion([
-                region.region_1depth_name,
-                region.region_2depth_name,
-                region.region_3depth_name,
-                region.region_4depth_name
-              ]);
-              return;
-            }
-
-            // 일부 환경에서 행정구역 코드 조회가 실패할 때 주소조회로 한 번 더 표시
-            geocoder.coord2Address(
-              center.getLng(),
-              center.getLat(),
-              function (addressResult, addressStatus) {
-                if (requestSeq !== regionRequestSeq) return;
-
-                if (
-                  addressStatus === kakao.maps.services.Status.OK &&
-                  addressResult &&
-                  addressResult.length &&
-                  addressResult[0].address
-                ) {
-                  const address = addressResult[0].address;
-                  renderCenterRegion([
-                    address.region_1depth_name,
-                    address.region_2depth_name,
-                    address.region_3depth_name
-                  ]);
-                } else {
-                  renderCenterRegion([]);
-                }
-              }
-            );
-          }
-        );
-      }
-
-      kakao.maps.event.addListener(map, "idle", updateCenterRegion);
-      kakao.maps.event.addListener(map, "tilesloaded", updateCenterRegion);
-      setTimeout(updateCenterRegion, 300);
       const places = new kakao.maps.services.Places();
       const addressMarker = new kakao.maps.Marker();
       const addressInfo = new kakao.maps.InfoWindow({
@@ -2085,6 +2042,9 @@
       const spatialBtn = document.getElementById("spatialBtn");
       const spatialPanel = document.getElementById("spatialPanel");
       const spatialOpenBtn = document.getElementById("spatialOpenBtn");
+      const spatialResetBtn = document.getElementById("spatialResetBtn");
+      const spatialMinBtn = document.getElementById("spatialMinBtn");
+      const spatialCloseBtn = document.getElementById("spatialCloseBtn");
       const spatialFileInput = document.getElementById("spatialFileInput");
       const spatialLayerList = document.getElementById("spatialLayerList");
       const importedLayers = new Map();
@@ -2147,8 +2107,6 @@
 
         stylePanel.style.display = "none";
         styleBtn.classList.remove("active");
-        spatialPanel.style.display = "none";
-        spatialBtn.classList.remove("active");
       };
 
       layerPanel.onclick = function (event) {
@@ -2167,8 +2125,6 @@
         styleBtn.classList.toggle("active", !opened);
         layerPanel.style.display = "none";
         layerBtn.classList.remove("active");
-        spatialPanel.style.display = "none";
-        spatialBtn.classList.remove("active");
       };
 
       stylePanel.onclick = function (event) {
@@ -2180,25 +2136,61 @@
         layerBtn.classList.remove("active");
         stylePanel.style.display = "none";
         styleBtn.classList.remove("active");
-        spatialPanel.style.display = "none";
-        spatialBtn.classList.remove("active");
       });
 
 
+      function openSpatialPanel() {
+        spatialPanel.style.display = "block";
+        spatialPanel.classList.remove("minimized");
+        spatialBtn.classList.add("active");
+        spatialMinBtn.textContent = "−";
+        spatialMinBtn.title = "최소화";
+      }
+
+      function closeSpatialPanel() {
+        spatialPanel.style.display = "none";
+        spatialPanel.classList.remove("minimized");
+        spatialBtn.classList.remove("active");
+        spatialMinBtn.textContent = "−";
+        spatialMinBtn.title = "최소화";
+      }
+
       spatialBtn.onclick = function (event) {
         event.stopPropagation();
-        const opened = spatialPanel.style.display === "block";
-        spatialPanel.style.display = opened ? "none" : "block";
-        spatialBtn.classList.toggle("active", !opened);
+        if (spatialPanel.style.display === "block") {
+          if (spatialPanel.classList.contains("minimized")) openSpatialPanel();
+          else closeSpatialPanel();
+        } else {
+          openSpatialPanel();
+        }
         layerPanel.style.display = "none"; layerBtn.classList.remove("active");
         stylePanel.style.display = "none"; styleBtn.classList.remove("active");
       };
       spatialPanel.onclick = function (event) { event.stopPropagation(); };
+      spatialCloseBtn.onclick = function (event) {
+        event.stopPropagation();
+        closeSpatialPanel();
+      };
+      spatialMinBtn.onclick = function (event) {
+        event.stopPropagation();
+        const minimized = spatialPanel.classList.toggle("minimized");
+        spatialMinBtn.textContent = minimized ? "□" : "−";
+        spatialMinBtn.title = minimized ? "복원" : "최소화";
+      };
       spatialOpenBtn.onclick = function () { spatialFileInput.click(); };
+      spatialResetBtn.onclick = function () {
+        importedLayers.forEach(function(layer) { clearImportedGraphics(layer); });
+        importedLayers.clear();
+        spatialLayerList.innerHTML = "";
+        spatialFileInput.value = "";
+      };
       spatialFileInput.onchange = async function () {
         const files = Array.from(spatialFileInput.files || []);
         if (!files.length) return;
-        try { await importSpatialFiles(files); }
+        try {
+          await importSpatialFiles(files);
+          openSpatialPanel();
+        }
         catch (error) { console.error(error); alert("공간파일을 읽지 못했습니다.\n" + (error.message || error)); }
         spatialFileInput.value = "";
       };
@@ -2297,24 +2289,64 @@
       }
 
       function renderImportedLayerControls(layer) {
-        const box=document.createElement("div"); box.className="import-layer"; box.dataset.layerId=layer.id;
-        const options=['<option value="">라벨 없음</option>'].concat(layer.fields.map(f=>'<option value="'+escapeHTML(f)+'">'+escapeHTML(f)+'</option>')).join("");
-        box.innerHTML='<div class="import-layer-head"><input class="imp-visible" type="checkbox" checked><span class="import-layer-name" title="'+escapeHTML(layer.name)+'">'+escapeHTML(layer.name)+'</span><button class="import-delete" type="button">삭제</button></div>'+ 
-          '<div class="import-style-grid"><span>선 색상</span><input class="imp-color" type="color" value="'+layer.color+'">'+
-          '<span>선 두께</span><input class="imp-weight" type="number" min="1" max="30" value="'+layer.weight+'">'+
-          '<span>투명도</span><input class="imp-opacity" type="range" min="0" max="100" step="5" value="'+layer.opacity+'">'+
-          '<span>선 모양</span><select class="imp-stroke"><option value="solid">실선</option><option value="shortdash">짧은 대시</option><option value="dash">대시</option><option value="longdash">긴 대시</option><option value="dot">점선</option></select>'+ 
-          '<span>라벨 필드</span><select class="imp-label">'+options+'</select>'+ 
-          '<span>라벨 크기</span><input class="imp-label-size" type="number" min="8" max="40" value="12"></div><div class="import-status">'+layer.features.length.toLocaleString('ko-KR')+'개 객체</div>';
+        const box = document.createElement("div");
+        box.className = "import-layer";
+        box.dataset.layerId = layer.id;
+
+        const options = ['<option value="">라벨 없음</option>']
+          .concat(layer.fields.map(function (f) {
+            return '<option value="' + escapeHTML(f) + '">' + escapeHTML(f) + '</option>';
+          })).join("");
+
+        box.innerHTML =
+          '<div class="import-layer-head" title="클릭하여 상세 설정 열기">' +
+            '<span class="import-layer-toggle">▶</span>' +
+            '<label class="import-visible-wrap" title="레이어 표시/숨김"><input class="imp-visible" type="checkbox" checked><span>표시</span></label>' +
+            '<span class="import-layer-name" title="' + escapeHTML(layer.name) + '">' + escapeHTML(layer.name) + '</span>' +
+            '<span class="import-status">' + layer.features.length.toLocaleString('ko-KR') + '개</span>' +
+          '</div>' +
+          '<div class="import-layer-detail">' +
+            '<div class="import-style-grid">' +
+              '<span>선 색상</span><input class="imp-color" type="color" value="' + layer.color + '">' +
+              '<span>선 두께</span><input class="imp-weight" type="number" min="1" max="30" value="' + layer.weight + '">' +
+              '<span>투명도</span><input class="imp-opacity" type="range" min="0" max="100" step="5" value="' + layer.opacity + '">' +
+              '<span>선 모양</span><select class="imp-stroke"><option value="solid">실선</option><option value="shortdash">짧은 대시</option><option value="dash">대시</option><option value="longdash">긴 대시</option><option value="dot">점선</option></select>' +
+              '<span>라벨 필드</span><select class="imp-label">' + options + '</select>' +
+              '<span>라벨 크기</span><input class="imp-label-size" type="number" min="8" max="40" value="12">' +
+            '</div>' +
+            '<div style="display:flex;justify-content:flex-end;margin-top:9px"><button class="import-delete" type="button">레이어 삭제</button></div>' +
+          '</div>';
+
         spatialLayerList.prepend(box);
-        const redraw=function(){
-          layer.visible=box.querySelector('.imp-visible').checked; layer.color=box.querySelector('.imp-color').value;
-          layer.weight=Math.max(1,Math.min(30,Number(box.querySelector('.imp-weight').value)||4)); layer.opacity=Number(box.querySelector('.imp-opacity').value);
-          layer.strokeStyle=box.querySelector('.imp-stroke').value; layer.labelField=box.querySelector('.imp-label').value;
-          layer.labelSize=Math.max(8,Math.min(40,Number(box.querySelector('.imp-label-size').value)||12)); drawImportedLayer(layer);
+
+        const head = box.querySelector('.import-layer-head');
+        const visible = box.querySelector('.imp-visible');
+        head.addEventListener('click', function (event) {
+          if (event.target.closest('.import-visible-wrap')) return;
+          box.classList.toggle('active');
+        });
+
+        const redraw = function () {
+          layer.visible = visible.checked;
+          layer.color = box.querySelector('.imp-color').value;
+          layer.weight = Math.max(1, Math.min(30, Number(box.querySelector('.imp-weight').value) || 4));
+          layer.opacity = Number(box.querySelector('.imp-opacity').value);
+          layer.strokeStyle = box.querySelector('.imp-stroke').value;
+          layer.labelField = box.querySelector('.imp-label').value;
+          layer.labelSize = Math.max(8, Math.min(40, Number(box.querySelector('.imp-label-size').value) || 12));
+          drawImportedLayer(layer);
         };
-        box.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',redraw));
-        box.querySelector('.import-delete').onclick=function(){clearImportedGraphics(layer); importedLayers.delete(layer.id); box.remove();};
+
+        box.querySelectorAll('input,select').forEach(function (el) {
+          el.addEventListener('input', redraw);
+          el.addEventListener('change', redraw);
+        });
+
+        box.querySelector('.import-delete').onclick = function () {
+          clearImportedGraphics(layer);
+          importedLayers.delete(layer.id);
+          box.remove();
+        };
       }
 
       initStylePanel();
@@ -2502,9 +2534,6 @@
             map.removeOverlayMapTypeId(
               kakao.maps.MapTypeId.USE_DISTRICT
             );
-
-            addressInfo.close();
-            addressMarker.setMap(null);
           }
         };
 
@@ -3259,50 +3288,6 @@
         addressMarker.setMap(null);
       };
 
-      function showAddressInfo(position) {
-        geocoder.coord2Address(
-          position.getLng(),
-          position.getLat(),
-          function (result, status) {
-            if (
-              status !== kakao.maps.services.Status.OK ||
-              !result.length
-            ) {
-              return;
-            }
-
-            const data = result[0];
-            const parcelAddress = data.address
-              ? data.address.address_name
-              : "정보 없음";
-
-            const roadAddress = data.road_address
-              ? data.road_address.address_name
-              : "정보 없음";
-
-            const content = `
-              <div class="road-popup">
-                <button
-                  class="popup-close"
-                  onclick="closeAddressPopup()"
-                >×</button>
-
-                <div class="popup-title">지번 정보</div>
-                ${row("지번주소", parcelAddress)}
-                ${row("도로명주소", roadAddress)}
-                ${row("위도", position.getLat().toFixed(7))}
-                ${row("경도", position.getLng().toFixed(7))}
-              </div>
-            `;
-
-            addressMarker.setPosition(position);
-            addressMarker.setMap(map);
-            addressInfo.setContent(content);
-            addressInfo.open(map, addressMarker);
-          }
-        );
-      }
-
       /*
        * 지도 클릭
        */
@@ -3325,9 +3310,6 @@
             return;
           }
 
-          if (document.getElementById("districtCheck").checked) {
-            showAddressInfo(event.latLng);
-          }
         }
       );
 
@@ -3608,6 +3590,7 @@
         if (layerId === "city") {
           const status = String(properties["개설여부"] || "").trim();
           if (status.includes("미개설")) return "UNOPENED";
+          if (status.includes("미확장")) return "UNEXPANDED";
           return "NORMAL";
         }
 
