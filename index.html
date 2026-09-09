@@ -874,15 +874,18 @@
       --label-scale: var(--road-label-scale, 0.7);
       width: auto;
       min-width: 0;
-      padding: calc(3px * var(--label-scale)) calc(7px * var(--label-scale));
+      padding: calc(1px * var(--label-scale)) calc(3px * var(--label-scale));
       color: #111;
       background: white;
       border: 0;
-      border-radius: calc(4px * var(--label-scale));
+      border-radius: 0;
       box-shadow: 0 1px 3px #0006;
       font-size: calc(13px * var(--label-scale));
       font-weight: bold;
       line-height: 1.1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
       white-space: nowrap;
       pointer-events: none;
@@ -1214,6 +1217,10 @@
     .import-label-row select { flex:1; min-width:0; }
     .import-status { font-size:11px; color:#555; margin-top:7px; }
     .imported-map-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
       white-space: nowrap;
       padding: 0;
       background: transparent;
@@ -1235,6 +1242,20 @@
          1px  1px 0 #000,
          0    2px 2px rgba(0,0,0,.35);
       pointer-events: none;
+    }
+    .imported-point {
+      box-sizing: border-box;
+      border: 1px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,.45);
+      transform: translateZ(0);
+      cursor: pointer;
+      pointer-events: auto;
+    }
+    .imported-attributes {
+      max-height: 260px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
     @media (max-width: 640px) {
       #spatialPanel { top: 62px; right: 8px; width: min(380px, calc(100vw - 16px)); max-height: calc(100vh - 72px); }
@@ -1500,6 +1521,14 @@
         <div class="status-style-settings">
           <div class="status-style-title">개설상태 표현</div>
           <div class="style-section-note">미개설 표현은 시도와 농어촌도로에 함께 적용됩니다.</div>
+          <label class="status-style-row two-column">
+            <span>미확장</span>
+            <select id="unexpandedStyle">
+              <option value="shortdash">짧은 대시</option>
+              <option value="dash">대시</option>
+              <option value="longdash">긴 대시</option>
+            </select>
+          </label>
           <label class="status-style-row">
             <span>미개설</span>
             <input id="unopenedDotSize" type="number" min="1" max="20" aria-label="미개설 선 두께">
@@ -1514,14 +1543,6 @@
               <option value="dashdot">대시+점</option>
               <option value="longdashdot">긴 대시+점</option>
               <option value="longdashdotdot">긴 대시+점 2개</option>
-            </select>
-          </label>
-          <label class="status-style-row two-column">
-            <span>미확장</span>
-            <select id="unexpandedStyle">
-              <option value="shortdash">짧은 대시</option>
-              <option value="dash">대시</option>
-              <option value="longdash">긴 대시</option>
             </select>
           </label>
         </div>
@@ -2403,24 +2424,58 @@
       function addImportedGeoJSON(name, data) {
         if (data && data.type === "Feature") data = {type:"FeatureCollection", features:[data]};
         if (!data || !Array.isArray(data.features)) throw new Error(name + ": FeatureCollection 형식이 아닙니다.");
-        const supported = data.features.filter(f => importedGeometryLines(f.geometry).length);
-        if (!supported.length) throw new Error(name + ": 표시할 선(LineString/MultiLineString/Polygon)이 없습니다.");
+        const supported = data.features.filter(f => isImportedGeometrySupported(f.geometry));
+        if (!supported.length) throw new Error(name + ": 표시할 선·폴리곤·포인트 객체가 없습니다.");
         const id = "import-" + (++importedLayerSeq);
         const fields = Array.from(new Set(supported.flatMap(f => Object.keys(f.properties || {}))));
-        const layer = { id, name, features:supported, fields, visible:true, color:"#ff3b30", weight:4, opacity:90, strokeStyle:"solid", labelField:"", labelSize:12, shapes:[], labels:[], bounds:new kakao.maps.LatLngBounds() };
+        const layer = {
+          id, name, features:supported, fields, visible:true,
+          color:"#ff3b30", weight:4, opacity:90, strokeStyle:"solid",
+          fillColor:"#4a90e2", fillOpacity:35,
+          pointColor:"#ff3b30", pointSize:12,
+          labelField:"", labelSize:12, shapes:[], labels:[],
+          bounds:new kakao.maps.LatLngBounds()
+        };
         importedLayers.set(id, layer);
         drawImportedLayer(layer);
         renderImportedLayerControls(layer);
         if (!layer.bounds.isEmpty()) map.setBounds(layer.bounds);
       }
 
+      function isImportedGeometrySupported(geometry) {
+        return !!geometry && ["LineString", "MultiLineString", "Polygon", "MultiPolygon", "Point", "MultiPoint"].includes(geometry.type);
+      }
+
       function importedGeometryLines(geometry) {
         if (!geometry) return [];
         if (geometry.type === "LineString") return [geometry.coordinates];
         if (geometry.type === "MultiLineString") return geometry.coordinates;
-        if (geometry.type === "Polygon") return geometry.coordinates;
-        if (geometry.type === "MultiPolygon") return geometry.coordinates.flat();
         return [];
+      }
+
+      function importedPosition(coordinate, bounds) {
+        const normalized = normalizeCoordinate(coordinate);
+        const position = new kakao.maps.LatLng(normalized[1], normalized[0]);
+        if (bounds) bounds.extend(position);
+        return position;
+      }
+
+      function boundsCenter(bounds) {
+        const southWest = bounds.getSouthWest();
+        const northEast = bounds.getNorthEast();
+        return new kakao.maps.LatLng(
+          (southWest.getLat() + northEast.getLat()) / 2,
+          (southWest.getLng() + northEast.getLng()) / 2
+        );
+      }
+
+      function collectImportedCoordinates(coordinates, output) {
+        if (!Array.isArray(coordinates)) return;
+        if (coordinates.length >= 2 && Number.isFinite(Number(coordinates[0])) && Number.isFinite(Number(coordinates[1]))) {
+          output.push(coordinates);
+          return;
+        }
+        coordinates.forEach(function (item) { collectImportedCoordinates(item, output); });
       }
 
       function clearImportedGraphics(layer) {
@@ -2429,29 +2484,119 @@
         layer.shapes=[]; layer.labels=[];
       }
 
+      function showImportedFeatureInfo(position, feature, layer) {
+        const properties = feature.properties || {};
+        const entries = Object.entries(properties);
+        addressInfo.close();
+        addressMarker.setMap(null);
+        infoWindow.setContent(
+          '<div class="road-popup">' +
+            '<button class="popup-close" onclick="closeRoadPopup()">×</button>' +
+            '<div class="popup-title">' + escapeHTML(layer.name) + '</div>' +
+            '<div class="road-attributes imported-attributes">' +
+              (entries.length
+                ? entries.map(function (entry) { return row(entry[0], entry[1]); }).join('')
+                : row('속성', '정보 없음')) +
+            '</div>' +
+          '</div>'
+        );
+        infoWindow.setPosition(position);
+        infoWindow.open(map);
+      }
+
+      function handleImportedFeatureClick(position, feature, layer) {
+        if (measureMode) {
+          addMeasurePoint(position);
+          return;
+        }
+        if (roadviewMode) {
+          openRoadview(position);
+          return;
+        }
+        resetSelection();
+        showImportedFeatureInfo(position, feature, layer);
+      }
+
+      function bindImportedShapeClick(shape, feature, layer) {
+        kakao.maps.event.addListener(shape, 'click', function (event) {
+          kakao.maps.event.preventMap();
+          handleImportedFeatureClick(event.latLng, feature, layer);
+        });
+      }
+
       function drawImportedLayer(layer) {
         clearImportedGraphics(layer);
         layer.bounds = new kakao.maps.LatLngBounds();
         layer.features.forEach(function(feature) {
-          const lines = importedGeometryLines(feature.geometry);
-          lines.forEach(function(coords) {
-            const path = coords.map(function(c) {
-              const n=normalizeCoordinate(c); const pos=new kakao.maps.LatLng(n[1],n[0]); layer.bounds.extend(pos); return pos;
-            }).filter(Boolean);
+          const geometry = feature.geometry;
+          if (!geometry) return;
+
+          importedGeometryLines(geometry).forEach(function(coords) {
+            const path = coords.map(function(c) { return importedPosition(c, layer.bounds); });
             if (path.length < 2) return;
-            const line = new kakao.maps.Polyline({map:layer.visible?map:null,path,strokeWeight:layer.weight,strokeColor:layer.color,strokeOpacity:layer.opacity/100,strokeStyle:layer.strokeStyle,zIndex:7});
-            layer.shapes.push(line);
+            const lineShape = new kakao.maps.Polyline({
+              map:layer.visible?map:null, path,
+              strokeWeight:layer.weight, strokeColor:layer.color,
+              strokeOpacity:layer.opacity/100, strokeStyle:layer.strokeStyle, zIndex:7
+            });
+            bindImportedShapeClick(lineShape, feature, layer);
+            layer.shapes.push(lineShape);
           });
-          if (layer.labelField) addImportedLabel(layer, feature, lines);
+
+          const polygons = geometry.type === "Polygon"
+            ? [geometry.coordinates]
+            : geometry.type === "MultiPolygon" ? geometry.coordinates : [];
+          polygons.forEach(function(rings) {
+            const paths = rings.map(function(ring) {
+              return ring.map(function(c) { return importedPosition(c, layer.bounds); });
+            }).filter(function(path) { return path.length >= 3; });
+            if (!paths.length) return;
+            const polygonShape = new kakao.maps.Polygon({
+              map:layer.visible?map:null, path:paths,
+              strokeWeight:layer.weight, strokeColor:layer.color,
+              strokeOpacity:layer.opacity/100, strokeStyle:layer.strokeStyle,
+              fillColor:layer.fillColor, fillOpacity:layer.fillOpacity/100, zIndex:7
+            });
+            bindImportedShapeClick(polygonShape, feature, layer);
+            layer.shapes.push(polygonShape);
+          });
+
+          const points = geometry.type === "Point"
+            ? [geometry.coordinates]
+            : geometry.type === "MultiPoint" ? geometry.coordinates : [];
+          points.forEach(function(coordinate) {
+            const position = importedPosition(coordinate, layer.bounds);
+            const pointElement = document.createElement('div');
+            pointElement.className = 'imported-point';
+            pointElement.style.width = layer.pointSize + 'px';
+            pointElement.style.height = layer.pointSize + 'px';
+            pointElement.style.background = layer.pointColor;
+            pointElement.addEventListener('click', function (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              handleImportedFeatureClick(position, feature, layer);
+            });
+            const point = new kakao.maps.CustomOverlay({
+              map:layer.visible?map:null, position,
+              content:pointElement,
+              xAnchor:.5, yAnchor:.5, zIndex:8
+            });
+            layer.shapes.push(point);
+          });
+
+          if (layer.labelField) addImportedLabel(layer, feature);
         });
       }
 
-      function addImportedLabel(layer, feature, lines) {
+      function addImportedLabel(layer, feature) {
         const value=(feature.properties||{})[layer.labelField];
         if (value===undefined || value===null || String(value).trim()==="") return;
-        const longest=lines.reduce((a,b)=>b.length>a.length?b:a,[]); if(!longest.length)return;
-        const c=normalizeCoordinate(longest[Math.floor(longest.length/2)]);
-        const label=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(c[1],c[0]),content:'<div class="imported-map-label" style="font-size:'+layer.labelSize+'px">'+escapeHTML(value)+'</div>',xAnchor:.5,yAnchor:.5,zIndex:8});
+        const coordinates=[];
+        collectImportedCoordinates(feature.geometry && feature.geometry.coordinates, coordinates);
+        if (!coordinates.length) return;
+        const bounds=new kakao.maps.LatLngBounds();
+        coordinates.forEach(function(c) { importedPosition(c, bounds); });
+        const label=new kakao.maps.CustomOverlay({position:boundsCenter(bounds),content:'<div class="imported-map-label" style="font-size:'+layer.labelSize+'px">'+escapeHTML(value)+'</div>',xAnchor:.5,yAnchor:.5,zIndex:9});
         label.setMap(layer.visible?map:null); layer.labels.push(label);
       }
 
@@ -2476,8 +2621,12 @@
             '<div class="import-style-grid">' +
               '<span>선 색상</span><input class="imp-color" type="color" value="' + layer.color + '">' +
               '<span>선 두께</span><input class="imp-weight" type="number" min="1" max="30" value="' + layer.weight + '">' +
-              '<span>투명도</span><input class="imp-opacity" type="range" min="0" max="100" step="5" value="' + layer.opacity + '">' +
+              '<span>선 투명도</span><input class="imp-opacity" type="range" min="0" max="100" step="5" value="' + layer.opacity + '">' +
               '<span>선 모양</span><select class="imp-stroke"><option value="solid">실선</option><option value="shortdash">짧은 대시</option><option value="dash">대시</option><option value="longdash">긴 대시</option><option value="dot">점선</option></select>' +
+              '<span>면 색상</span><input class="imp-fill-color" type="color" value="' + layer.fillColor + '">' +
+              '<span>면 투명도</span><input class="imp-fill-opacity" type="range" min="0" max="100" step="5" value="' + layer.fillOpacity + '">' +
+              '<span>포인트 색상</span><input class="imp-point-color" type="color" value="' + layer.pointColor + '">' +
+              '<span>포인트 크기</span><input class="imp-point-size" type="number" min="3" max="60" value="' + layer.pointSize + '">' +
               '<span>라벨 필드</span><select class="imp-label">' + options + '</select>' +
               '<span>라벨 크기</span><input class="imp-label-size" type="number" min="8" max="40" value="12">' +
             '</div>' +
@@ -2499,6 +2648,10 @@
           layer.weight = Math.max(1, Math.min(30, Number(box.querySelector('.imp-weight').value) || 4));
           layer.opacity = Number(box.querySelector('.imp-opacity').value);
           layer.strokeStyle = box.querySelector('.imp-stroke').value;
+          layer.fillColor = box.querySelector('.imp-fill-color').value;
+          layer.fillOpacity = Number(box.querySelector('.imp-fill-opacity').value);
+          layer.pointColor = box.querySelector('.imp-point-color').value;
+          layer.pointSize = Math.max(3, Math.min(60, Number(box.querySelector('.imp-point-size').value) || 12));
           layer.labelField = box.querySelector('.imp-label').value;
           layer.labelSize = Math.max(8, Math.min(40, Number(box.querySelector('.imp-label-size').value) || 12));
           drawImportedLayer(layer);
@@ -2736,10 +2889,6 @@
       document.getElementById("listClose").onclick = function () {
         document.body.classList.add("list-collapsed");
       };
-
-      if (window.matchMedia("(max-width: 700px)").matches) {
-        document.body.classList.add("list-collapsed");
-      }
 
       const roadSearch = document.getElementById("roadSearch");
 
@@ -3302,18 +3451,43 @@
       /*
        * 도로 라벨
        */
+      function midpointOnRoadPath(path) {
+        if (!path.length) return null;
+        if (path.length === 1) return path[0];
+        const total = totalDistance(path);
+        const target = total / 2;
+        let accumulated = 0;
+
+        for (let index = 1; index < path.length; index++) {
+          const start = path[index - 1];
+          const end = path[index];
+          const segment = distanceMeters(start, end);
+          if (accumulated + segment >= target) {
+            const ratio = segment ? (target - accumulated) / segment : 0;
+            return new kakao.maps.LatLng(
+              start.getLat() + (end.getLat() - start.getLat()) * ratio,
+              start.getLng() + (end.getLng() - start.getLng()) * ratio
+            );
+          }
+          accumulated += segment;
+        }
+        return path[path.length - 1];
+      }
+
       function addLabel(lines, properties, layerId) {
-        const longest = lines.reduce(
-          function (a, b) {
-            return b.length > a.length ? b : a;
-          },
-          []
-        );
+        const paths = lines.map(function (line) {
+          return line.map(function (coordinate) {
+            const normalized = normalizeCoordinate(coordinate);
+            return new kakao.maps.LatLng(normalized[1], normalized[0]);
+          });
+        }).filter(function (path) { return path.length; });
 
-        if (!longest.length) return;
-
-        const coordinate =
-          longest[Math.floor(longest.length / 2)];
+        if (!paths.length) return;
+        const longestPath = paths.reduce(function (longest, path) {
+          return totalDistance(path) > totalDistance(longest) ? path : longest;
+        }, paths[0]);
+        const labelPosition = midpointOnRoadPath(longestPath);
+        if (!labelPosition) return;
 
         const text = layerId === "city"
           ? getNumber(properties, layerId)
@@ -3326,10 +3500,7 @@
           : "road-label";
 
         const label = new kakao.maps.CustomOverlay({
-          position: new kakao.maps.LatLng(
-            coordinate[1],
-            coordinate[0]
-          ),
+          position: labelPosition,
 
           content:
             '<div class="' +
