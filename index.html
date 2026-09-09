@@ -1163,9 +1163,55 @@
         bottom: 8px;
       }
 
-      #listPanel { width: min(250px, 82vw); }
+      #listPanel {
+        width: min(260px, calc(100vw - 52px));
+        max-width: calc(100vw - 52px);
+        box-sizing: border-box;
+        overflow: visible;
+      }
+      .list-header {
+        min-height: 46px;
+        padding: 11px 12px;
+        box-sizing: border-box;
+        overflow: hidden;
+        font-size: 15px;
+        white-space: nowrap;
+      }
       #listClose { right: -14px; width: 14px; }
       #listOpen { width: 14px; }
+
+      .road-search-wrap {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 52px;
+        gap: 5px;
+        padding: 7px;
+      }
+      #roadSearch { width: 100%; padding: 7px 8px; font-size: 16px; }
+      #addressSearchBtn { padding: 0 5px; font-size: 12px; }
+      .sidebar-tools { padding: 7px; font-size: 11px; }
+      .sidebar-tool-title { margin-bottom: 5px; }
+      .status-filter-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 3px;
+      }
+      .status-filter-row label { gap: 1px; min-width: 0; white-space: nowrap; }
+      .status-filter-row input { margin: 0 2px 0 0; }
+      .road-legend { gap: 5px 4px; margin-top: 7px; font-size: 11px; }
+      .legend-item { gap: 4px; white-space: nowrap; }
+      .legend-line { width: 24px; flex-basis: 24px; }
+      #listContent {
+        height: calc(100dvh - 220px);
+        padding: 6px;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      body:not(.list-collapsed) .top-toolbar,
+      body:not(.list-collapsed) #mapTools,
+      body:not(.list-collapsed) #scaleControl {
+        visibility: hidden;
+        pointer-events: none;
+      }
 
       #mapTools { right: 8px; top: 59%; }
       #scaleControl { right: 8px; bottom: 8px; }
