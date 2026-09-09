@@ -1,0 +1,3318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>사천시 도로지도</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, "Apple SD Gothic Neo", sans-serif;
+    }
+
+    html,
+    body,
+    #map {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    button,
+    label {
+      cursor: pointer;
+    }
+
+    /* 지도 중심 행정구역 표시 */
+    #centerRegionBar {
+      position: absolute;
+      top: 15px;
+      left: 295px;
+      z-index: 35;
+      display: flex;
+      align-items: center;
+      min-height: 47px;
+      padding: 0 16px;
+      border: 1px solid #d7dce2;
+      border-radius: 7px;
+      color: #333;
+      background: rgba(255,255,255,.96);
+      box-shadow: 0 2px 8px #0003;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    body.list-collapsed #centerRegionBar {
+      left: 15px;
+    }
+
+    #centerRegionBar .region-part + .region-part::before {
+      content: "›";
+      margin: 0 11px;
+      color: #a0a6ad;
+      font-size: 18px;
+      font-weight: normal;
+    }
+    @media (max-width: 900px) {
+      #centerRegionBar { left: 15px; top: 70px; max-width: calc(100vw - 30px); overflow: hidden; text-overflow: ellipsis; }
+    }
+
+    /* =========================
+       오른쪽 상단 메뉴
+       ========================= */
+
+      .top-toolbar {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      z-index: 30;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .base-map-menu {
+      display: flex;
+      overflow: hidden;
+      background: white;
+      border-radius: 7px;
+      box-shadow: 0 2px 8px #0005;
+    }
+
+    .base-map-menu button {
+      padding: 12px 17px;
+      border: 0;
+      border-right: 1px solid #ddd;
+      background: white;
+      color: #222;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .base-map-menu button:last-child {
+      border-right: 0;
+    }
+
+    .base-map-menu button.active {
+      color: white;
+      background: #258fff;
+    }
+
+    .tool-wrap {
+      position: relative;
+    }
+
+    .tool-button {
+      width: 52px;
+      height: 47px;
+      padding: 0;
+      border: 0;
+      border-radius: 7px;
+      color: #555;
+      background: white;
+      box-shadow: 0 2px 8px #0005;
+      font-size: 25px;
+      font-weight: bold;
+    }
+
+    .tool-button.active {
+      color: white;
+      background: #258fff;
+    }
+
+    #styleBtn {
+      width: 72px;
+      font-size: 13px;
+    }
+
+    /* 레이어 모양 아이콘 */
+    .layer-symbol {
+      position: relative;
+      display: inline-block;
+      width: 25px;
+      height: 23px;
+    }
+
+    .layer-symbol span {
+      position: absolute;
+      left: 50%;
+      width: 18px;
+      height: 18px;
+      border-radius: 2px;
+      background: currentColor;
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    .layer-symbol span:nth-child(1) {
+      top: 0;
+    }
+
+    .layer-symbol span:nth-child(2) {
+      top: 5px;
+      opacity: 0.65;
+    }
+
+    .layer-symbol span:nth-child(3) {
+      top: 10px;
+      opacity: 0.35;
+    }
+
+    /* =========================
+       레이어 설정창
+       ========================= */
+
+    #layerPanel {
+      position: absolute;
+      top: 58px;
+      right: 0;
+      z-index: 31;
+      width: 240px;
+      display: none;
+      padding: 14px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 14px #0005;
+    }
+
+    .layer-panel-title {
+      margin-bottom: 12px;
+      padding: 0 3px 9px;
+      border-bottom: 1px solid #999;
+      color: #555;
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+    .layer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .layer-item {
+      position: relative;
+      height: 50px;
+    }
+
+    .layer-item input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .layer-item label {
+      width: 100%;
+      height: 100%;
+      padding: 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #3594ef;
+      border-radius: 8px;
+      color: #3594ef;
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .layer-item label:hover {
+      background: #eaf4ff;
+    }
+
+    .layer-item input:checked + label {
+      color: white;
+      border-color: #3594ef;
+      background: #3594ef;
+      font-weight: bold;
+    }
+
+    /* 사용자화 설정창 */
+    #stylePanel {
+      position: absolute;
+      top: 58px;
+      right: 0;
+      z-index: 31;
+      width: 690px;
+      max-width: calc(100vw - 30px);
+      max-height: calc(100vh - 90px);
+      display: none;
+      overflow-y: auto;
+      padding: 0;
+      background: #f5f7fa;
+      border: 1px solid #dfe4ea;
+      border-radius: 12px;
+      box-shadow: 0 8px 28px #0003;
+    }
+
+    .style-title {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      padding: 14px 16px 11px;
+      color: #222;
+      background: white;
+      border-bottom: 1px solid #e6e9ed;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .style-subtitle {
+      display: block;
+      margin-top: 3px;
+      color: #858b93;
+      font-size: 11px;
+      font-weight: normal;
+    }
+
+    .style-section {
+      margin: 12px;
+      padding: 12px;
+      background: white;
+      border: 1px solid #e3e7eb;
+      border-radius: 10px;
+    }
+
+    .style-section-title {
+      margin-bottom: 9px;
+      color: #30343a;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .style-section-note {
+      margin: -4px 0 10px;
+      color: #8a9098;
+      font-size: 11px;
+    }
+
+    .style-head,
+    .style-row {
+      display: grid;
+      grid-template-columns: 58px 46px 46px 60px 60px minmax(105px, 1fr) minmax(105px, 1fr);
+      gap: 7px;
+      align-items: center;
+      text-align: center;
+    }
+
+    .style-head {
+      padding: 0 2px 7px;
+      color: #8a9098;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .style-row {
+      min-height: 50px;
+      padding: 7px 2px;
+      border-top: 1px solid #eef1f4;
+      color: #333;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .style-row input[type="color"] {
+      width: 38px;
+      height: 30px;
+      padding: 2px;
+      border: 1px solid #cfd5dc;
+      border-radius: 6px;
+      background: white;
+    }
+
+    .style-row input[type="number"] {
+      width: 58px;
+      height: 34px;
+      padding: 4px;
+      border: 1px solid #cfd5dc;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .opacity-control {
+      display: grid;
+      grid-template-columns: 1fr 40px;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .opacity-control input[type="range"] {
+      width: 100%;
+      accent-color: #258fff;
+    }
+
+    .opacity-value {
+      color: #4b5563;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .status-style-settings {
+      margin: 12px;
+      padding: 12px;
+      background: white;
+      border: 1px solid #e3e7eb;
+      border-radius: 10px;
+    }
+
+    .status-style-title {
+      margin-bottom: 8px;
+      color: #30343a;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .status-style-row {
+      display: grid;
+      grid-template-columns: 120px 85px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 6px 0;
+      color: #444;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status-style-row.two-column {
+      grid-template-columns: 120px 1fr;
+    }
+
+    .status-style-row select,
+    .status-style-row input[type="number"] {
+      width: 100%;
+      height: 36px;
+      padding: 0 9px;
+      border: 1px solid #cfd5dc;
+      border-radius: 6px;
+      background: white;
+      font-size: 13px;
+    }
+
+    .status-style-row input[type="number"] {
+      text-align: center;
+    }
+
+    #styleReset {
+      width: calc(100% - 24px);
+      margin: 0 12px 12px;
+      padding: 10px;
+      border: 1px solid #d7dce2;
+      border-radius: 8px;
+      color: #4b5563;
+      background: white;
+      font-weight: 800;
+    }
+
+    #styleReset:hover {
+      background: #f0f3f6;
+    }
+
+    #scaleControl {
+      position: absolute;
+      right: 15px;
+      bottom: 12px;
+      z-index: 19;
+      color: #222;
+      font-size: 12px;
+      text-align: right;
+      text-shadow:
+        -1px -1px 0 white,
+         1px -1px 0 white,
+        -1px  1px 0 white,
+         1px  1px 0 white;
+      pointer-events: none;
+    }
+
+    #scaleBar {
+      position: relative;
+      height: 8px;
+      margin: 0 0 3px auto;
+      border: 2px solid #222;
+      border-top: 0;
+      box-sizing: border-box;
+    }
+
+    #scaleDistance,
+    #scaleRatio {
+      white-space: nowrap;
+    }
+
+    #scaleDistance {
+      font-weight: bold;
+    }
+
+    /* =========================
+       노선목록
+       ========================= */
+
+    #listOpen {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 20;
+      display: none;
+      padding: 10px 15px;
+      border: 0;
+      border-radius: 5px;
+      color: white;
+      background: #258fff;
+      box-shadow: 0 2px 7px #0005;
+      font-weight: bold;
+    }
+
+    #listPanel {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 21;
+      width: 280px;
+      display: block;
+      overflow: hidden;
+      background: white;
+      box-shadow: 2px 0 12px #0006;
+    }
+
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-bottom: 1px solid #ddd;
+      color: white;
+      background: #258fff;
+      font-weight: bold;
+    }
+
+    .list-header button {
+      border: 0;
+      color: white;
+      background: transparent;
+      font-weight: bold;
+    }
+
+    .road-search-wrap {
+      display: flex;
+      gap: 5px;
+      padding: 9px;
+      border-bottom: 1px solid #ddd;
+      background: #f7f8fa;
+    }
+
+    #roadSearch {
+      flex: 1;
+      min-width: 0;
+      padding: 8px 10px;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      outline: none;
+      font-size: 13px;
+    }
+
+    #roadSearch:focus {
+      border-color: #258fff;
+      box-shadow: 0 0 0 2px #258fff22;
+    }
+
+    #addressSearchBtn {
+      padding: 0 10px;
+      border: 0;
+      border-radius: 5px;
+      color: white;
+      background: #258fff;
+      font-size: 13px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    #addressResults {
+      display: none;
+      margin-bottom: 8px;
+    }
+
+    .address-result-title {
+      margin: 5px 5px 4px;
+      color: #258fff;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .address-result-item {
+      width: 100%;
+      padding: 8px 9px;
+      border: 0;
+      border-bottom: 1px solid #eee;
+      background: #f6f9ff;
+      text-align: left;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .address-result-item:hover {
+      background: #e5f0ff;
+    }
+
+    .address-result-item small {
+      display: block;
+      color: #777;
+    }
+
+    #searchEmpty {
+      display: none;
+      padding: 18px 5px;
+      color: #777;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    #listContent {
+      height: calc(100vh - 111px);
+      padding: 8px;
+      overflow-y: auto;
+    }
+
+    body.list-collapsed #listPanel {
+      display: none;
+    }
+
+    body.list-collapsed #listOpen {
+      display: block;
+    }
+
+    #mapTools {
+      position: absolute;
+      top: 50%;
+      right: 15px;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(-50%);
+      border-radius: 6px;
+      background: white;
+      box-shadow: 0 2px 8px #0004;
+      overflow: hidden;
+    }
+
+    #mapTools button {
+      width: 46px;
+      height: 46px;
+      padding: 0;
+      border: 0;
+      border-bottom: 1px solid #ddd;
+      color: #444;
+      background: white;
+      font: bold 25px/1 Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    #mapTools button:last-child { border-bottom: 0; }
+    #mapTools button:hover { background: #f4f4f4; }
+    #mapTools button.active { color: white; background: #3396f4; }
+
+    #mapTools .measure-icon {
+      font-size: 22px;
+    }
+
+    #mapTools #locationBtn {
+      color: #777;
+    }
+
+    #mapTools #locationBtn.active {
+      color: #258fff;
+      background: #fff;
+    }
+
+    #mapTools #locationBtn svg {
+      width: 25px;
+      height: 25px;
+      display: block;
+      margin: auto;
+    }
+
+    .current-location-dot {
+      width: 18px;
+      height: 18px;
+      border: 4px solid #fff;
+      border-radius: 50%;
+      background: #258fff;
+      box-shadow: 0 1px 5px #0008;
+      pointer-events: none;
+    }
+
+    #mapTools .measure-icon svg {
+      width: 24px;
+      height: 24px;
+      display: block;
+      margin: auto;
+    }
+
+    #measureHint {
+      position: absolute;
+      top: calc(50% + 105px);
+      right: 70px;
+      z-index: 20;
+      display: none;
+      padding: 7px 10px;
+      border-radius: 4px;
+      color: white;
+      background: #333d;
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .measure-point {
+      width: 14px;
+      height: 14px;
+      border: 4px solid #f01818;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px #0004;
+      pointer-events: none;
+    }
+
+    .measure-segment-label {
+      padding: 1px 5px 2px;
+      border: 2px solid #f01818;
+      border-radius: 4px;
+      color: #f01818;
+      background: #fff;
+      box-shadow: 0 1px 2px #0003;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .measure-panel {
+      min-width: 172px;
+      overflow: hidden;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      background: #fff;
+      box-shadow: 0 4px 14px #0004;
+      color: #444;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .measure-panel-main {
+      position: relative;
+      padding: 10px 40px 10px 14px;
+    }
+
+    .measure-panel-row {
+      display: grid;
+      grid-template-columns: 66px auto;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .measure-panel-row .measure-number {
+      color: #f01818;
+    }
+
+    .measure-panel-close {
+      position: absolute;
+      top: 7px;
+      right: 9px;
+      width: 24px;
+      height: 24px;
+      border: 0;
+      background: transparent;
+      color: #111;
+      font-size: 24px;
+      line-height: 22px;
+      cursor: pointer;
+    }
+
+    .measure-panel-help {
+      padding: 8px 14px;
+      border-top: 1px solid #eee;
+      background: #fafafa;
+      color: #666;
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: nowrap;
+    }
+
+    .measure-area-result {
+      position: relative;
+      padding: 7px 38px 7px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+      box-shadow: 0 2px 8px #0004;
+      color: #444;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .measure-area-result .measure-number {
+      color: #f01818;
+    }
+
+    .measure-area-result .measure-panel-close {
+      top: 2px;
+      right: 5px;
+    }
+
+    .list-title {
+      margin: 8px 5px 5px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid #444;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .list-title.city {
+      color: #009844;
+    }
+
+    .list-title.rural {
+      color: #e06b00;
+    }
+
+    .list-item {
+      width: 100%;
+      padding: 8px 10px;
+      border: 0;
+      border-bottom: 1px solid #eee;
+      background: white;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .list-item:hover {
+      background: #edf6ff;
+    }
+
+    .list-item.selected {
+      color: white;
+      background: #258fff;
+      font-weight: bold;
+    }
+
+    /* =========================
+       도로 라벨
+       ========================= */
+
+    /* 농어촌도로 */
+    .road-label {
+      --label-scale: var(--road-label-scale, 0.7);
+      width: auto;
+      min-width: 0;
+      padding: calc(3px * var(--label-scale)) calc(7px * var(--label-scale));
+      color: #111;
+      background: white;
+      border: max(1px, calc(2px * var(--label-scale))) solid black;
+      border-radius: calc(4px * var(--label-scale));
+      box-shadow: 0 1px 3px #0006;
+      font-size: calc(13px * var(--label-scale));
+      font-weight: bold;
+      line-height: 1.1;
+      text-align: center;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* 시도: 글자 크기에 맞춰 원형 박스도 자동 조절 */
+    .road-label.city {
+      width: calc(25px * var(--label-scale));
+      height: calc(25px * var(--label-scale));
+      min-width: calc(25px * var(--label-scale));
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: calc(13px * var(--label-scale));
+    }
+
+    /* =========================
+       속성 팝업
+       ========================= */
+
+    .road-popup {
+      position: relative;
+      width: 244px;
+      max-width: calc(100vw - 20px);
+      padding: 14px 7px 13px;
+      color: #111;
+      background: #fff;
+      border: 1px solid #444;
+      border-radius: 2px;
+      box-shadow: 0 5px 18px #0004;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    /* 노선 속성은 첨부 예시처럼 좌·우 2열 + 중앙 구분선 */
+    .road-attributes {
+      position: relative;
+      margin-top: 7px;
+      overflow: hidden;
+      border-radius: 3px;
+    }
+
+    .road-attributes::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 78px;
+      width: 1px;
+      background: #9ca3af;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .popup-row {
+      display: grid;
+      grid-template-columns: 78px minmax(0, 1fr);
+      align-items: stretch;
+      min-height: 25px;
+      line-height: 1.25;
+    }
+
+    .popup-row:nth-child(odd) .popup-label {
+      background: #f7f8fa;
+    }
+
+    .popup-row:nth-child(even) .popup-label {
+      background: #fbfbfc;
+    }
+
+    .popup-label {
+      display: flex;
+      align-items: center;
+      padding: 2px 5px 2px 2px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      white-space: nowrap;
+    }
+
+    .popup-value {
+      display: flex;
+      align-items: center;
+      padding: 2px 2px 2px 8px;
+      background: #fff;
+      overflow-wrap: anywhere;
+      word-break: keep-all;
+    }
+
+    .popup-title {
+      margin: 0;
+      padding: 0 32px 8px 1px;
+      border-bottom: 1px solid #aeb4bb;
+      color: #111;
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.4px;
+    }
+
+    .popup-close {
+      position: absolute;
+      top: 10px;
+      right: 11px;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      color: #444;
+      background: transparent;
+      font-size: 22px;
+      font-weight: bold;
+      line-height: 30px;
+    }
+
+    .popup-close:hover {
+      background: #f0f1f3;
+    }
+
+    /* =========================
+       로드뷰 창
+       ========================= */
+
+    #roadviewPanel {
+      position: absolute;
+      right: 15px;
+      bottom: 15px;
+      z-index: 40;
+      width: 45%;
+      height: 45%;
+      display: none;
+      background: white;
+      border: 3px solid white;
+      box-shadow: 0 3px 12px #0007;
+    }
+
+    #roadview {
+      width: 100%;
+      height: 100%;
+    }
+
+    .roadview-buttons {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      z-index: 41;
+      display: flex;
+      gap: 5px;
+    }
+
+    .roadview-buttons button {
+      padding: 7px 11px;
+      border: 0;
+      border-radius: 4px;
+      background: white;
+      box-shadow: 0 1px 5px #0005;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    /*
+     * 로드뷰 전체화면
+     */
+    #roadviewPanel.fullscreen {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      z-index: 9999;
+    }
+
+    @media (max-width: 700px) {
+      .top-toolbar {
+        top: 8px;
+        right: 8px;
+        gap: 5px;
+      }
+
+      .base-map-menu button {
+        padding: 10px 9px;
+        font-size: 13px;
+      }
+
+      .tool-button {
+        width: 44px;
+        height: 42px;
+      }
+
+      #layerPanel {
+        width: 270px;
+      }
+
+      #roadviewPanel {
+        width: calc(100% - 30px);
+        height: 40%;
+      }
+
+      #roadviewPanel.fullscreen {
+        width: 100%;
+        height: 100%;
+      }
+
+      #listPanel { width: min(280px, 82vw); }
+
+      #mapTools { right: 8px; }
+      #scaleControl { right: 8px; bottom: 8px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <div id="centerRegionBar" aria-live="polite" title="지도 중심 행정구역">
+    <span class="region-part">행정구역 확인 중</span>
+  </div>
+
+  <div id="scaleControl">
+    <div id="scaleBar"></div>
+    <div id="scaleDistance">-</div>
+    <div id="scaleRatio">축척 1:-</div>
+  </div>
+
+  <div id="mapTools" aria-label="지도 도구">
+    <button id="locationBtn" type="button" title="현위치" aria-label="현위치">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="12" cy="12" r="2.3" fill="currentColor"/>
+        <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <button id="zoomInBtn" type="button" title="확대" aria-label="확대">+</button>
+    <button id="zoomOutBtn" type="button" title="축소" aria-label="축소">−</button>
+    <button id="distanceBtn" class="measure-icon" type="button" title="거리재기" aria-label="거리재기">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 17.5 17.5 5 19 6.5 6.5 19Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        <path d="M8.2 14.3l1.2 1.2M10.7 11.8l1.2 1.2M13.2 9.3l1.2 1.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="5" cy="19" r="1.7" fill="currentColor"/>
+        <circle cx="19" cy="5" r="1.7" fill="currentColor"/>
+      </svg>
+    </button>
+    <button id="areaBtn" class="measure-icon" type="button" title="면적재기" aria-label="면적재기">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 17 8 7l8-2 3 7-5 7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        <circle cx="5" cy="17" r="1.7" fill="currentColor"/>
+        <circle cx="8" cy="7" r="1.7" fill="currentColor"/>
+        <circle cx="16" cy="5" r="1.7" fill="currentColor"/>
+        <circle cx="19" cy="12" r="1.7" fill="currentColor"/>
+        <circle cx="14" cy="19" r="1.7" fill="currentColor"/>
+      </svg>
+    </button>
+  </div>
+  <div id="measureHint">지점을 클릭하고 마우스 오른쪽 버튼으로 완료하세요.</div>
+
+  <button id="listOpen">☰ 노선목록</button>
+
+  <div id="listPanel">
+    <div class="list-header">
+      <span>도로 노선목록</span>
+      <button id="listClose">◀ 접기</button>
+    </div>
+
+    <div class="road-search-wrap">
+      <input
+        id="roadSearch"
+        type="search"
+        placeholder="노선·주소·장소·건물·행정구역 검색"
+        autocomplete="off"
+      >
+      <button id="addressSearchBtn" type="button">검색</button>
+    </div>
+
+    <div id="listContent">
+      <div id="addressResults"></div>
+      <div id="cityListTitle" class="list-title city">시도</div>
+      <div id="cityList"></div>
+
+      <div id="ruralListTitle" class="list-title rural">농어촌도로</div>
+      <div id="ruralList"></div>
+
+      <div id="searchEmpty">검색 결과가 없습니다.</div>
+    </div>
+  </div>
+
+  <!-- 오른쪽 상단 메뉴 -->
+  <div class="top-toolbar">
+    <div class="base-map-menu">
+      <button id="normalBtn">지도</button>
+      <button id="skyBtn" class="active">스카이뷰</button>
+    </div>
+
+    <!-- 로드뷰 -->
+    <button
+      id="roadviewBtn"
+      class="tool-button"
+      title="로드뷰"
+    >◉</button>
+
+    <!-- 레이어 -->
+    <div class="tool-wrap">
+      <button
+        id="layerBtn"
+        class="tool-button"
+        title="레이어 설정"
+      >
+        <span class="layer-symbol">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+
+      <div id="layerPanel">
+        <div class="layer-panel-title">지도설정</div>
+
+        <div class="layer-grid">
+          <div class="layer-item">
+            <input id="hybridCheck" type="checkbox" checked>
+            <label for="hybridCheck">하이브리드</label>
+          </div>
+
+          <div class="layer-item">
+            <input id="districtCheck" type="checkbox">
+            <label for="districtCheck">지적편집도</label>
+          </div>
+
+          <div class="layer-item">
+            <input id="cityCheck" type="checkbox" checked>
+            <label for="cityCheck">시도</label>
+          </div>
+
+          <div class="layer-item">
+            <input id="ruralCheck" type="checkbox" checked>
+            <label for="ruralCheck">농어촌도로</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 사용자화 설정 -->
+    <div class="tool-wrap">
+      <button id="styleBtn" class="tool-button" title="사용자화">사용자화</button>
+
+      <div id="stylePanel">
+        <div class="style-title">
+          사용자화
+          <span class="style-subtitle">도로의 색상·두께·투명도와 개설상태 표현을 조정합니다.</span>
+        </div>
+
+        <div class="style-section">
+          <div class="style-section-title">도로선 스타일</div>
+          <div class="style-section-note">투명도는 0%가 완전 투명, 100%가 완전 불투명입니다.</div>
+
+          <div class="style-head">
+            <span>구분</span><span>선색</span><span>배경색</span><span>선 두께</span><span>배경</span><span>선 투명도</span><span>배경 투명도</span>
+          </div>
+
+          <div class="style-row" data-style="CITY">
+            <span>시도</span><input class="style-color" type="color" aria-label="시도 선 색상">
+            <input class="style-base-color" type="color" aria-label="시도 배경 색상">
+            <input class="style-top" type="number" min="1" max="20" aria-label="시도 선 두께">
+            <input class="style-base" type="number" min="1" max="30" aria-label="시도 배경 두께">
+            <div class="opacity-control"><input class="style-top-opacity" type="range" min="0" max="100" step="5" aria-label="시도 선 투명도"><span class="top-opacity-value opacity-value">100%</span></div>
+            <div class="opacity-control"><input class="style-base-opacity" type="range" min="0" max="100" step="5" aria-label="시도 배경 투명도"><span class="base-opacity-value opacity-value">100%</span></div>
+          </div>
+
+          <div class="style-row" data-style="MYEON">
+            <span>면도</span><input class="style-color" type="color" aria-label="면도 선 색상">
+            <input class="style-base-color" type="color" aria-label="면도 배경 색상">
+            <input class="style-top" type="number" min="1" max="20" aria-label="면도 선 두께">
+            <input class="style-base" type="number" min="1" max="30" aria-label="면도 배경 두께">
+            <div class="opacity-control"><input class="style-top-opacity" type="range" min="0" max="100" step="5" aria-label="면도 선 투명도"><span class="top-opacity-value opacity-value">100%</span></div>
+            <div class="opacity-control"><input class="style-base-opacity" type="range" min="0" max="100" step="5" aria-label="면도 배경 투명도"><span class="base-opacity-value opacity-value">100%</span></div>
+          </div>
+
+          <div class="style-row" data-style="RI">
+            <span>리도</span><input class="style-color" type="color" aria-label="리도 선 색상">
+            <input class="style-base-color" type="color" aria-label="리도 배경 색상">
+            <input class="style-top" type="number" min="1" max="20" aria-label="리도 선 두께">
+            <input class="style-base" type="number" min="1" max="30" aria-label="리도 배경 두께">
+            <div class="opacity-control"><input class="style-top-opacity" type="range" min="0" max="100" step="5" aria-label="리도 선 투명도"><span class="top-opacity-value opacity-value">100%</span></div>
+            <div class="opacity-control"><input class="style-base-opacity" type="range" min="0" max="100" step="5" aria-label="리도 배경 투명도"><span class="base-opacity-value opacity-value">100%</span></div>
+          </div>
+
+          <div class="style-row" data-style="FARM">
+            <span>농도</span><input class="style-color" type="color" aria-label="농도 선 색상">
+            <input class="style-base-color" type="color" aria-label="농도 배경 색상">
+            <input class="style-top" type="number" min="1" max="20" aria-label="농도 선 두께">
+            <input class="style-base" type="number" min="1" max="30" aria-label="농도 배경 두께">
+            <div class="opacity-control"><input class="style-top-opacity" type="range" min="0" max="100" step="5" aria-label="농도 선 투명도"><span class="top-opacity-value opacity-value">100%</span></div>
+            <div class="opacity-control"><input class="style-base-opacity" type="range" min="0" max="100" step="5" aria-label="농도 배경 투명도"><span class="base-opacity-value opacity-value">100%</span></div>
+          </div>
+        </div>
+
+        <div class="status-style-settings">
+          <div class="status-style-title">노선번호 라벨</div>
+          <div class="style-section-note">글자 크기를 변경하면 라벨 박스도 함께 자동 조절됩니다.</div>
+          <label class="status-style-row two-column">
+            <span>라벨 크기</span>
+            <div class="opacity-control">
+              <input id="labelScale" type="range" min="50" max="150" step="5" aria-label="노선번호 라벨 크기">
+              <span id="labelScaleValue" class="opacity-value">70%</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="status-style-settings">
+          <div class="status-style-title">개설상태 표현</div>
+          <div class="style-section-note">미개설 표현은 시도와 농어촌도로에 함께 적용됩니다.</div>
+          <label class="status-style-row">
+            <span>미개설</span>
+            <input id="unopenedDotSize" type="number" min="1" max="20" aria-label="미개설 선 두께">
+            <select id="unopenedDotGap" aria-label="미개설 선 모양">
+              <option value="shortdash">대시 간격 좁게</option>
+              <option value="dash">대시 간격 보통</option>
+              <option value="longdash">대시 간격 넓게</option>
+              <option value="shortdot">점선 간격 좁게</option>
+              <option value="dot">점선 간격 보통</option>
+              <option value="shortdashdot">짧은 대시+점</option>
+              <option value="shortdashdotdot">짧은 대시+점 2개</option>
+              <option value="dashdot">대시+점</option>
+              <option value="longdashdot">긴 대시+점</option>
+              <option value="longdashdotdot">긴 대시+점 2개</option>
+            </select>
+          </label>
+          <label class="status-style-row two-column">
+            <span>미확장</span>
+            <select id="unexpandedStyle">
+              <option value="shortdash">짧은 대시</option>
+              <option value="dash">대시</option>
+              <option value="longdash">긴 대시</option>
+            </select>
+          </label>
+        </div>
+
+        <button id="styleReset">기본값으로 초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 로드뷰 창 -->
+  <div id="roadviewPanel">
+    <div class="roadview-buttons">
+      <button id="roadviewFullscreen">전체화면</button>
+      <button id="roadviewClose">닫기</button>
+    </div>
+
+    <div id="roadview"></div>
+  </div>
+
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=28421f6917a018f0097983c23e04865e&libraries=services&autoload=false"></script>
+
+  <script>
+    kakao.maps.load(function () {
+      /*
+       * 도로 두께와 색상
+       */
+      const ROAD_WIDTH = 3;
+      const BASE_WIDTH = 6;
+      const SELECTED_WIDTH = ROAD_WIDTH + 3;
+
+      const COLORS = {
+        CITY: "#00B050",
+        MYEON: "#FF3333",
+        RI: "#3300FF",
+        FARM: "#FF9900",
+        OTHER: "#999999",
+        BASE: "#FFFFFF",
+        SELECTED: "#00FF66"
+      };
+
+      const DEFAULT_STYLES = {
+        CITY:  { color: "#FFFFFF", baseColor: "#00C000", top: 3, base: 6, topOpacity: 80, baseOpacity: 80 },
+        MYEON: { color: "#FFFFFF", baseColor: "#FF00A8", top: 3, base: 6, topOpacity: 80, baseOpacity: 80 },
+        RI:    { color: "#FFFFFF", baseColor: "#2537FF", top: 3, base: 6, topOpacity: 80, baseOpacity: 80 },
+        FARM:  { color: "#FFFFFF", baseColor: "#FF7A00", top: 3, base: 6, topOpacity: 80, baseOpacity: 80 }
+      };
+
+      const DEFAULT_STATUS_STYLES = {
+        UNOPENED_SIZE: 4,
+        UNOPENED_GAP: "shortdash",
+        UNEXPANDED: "shortdash"
+      };
+
+      const DEFAULT_LABEL_STYLES = {
+        SCALE: 70
+      };
+
+      const STYLE_DEFAULTS_VERSION = "2026-09-09-3";
+
+      if (
+        localStorage.getItem("styleDefaultsVersion") !==
+        STYLE_DEFAULTS_VERSION
+      ) {
+        localStorage.removeItem("roadStyles");
+        localStorage.removeItem("statusStyles");
+        localStorage.removeItem("labelStyles");
+        localStorage.setItem(
+          "styleDefaultsVersion",
+          STYLE_DEFAULTS_VERSION
+        );
+      }
+
+      let ROAD_STYLES;
+
+      try {
+        const savedStyles = JSON.parse(
+          localStorage.getItem("roadStyles") || "{}"
+        );
+        ROAD_STYLES = {};
+        Object.keys(DEFAULT_STYLES).forEach(function (key) {
+          const saved = savedStyles[key] || {};
+          ROAD_STYLES[key] = {
+            ...DEFAULT_STYLES[key],
+            ...saved,
+            topOpacity: saved.topOpacity ?? saved.opacity ?? DEFAULT_STYLES[key].topOpacity,
+            baseOpacity: saved.baseOpacity ?? DEFAULT_STYLES[key].baseOpacity
+          };
+        });
+      } catch (error) {
+        ROAD_STYLES = JSON.parse(JSON.stringify(DEFAULT_STYLES));
+      }
+
+      let STATUS_STYLES;
+      try {
+        STATUS_STYLES = {
+          ...DEFAULT_STATUS_STYLES,
+          ...JSON.parse(localStorage.getItem("statusStyles") || "{}")
+        };
+      } catch (error) {
+        STATUS_STYLES = { ...DEFAULT_STATUS_STYLES };
+      }
+
+      let LABEL_STYLES;
+      try {
+        LABEL_STYLES = {
+          ...DEFAULT_LABEL_STYLES,
+          ...JSON.parse(localStorage.getItem("labelStyles") || "{}")
+        };
+      } catch (error) {
+        LABEL_STYLES = { ...DEFAULT_LABEL_STYLES };
+      }
+
+      applyLabelScale();
+
+      const LAYERS = {
+        city: {
+          file: "city_roads.geojson",
+          visible: true,
+          shapes: [],
+          labels: []
+        },
+
+        rural: {
+          file: "roads.geojson",
+          visible: true,
+          shapes: [],
+          labels: []
+        }
+      };
+
+      const map = new kakao.maps.Map(
+        document.getElementById("map"),
+        {
+          center: new kakao.maps.LatLng(35.0036, 128.0642),
+          level: 7
+        }
+      );
+
+      map.setMapTypeId(kakao.maps.MapTypeId.HYBRID);
+
+      let currentScaleDenominator = Infinity;
+
+      function updateScale() {
+        const mapElement = document.getElementById("map");
+        const projection = map.getProjection();
+        const centerX = mapElement.clientWidth / 2;
+        const centerY = mapElement.clientHeight / 2;
+        const samplePixels = 100;
+        const left = projection.coordsFromPoint(
+          new kakao.maps.Point(centerX - samplePixels / 2, centerY)
+        );
+        const right = projection.coordsFromPoint(
+          new kakao.maps.Point(centerX + samplePixels / 2, centerY)
+        );
+
+        if (!left || !right) return;
+
+        const metersPerPixel = distanceMeters(left, right) / samplePixels;
+        const scaleMeters = niceScaleDistance(metersPerPixel * 110);
+        currentScaleDenominator = metersPerPixel * 3779.527559;
+        const denominator = roundScale(currentScaleDenominator);
+
+        document.getElementById("scaleBar").style.width =
+          Math.round(scaleMeters / metersPerPixel) + "px";
+        document.getElementById("scaleDistance").textContent =
+          formatDistance(scaleMeters);
+        document.getElementById("scaleRatio").textContent =
+          "축척 1:" + denominator.toLocaleString("ko-KR");
+        updateLabels();
+      }
+
+      function distanceMeters(a, b) {
+        const radius = 6371008.8;
+        const radians = Math.PI / 180;
+        const lat1 = a.getLat() * radians;
+        const lat2 = b.getLat() * radians;
+        const deltaLat = (b.getLat() - a.getLat()) * radians;
+        const deltaLng = (b.getLng() - a.getLng()) * radians;
+        const value =
+          Math.sin(deltaLat / 2) ** 2 +
+          Math.cos(lat1) * Math.cos(lat2) *
+          Math.sin(deltaLng / 2) ** 2;
+
+        return radius * 2 * Math.atan2(
+          Math.sqrt(value),
+          Math.sqrt(1 - value)
+        );
+      }
+
+      function niceScaleDistance(value) {
+        const power = 10 ** Math.floor(Math.log10(value));
+        const fraction = value / power;
+        return (fraction >= 5 ? 5 : fraction >= 2 ? 2 : 1) * power;
+      }
+
+      function roundScale(value) {
+        if (value >= 100000) return Math.round(value / 10000) * 10000;
+        if (value >= 10000) return Math.round(value / 1000) * 1000;
+        if (value >= 1000) return Math.round(value / 100) * 100;
+        return Math.round(value / 10) * 10;
+      }
+
+      function formatDistance(meters) {
+        return meters >= 1000
+          ? (meters / 1000).toLocaleString("ko-KR") + " km"
+          : Math.round(meters).toLocaleString("ko-KR") + " m";
+      }
+
+      kakao.maps.event.addListener(map, "idle", updateScale);
+      window.addEventListener("resize", updateScale);
+      setTimeout(updateScale, 0);
+
+      /* 확대·축소와 거리·면적 측정 - 카카오맵 방식 */
+      let measureMode = null;
+      let measurePoints = [];
+      let measureShape = null;
+      let measurePreviewShape = null;
+      let measureResult = null;
+      let measurePointOverlays = [];
+      let measureSegmentOverlays = [];
+      let measureMousePosition = null;
+
+      const distanceBtn = document.getElementById("distanceBtn");
+      const areaBtn = document.getElementById("areaBtn");
+      const measureHint = document.getElementById("measureHint");
+
+      let currentLocationOverlay = null;
+      let currentLocationAccuracy = null;
+      const locationBtn = document.getElementById("locationBtn");
+
+      locationBtn.onclick = function () {
+        if (!navigator.geolocation) {
+          alert("이 브라우저에서는 현위치 기능을 사용할 수 없습니다.");
+          return;
+        }
+
+        locationBtn.classList.add("active");
+        map.setCursor("wait");
+
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+            const latlng = new kakao.maps.LatLng(
+              position.coords.latitude,
+              position.coords.longitude
+            );
+
+            if (currentLocationOverlay) currentLocationOverlay.setMap(null);
+            if (currentLocationAccuracy) currentLocationAccuracy.setMap(null);
+
+            currentLocationAccuracy = new kakao.maps.Circle({
+              map: map,
+              center: latlng,
+              radius: Math.max(5, position.coords.accuracy || 0),
+              strokeWeight: 1,
+              strokeColor: "#258fff",
+              strokeOpacity: 0.45,
+              fillColor: "#258fff",
+              fillOpacity: 0.10,
+              zIndex: 55
+            });
+
+            currentLocationOverlay = new kakao.maps.CustomOverlay({
+              map: map,
+              position: latlng,
+              content: '<div class="current-location-dot" title="현재 위치"></div>',
+              xAnchor: 0.5,
+              yAnchor: 0.5,
+              zIndex: 56
+            });
+
+            map.setCenter(latlng);
+            if (map.getLevel() > 4) map.setLevel(4);
+            map.setCursor("");
+            setTimeout(function () { locationBtn.classList.remove("active"); }, 700);
+          },
+          function (error) {
+            map.setCursor("");
+            locationBtn.classList.remove("active");
+            let message = "현재 위치를 확인할 수 없습니다.";
+            if (error.code === 1) message = "현위치 사용 권한이 필요합니다. 브라우저의 위치 권한을 허용해 주세요.";
+            else if (error.code === 2) message = "현재 위치 정보를 가져올 수 없습니다.";
+            else if (error.code === 3) message = "현위치 확인 시간이 초과되었습니다.";
+            alert(message);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+        );
+      };
+
+      document.getElementById("zoomInBtn").onclick = function () {
+        map.setLevel(map.getLevel() - 1, { animate: true });
+      };
+
+      document.getElementById("zoomOutBtn").onclick = function () {
+        map.setLevel(map.getLevel() + 1, { animate: true });
+      };
+
+      distanceBtn.onclick = function () { toggleMeasure("distance"); };
+      areaBtn.onclick = function () { toggleMeasure("area"); };
+
+      function toggleMeasure(mode) {
+        if (measureMode === mode) {
+          clearMeasure();
+          return;
+        }
+        clearMeasure();
+        measureMode = mode;
+        document.getElementById(mode + "Btn").classList.add("active");
+        measureHint.textContent = "지점을 클릭하고 마우스 오른쪽 버튼으로 완료하세요.";
+        measureHint.style.display = "block";
+        map.setCursor("crosshair");
+      }
+
+      function removeOverlay(overlay) {
+        if (overlay && overlay.setMap) overlay.setMap(null);
+      }
+
+      function clearMeasure() {
+        measureMode = null;
+        measurePoints = [];
+        measureMousePosition = null;
+        distanceBtn.classList.remove("active");
+        areaBtn.classList.remove("active");
+        measureHint.style.display = "none";
+        map.setCursor("");
+        removeOverlay(measureShape);
+        removeOverlay(measurePreviewShape);
+        removeOverlay(measureResult);
+        measurePointOverlays.forEach(removeOverlay);
+        measureSegmentOverlays.forEach(removeOverlay);
+        measureShape = null;
+        measurePreviewShape = null;
+        measureResult = null;
+        measurePointOverlays = [];
+        measureSegmentOverlays = [];
+      }
+
+      window.clearKakaoMeasure = clearMeasure;
+
+      function makePointOverlay(position) {
+        const overlay = new kakao.maps.CustomOverlay({
+          map: map,
+          position: position,
+          content: '<div class="measure-point"></div>',
+          xAnchor: 0.5,
+          yAnchor: 0.5,
+          zIndex: 54
+        });
+        measurePointOverlays.push(overlay);
+      }
+
+      function makeSegmentOverlay(a, b) {
+        const distance = distanceMeters(a, b);
+        const middle = new kakao.maps.LatLng(
+          (a.getLat() + b.getLat()) / 2,
+          (a.getLng() + b.getLng()) / 2
+        );
+        const overlay = new kakao.maps.CustomOverlay({
+          map: map,
+          position: middle,
+          content: '<div class="measure-segment-label">' + formatMeasureDistance(distance) + '</div>',
+          xAnchor: 0.5,
+          yAnchor: 1.15,
+          zIndex: 55
+        });
+        measureSegmentOverlays.push(overlay);
+      }
+
+      function addMeasurePoint(position) {
+        if (!measureMode) return;
+        if (measurePoints.length && distanceMeters(measurePoints[measurePoints.length - 1], position) < 1) return;
+
+        const previous = measurePoints[measurePoints.length - 1];
+        measurePoints.push(position);
+        makePointOverlay(position);
+        if (measureMode === "distance" && previous) makeSegmentOverlay(previous, position);
+        drawMeasure(measurePoints);
+        updateLiveMeasurePanel(position);
+      }
+
+      function drawMeasure(path) {
+        if (!path.length) return;
+        removeOverlay(measureShape);
+        if (measureMode === "distance") {
+          measureShape = new kakao.maps.Polyline({
+            map: map,
+            path: path,
+            strokeWeight: 4,
+            strokeColor: "#f01818",
+            strokeOpacity: 0.58,
+            strokeStyle: "solid",
+            zIndex: 50
+          });
+        } else {
+          measureShape = new kakao.maps.Polygon({
+            map: map,
+            path: path,
+            strokeWeight: 3,
+            strokeColor: "#f01818",
+            strokeOpacity: 0.8,
+            strokeStyle: "solid",
+            fillColor: "#f66",
+            fillOpacity: 0.14,
+            zIndex: 50
+          });
+        }
+      }
+
+      function drawPreview(position) {
+        removeOverlay(measurePreviewShape);
+        measurePreviewShape = null;
+        if (!measureMode || !measurePoints.length || !position) return;
+
+        if (measureMode === "distance") {
+          measurePreviewShape = new kakao.maps.Polyline({
+            map: map,
+            path: [measurePoints[measurePoints.length - 1], position],
+            strokeWeight: 4,
+            strokeColor: "#f01818",
+            strokeOpacity: 0.35,
+            strokeStyle: "solid",
+            zIndex: 49
+          });
+        } else {
+          measurePreviewShape = new kakao.maps.Polygon({
+            map: map,
+            path: measurePoints.concat(position),
+            strokeWeight: 2,
+            strokeColor: "#f01818",
+            strokeOpacity: 0.45,
+            fillColor: "#f66",
+            fillOpacity: 0.08,
+            zIndex: 49
+          });
+        }
+      }
+
+      function formatMeasureDistance(meters) {
+        return meters >= 1000 ? (meters / 1000).toFixed(meters >= 10000 ? 0 : 1) + "km" : Math.round(meters) + "m";
+      }
+
+      function walkTime(distance) {
+        return Math.max(0, Math.floor(distance / 67));
+      }
+
+      function bicycleTime(distance) {
+        return Math.max(0, Math.floor(distance / 227));
+      }
+
+      function formatMinutes(minutes) {
+        if (minutes >= 60) return Math.floor(minutes / 60) + "시간 " + (minutes % 60) + "분";
+        return minutes + "분";
+      }
+
+      function distancePanelHTML(distance, relative, drawing) {
+        return '<div class="measure-panel">' +
+          '<div class="measure-panel-main">' +
+          (drawing && relative != null ? '<div class="measure-panel-row"><span>상대거리</span><span><span class="measure-number">' + formatMeasureDistance(relative) + '</span></span></div>' : '') +
+          '<div class="measure-panel-row"><span>총거리</span><span><span class="measure-number">' + formatMeasureDistance(distance) + '</span></span></div>' +
+          '<div class="measure-panel-row"><span>도보</span><span><span class="measure-number">' + formatMinutes(walkTime(distance)) + '</span></span></div>' +
+          '<div class="measure-panel-row"><span>자전거</span><span><span class="measure-number">' + formatMinutes(bicycleTime(distance)) + '</span></span></div>' +
+          (!drawing ? '<button class="measure-panel-close" onclick="clearKakaoMeasure()" title="측정결과 지우기">×</button>' : '') +
+          '</div>' +
+          (drawing ? '<div class="measure-panel-help">부분취소 : 백스페이스<br>지정완료 : 마우스 오른쪽, ESC</div>' : '') +
+          '</div>';
+      }
+
+      function updateLiveMeasurePanel(position) {
+        removeOverlay(measureResult);
+        measureResult = null;
+        if (!measureMode || !measurePoints.length) return;
+        const anchor = position || measurePoints[measurePoints.length - 1];
+
+        if (measureMode === "distance") {
+          const fixed = totalDistance(measurePoints);
+          const relative = position && measurePoints.length ? distanceMeters(measurePoints[measurePoints.length - 1], position) : 0;
+          const total = fixed + (position && position !== measurePoints[measurePoints.length - 1] ? relative : 0);
+          measureResult = new kakao.maps.CustomOverlay({
+            map: map,
+            position: anchor,
+            content: distancePanelHTML(total, relative, true),
+            xAnchor: -0.08,
+            yAnchor: 0.55,
+            zIndex: 60
+          });
+        }
+      }
+
+      function finishMeasure() {
+        if (!measureMode) return;
+        const mode = measureMode;
+        const minimum = mode === "area" ? 3 : 2;
+        measurePoints = removeNearbyPoints(measurePoints);
+        if (measurePoints.length < minimum) return;
+
+        removeOverlay(measurePreviewShape);
+        measurePreviewShape = null;
+        drawMeasure(measurePoints);
+        removeOverlay(measureResult);
+        measureResult = null;
+
+        if (mode === "distance") {
+          const distance = totalDistance(measurePoints);
+          measureResult = new kakao.maps.CustomOverlay({
+            map: map,
+            position: measurePoints[measurePoints.length - 1],
+            content: distancePanelHTML(distance, null, false),
+            xAnchor: -0.08,
+            yAnchor: 0.55,
+            zIndex: 60
+          });
+        } else {
+          const area = polygonArea(measurePoints);
+          measureResult = new kakao.maps.CustomOverlay({
+            map: map,
+            position: measurePoints[measurePoints.length - 1],
+            content: '<div class="measure-area-result">총면적 <span class="measure-number">' + formatArea(area) + '</span><button class="measure-panel-close" onclick="clearKakaoMeasure()" title="측정결과 지우기">×</button></div>',
+            xAnchor: 0,
+            yAnchor: 0.5,
+            zIndex: 60
+          });
+        }
+
+        measureMode = null;
+        distanceBtn.classList.remove("active");
+        areaBtn.classList.remove("active");
+        measureHint.style.display = "none";
+        map.setCursor("");
+      }
+
+      function undoMeasurePoint() {
+        if (!measureMode || !measurePoints.length) return;
+        measurePoints.pop();
+        const point = measurePointOverlays.pop();
+        removeOverlay(point);
+        if (measureMode === "distance") {
+          const seg = measureSegmentOverlays.pop();
+          removeOverlay(seg);
+        }
+        if (!measurePoints.length) {
+          removeOverlay(measureShape);
+          measureShape = null;
+          removeOverlay(measureResult);
+          measureResult = null;
+          return;
+        }
+        drawMeasure(measurePoints);
+        drawPreview(measureMousePosition);
+        updateLiveMeasurePanel(measureMousePosition || measurePoints[measurePoints.length - 1]);
+      }
+
+      function removeNearbyPoints(points) {
+        return points.filter(function (point, index) {
+          return index === 0 || distanceMeters(points[index - 1], point) > 1;
+        });
+      }
+
+      function totalDistance(points) {
+        return points.slice(1).reduce(function (sum, point, index) {
+          return sum + distanceMeters(points[index], point);
+        }, 0);
+      }
+
+      function polygonArea(points) {
+        if (measureShape && measureShape.getArea && points.length >= 3) {
+          try { return measureShape.getArea(); } catch (e) {}
+        }
+        const radius = 6371008.8;
+        const radians = Math.PI / 180;
+        const averageLatitude = points.reduce(function (sum, point) { return sum + point.getLat(); }, 0) / points.length * radians;
+        const xy = points.map(function (point) {
+          return { x: radius * point.getLng() * radians * Math.cos(averageLatitude), y: radius * point.getLat() * radians };
+        });
+        return Math.abs(xy.reduce(function (sum, point, index) {
+          const next = xy[(index + 1) % xy.length];
+          return sum + point.x * next.y - next.x * point.y;
+        }, 0)) / 2;
+      }
+
+      function formatArea(squareMeters) {
+        return squareMeters >= 1000000
+          ? (squareMeters / 1000000).toFixed(2) + " km²"
+          : Math.round(squareMeters).toLocaleString("ko-KR") + " m²";
+      }
+
+      kakao.maps.event.addListener(map, "mousemove", function (event) {
+        if (!measureMode || !measurePoints.length) return;
+        measureMousePosition = event.latLng;
+        drawPreview(event.latLng);
+        updateLiveMeasurePanel(event.latLng);
+      });
+
+      kakao.maps.event.addListener(map, "rightclick", function () {
+        if (measureMode) finishMeasure();
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (!measureMode) return;
+        if (event.key === "Backspace") {
+          event.preventDefault();
+          undoMeasurePoint();
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          finishMeasure();
+        }
+      });
+
+      const infoWindow = new kakao.maps.InfoWindow({
+        removable: false,
+        zIndex: 100
+      });
+
+      const geocoder = new kakao.maps.services.Geocoder();
+
+      let regionRequestSeq = 0;
+
+      function renderCenterRegion(parts) {
+        const bar = document.getElementById("centerRegionBar");
+        if (!bar) return;
+
+        const cleanParts = (parts || []).filter(function (value) {
+          return value && String(value).trim();
+        });
+
+        if (!cleanParts.length) {
+          bar.innerHTML = '<span class="region-part">행정구역 정보 없음</span>';
+          bar.title = "행정구역 정보 없음";
+          return;
+        }
+
+        bar.innerHTML = cleanParts.map(function (part) {
+          return '<span class="region-part">' + escapeHTML(part) + '</span>';
+        }).join("");
+        bar.title = cleanParts.join(" ");
+      }
+
+      function updateCenterRegion() {
+        const center = map.getCenter();
+        const requestSeq = ++regionRequestSeq;
+
+        geocoder.coord2RegionCode(
+          center.getLng(),
+          center.getLat(),
+          function (result, status) {
+            if (requestSeq !== regionRequestSeq) return;
+
+            if (status === kakao.maps.services.Status.OK && result && result.length) {
+              const region =
+                result.find(function (item) { return item.region_type === "H"; }) ||
+                result.find(function (item) { return item.region_type === "B"; }) ||
+                result[0];
+
+              renderCenterRegion([
+                region.region_1depth_name,
+                region.region_2depth_name,
+                region.region_3depth_name,
+                region.region_4depth_name
+              ]);
+              return;
+            }
+
+            // 일부 환경에서 행정구역 코드 조회가 실패할 때 주소조회로 한 번 더 표시
+            geocoder.coord2Address(
+              center.getLng(),
+              center.getLat(),
+              function (addressResult, addressStatus) {
+                if (requestSeq !== regionRequestSeq) return;
+
+                if (
+                  addressStatus === kakao.maps.services.Status.OK &&
+                  addressResult &&
+                  addressResult.length &&
+                  addressResult[0].address
+                ) {
+                  const address = addressResult[0].address;
+                  renderCenterRegion([
+                    address.region_1depth_name,
+                    address.region_2depth_name,
+                    address.region_3depth_name
+                  ]);
+                } else {
+                  renderCenterRegion([]);
+                }
+              }
+            );
+          }
+        );
+      }
+
+      kakao.maps.event.addListener(map, "idle", updateCenterRegion);
+      kakao.maps.event.addListener(map, "tilesloaded", updateCenterRegion);
+      setTimeout(updateCenterRegion, 300);
+      const places = new kakao.maps.services.Places();
+      const addressMarker = new kakao.maps.Marker();
+      const addressInfo = new kakao.maps.InfoWindow({
+        removable: false,
+        zIndex: 101
+      });
+
+      const groups = new Map();
+      const ruralTotalLengths = new Map();
+      const allBounds = new kakao.maps.LatLngBounds();
+
+      let selectedKey = null;
+      let roadviewMode = false;
+      let roadviewOverlay = null;
+      let roadviewClient = null;
+      let roadview = null;
+
+      const normalBtn = document.getElementById("normalBtn");
+      const skyBtn = document.getElementById("skyBtn");
+      const roadviewBtn = document.getElementById("roadviewBtn");
+      const layerBtn = document.getElementById("layerBtn");
+      const layerPanel = document.getElementById("layerPanel");
+      const styleBtn = document.getElementById("styleBtn");
+      const stylePanel = document.getElementById("stylePanel");
+      const hybridCheck = document.getElementById("hybridCheck");
+
+      const roadviewPanel =
+        document.getElementById("roadviewPanel");
+
+      const fullscreenBtn =
+        document.getElementById("roadviewFullscreen");
+
+      /*
+       * 지도와 스카이뷰
+       */
+      normalBtn.onclick = function () {
+        map.setMapTypeId(kakao.maps.MapTypeId.ROADMAP);
+
+        normalBtn.classList.add("active");
+        skyBtn.classList.remove("active");
+      };
+
+      skyBtn.onclick = function () {
+        setSkyMap();
+
+        skyBtn.classList.add("active");
+        normalBtn.classList.remove("active");
+      };
+
+      hybridCheck.onchange = function () {
+        if (skyBtn.classList.contains("active")) {
+          setSkyMap();
+        }
+      };
+
+      function setSkyMap() {
+        map.setMapTypeId(
+          hybridCheck.checked
+            ? kakao.maps.MapTypeId.HYBRID
+            : kakao.maps.MapTypeId.SKYVIEW
+        );
+      }
+
+      /*
+       * 레이어 메뉴
+       */
+      layerBtn.onclick = function (event) {
+        event.stopPropagation();
+
+        const opened =
+          layerPanel.style.display === "block";
+
+        layerPanel.style.display =
+          opened ? "none" : "block";
+
+        layerBtn.classList.toggle(
+          "active",
+          !opened
+        );
+
+        stylePanel.style.display = "none";
+        styleBtn.classList.remove("active");
+      };
+
+      layerPanel.onclick = function (event) {
+        event.stopPropagation();
+      };
+
+      styleBtn.onclick = function (event) {
+        event.stopPropagation();
+
+        const opened =
+          stylePanel.style.display === "block";
+
+        stylePanel.style.display =
+          opened ? "none" : "block";
+
+        styleBtn.classList.toggle("active", !opened);
+        layerPanel.style.display = "none";
+        layerBtn.classList.remove("active");
+      };
+
+      stylePanel.onclick = function (event) {
+        event.stopPropagation();
+      };
+
+      document.addEventListener("click", function () {
+        layerPanel.style.display = "none";
+        layerBtn.classList.remove("active");
+        stylePanel.style.display = "none";
+        styleBtn.classList.remove("active");
+      });
+
+      initStylePanel();
+
+      function initStylePanel() {
+        syncStyleInputs();
+
+        document.querySelectorAll(".style-row").forEach(function (row) {
+          const key = row.dataset.style;
+          const color = row.querySelector(".style-color");
+          const baseColor = row.querySelector(".style-base-color");
+          const top = row.querySelector(".style-top");
+          const base = row.querySelector(".style-base");
+          const topOpacity = row.querySelector(".style-top-opacity");
+          const baseOpacity = row.querySelector(".style-base-opacity");
+          const topOpacityValue = row.querySelector(".top-opacity-value");
+          const baseOpacityValue = row.querySelector(".base-opacity-value");
+
+          [color, baseColor, top, base, topOpacity, baseOpacity].forEach(function (input) {
+            input.addEventListener("input", function () {
+              ROAD_STYLES[key] = {
+                color: color.value,
+                baseColor: baseColor.value,
+                top: limitNumber(top.value, 1, 20),
+                base: limitNumber(base.value, 1, 30),
+                topOpacity: limitNumberAllowZero(topOpacity.value, 0, 100),
+                baseOpacity: limitNumberAllowZero(baseOpacity.value, 0, 100)
+              };
+
+              topOpacityValue.textContent = ROAD_STYLES[key].topOpacity + "%";
+              baseOpacityValue.textContent = ROAD_STYLES[key].baseOpacity + "%";
+              applyRoadStyles();
+              saveRoadStyles();
+            });
+          });
+        });
+
+        [
+          "unopenedDotSize",
+          "unopenedDotGap",
+          "unexpandedStyle"
+        ].forEach(function (id) {
+          document.getElementById(id).addEventListener(
+            "input",
+            updateStatusStyles
+          );
+        });
+
+        document.getElementById("labelScale").addEventListener("input", function () {
+          LABEL_STYLES.SCALE = limitNumber(this.value, 50, 150);
+          localStorage.setItem("labelStyles", JSON.stringify(LABEL_STYLES));
+          applyLabelScale();
+          document.getElementById("labelScaleValue").textContent = LABEL_STYLES.SCALE + "%";
+        });
+
+        document.getElementById("styleReset").onclick = function () {
+          ROAD_STYLES = JSON.parse(JSON.stringify(DEFAULT_STYLES));
+          STATUS_STYLES = { ...DEFAULT_STATUS_STYLES };
+          LABEL_STYLES = { ...DEFAULT_LABEL_STYLES };
+          localStorage.removeItem("roadStyles");
+          localStorage.removeItem("statusStyles");
+          localStorage.removeItem("labelStyles");
+          syncStyleInputs();
+          applyRoadStyles();
+          applyStatusStyles();
+          applyLabelScale();
+        };
+      }
+
+      function syncStyleInputs() {
+        document.querySelectorAll(".style-row").forEach(function (row) {
+          const style = ROAD_STYLES[row.dataset.style];
+          row.querySelector(".style-color").value = style.color;
+          row.querySelector(".style-base-color").value = style.baseColor;
+          row.querySelector(".style-top").value = style.top;
+          row.querySelector(".style-base").value = style.base;
+          row.querySelector(".style-top-opacity").value = style.topOpacity;
+          row.querySelector(".style-base-opacity").value = style.baseOpacity;
+          row.querySelector(".top-opacity-value").textContent = style.topOpacity + "%";
+          row.querySelector(".base-opacity-value").textContent = style.baseOpacity + "%";
+        });
+
+        document.getElementById("unopenedDotSize").value =
+          STATUS_STYLES.UNOPENED_SIZE;
+        document.getElementById("unopenedDotGap").value =
+          STATUS_STYLES.UNOPENED_GAP;
+        document.getElementById("unexpandedStyle").value =
+          STATUS_STYLES.UNEXPANDED;
+        document.getElementById("labelScale").value = LABEL_STYLES.SCALE;
+        document.getElementById("labelScaleValue").textContent = LABEL_STYLES.SCALE + "%";
+      }
+
+      function applyLabelScale() {
+        const scale = limitNumber(LABEL_STYLES.SCALE, 50, 150) / 100;
+        document.documentElement.style.setProperty("--road-label-scale", scale);
+        document.querySelectorAll(".road-label").forEach(function (label) {
+          label.style.setProperty("--label-scale", scale);
+        });
+      }
+
+      function updateStatusStyles() {
+        STATUS_STYLES = {
+          UNOPENED_SIZE: limitNumber(
+            document.getElementById("unopenedDotSize").value,
+            1,
+            20
+          ),
+          UNOPENED_GAP:
+            document.getElementById("unopenedDotGap").value,
+          UNEXPANDED: document.getElementById("unexpandedStyle").value
+        };
+        localStorage.setItem(
+          "statusStyles",
+          JSON.stringify(STATUS_STYLES)
+        );
+        applyStatusStyles();
+      }
+
+      function limitNumber(value, min, max) {
+        return Math.min(max, Math.max(min, Number(value) || min));
+      }
+
+      function limitNumberAllowZero(value, min, max) {
+        const number = Number(value);
+        return Math.min(max, Math.max(min, Number.isFinite(number) ? number : min));
+      }
+
+      function saveRoadStyles() {
+        localStorage.setItem("roadStyles", JSON.stringify(ROAD_STYLES));
+      }
+
+      function applyRoadStyles() {
+        groups.forEach(function (group) {
+          group.roads.forEach(function (road) {
+            const style = ROAD_STYLES[road.styleKey];
+
+            road.baseLine.setOptions({
+              strokeWeight: style.base,
+              strokeColor: style.baseColor,
+              strokeOpacity: style.baseOpacity / 100
+            });
+
+            road.roadLine.setOptions({
+              strokeWeight:
+                getRoadStrokeWeight(
+                  road,
+                  selectedKey === road.groupKey
+                ),
+              strokeColor:
+                selectedKey === road.groupKey
+                  ? COLORS.SELECTED
+                  : style.color,
+              strokeOpacity: style.topOpacity / 100
+            });
+          });
+        });
+      }
+
+      function applyStatusStyles() {
+        groups.forEach(function (group) {
+          group.roads.forEach(function (road) {
+            road.roadLine.setOptions({
+              strokeStyle: getStatusStrokeStyle(road.statusKey),
+              strokeWeight: getRoadStrokeWeight(
+                road,
+                selectedKey === road.groupKey
+              )
+            });
+          });
+        });
+      }
+
+      /*
+       * 지적편집도
+       * 처음에는 체크 해제 상태
+       */
+      document
+        .getElementById("districtCheck")
+        .onchange = function () {
+          if (this.checked) {
+            map.addOverlayMapTypeId(
+              kakao.maps.MapTypeId.USE_DISTRICT
+            );
+          } else {
+            map.removeOverlayMapTypeId(
+              kakao.maps.MapTypeId.USE_DISTRICT
+            );
+
+            addressInfo.close();
+            addressMarker.setMap(null);
+          }
+        };
+
+      /*
+       * 노선목록
+       */
+      document.getElementById("listOpen").onclick = function () {
+        document.body.classList.remove("list-collapsed");
+        document.getElementById("roadSearch").focus();
+      };
+
+      document.getElementById("listClose").onclick = function () {
+        document.body.classList.add("list-collapsed");
+      };
+
+      const roadSearch = document.getElementById("roadSearch");
+
+      roadSearch.addEventListener("input", function () {
+        clearAddressResults();
+        filterRoadList(this.value);
+      });
+
+      roadSearch.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          runIntegratedSearch();
+        }
+      });
+
+      document.getElementById("addressSearchBtn").onclick =
+        runIntegratedSearch;
+
+      function filterRoadList(value) {
+        const query = String(value)
+          .toLowerCase()
+          .replace(/\s+/g, "");
+
+        let cityCount = 0;
+        let ruralCount = 0;
+
+        document.querySelectorAll(".list-item").forEach(function (item) {
+          const text = item.textContent
+            .toLowerCase()
+            .replace(/\s+/g, "");
+
+          const visible = text.includes(query);
+          item.style.display = visible ? "block" : "none";
+
+          if (visible) {
+            if (item.parentElement.id === "cityList") {
+              cityCount++;
+            } else {
+              ruralCount++;
+            }
+          }
+        });
+
+        document.getElementById("cityListTitle").style.display =
+          cityCount ? "block" : "none";
+
+        document.getElementById("ruralListTitle").style.display =
+          ruralCount ? "block" : "none";
+
+        const count = cityCount + ruralCount;
+        document.getElementById("searchEmpty").style.display =
+          count ? "none" : "block";
+
+        return count;
+      }
+
+      function runIntegratedSearch() {
+        const query = roadSearch.value.trim();
+
+        if (!query) {
+          clearAddressResults();
+          filterRoadList("");
+          return;
+        }
+
+        if (filterRoadList(query)) {
+          clearAddressResults();
+          return;
+        }
+
+        Promise.all([
+          searchAddress(query),
+          searchPlace(query)
+        ]).then(function (resultSets) {
+          const combined = [];
+          const used = new Set();
+
+          resultSets.flat().forEach(function (result) {
+            const key = [result.x, result.y, result.place_name || ""].join("|");
+            if (!used.has(key)) {
+              used.add(key);
+              combined.push(result);
+            }
+          });
+
+          if (!combined.length) {
+            clearAddressResults();
+            document.getElementById("searchEmpty").textContent =
+              "검색 결과가 없습니다.";
+            document.getElementById("searchEmpty").style.display =
+              "block";
+            return;
+          }
+
+          renderAddressResults(combined.slice(0, 12));
+        });
+      }
+
+      function searchAddress(query) {
+        return new Promise(function (resolve) {
+          geocoder.addressSearch(query, function (results, status) {
+            resolve(
+              status === kakao.maps.services.Status.OK ? results : []
+            );
+          });
+        });
+      }
+
+      function searchPlace(query) {
+        return new Promise(function (resolve) {
+          places.keywordSearch(query, function (results, status) {
+            resolve(
+              status === kakao.maps.services.Status.OK ? results : []
+            );
+          });
+        });
+      }
+
+      function clearAddressResults() {
+        const container = document.getElementById("addressResults");
+        container.innerHTML = "";
+        container.style.display = "none";
+        document.getElementById("searchEmpty").textContent =
+          "검색 결과가 없습니다.";
+      }
+
+      function renderAddressResults(results) {
+        const container = document.getElementById("addressResults");
+        container.innerHTML =
+          '<div class="address-result-title">장소·주소 검색결과</div>';
+
+        results.forEach(function (result) {
+          const button = document.createElement("button");
+          const mainAddress =
+            result.place_name ||
+            result.road_address_name ||
+            result.address_name;
+          const subAddress = result.place_name
+            ? result.road_address_name || result.address_name
+            : result.road_address_name
+              ? result.address_name
+              : "";
+
+          button.type = "button";
+          button.className = "address-result-item";
+          button.innerHTML =
+            escapeHTML(mainAddress) +
+            (subAddress
+              ? "<small>" + escapeHTML(subAddress) + "</small>"
+              : "");
+          button.onclick = function () {
+            moveToAddress(result);
+          };
+          container.appendChild(button);
+        });
+
+        container.style.display = "block";
+        document.getElementById("searchEmpty").style.display = "none";
+      }
+
+      function moveToAddress(result) {
+        const position = new kakao.maps.LatLng(
+          Number(result.y),
+          Number(result.x)
+        );
+
+        resetSelection();
+        infoWindow.close();
+        map.setCenter(position);
+        map.setLevel(3);
+
+        addressMarker.setPosition(position);
+        addressMarker.setMap(map);
+        addressInfo.setContent(`
+          <div class="road-popup">
+            <button class="popup-close" onclick="closeAddressPopup()">×</button>
+            <div class="popup-title">${escapeHTML(result.place_name || "주소 정보")}</div>
+            ${row("지번주소", result.address_name || "정보 없음")}
+            ${row("도로명주소", result.road_address_name || "정보 없음")}
+            ${row("위도", position.getLat().toFixed(7))}
+            ${row("경도", position.getLng().toFixed(7))}
+          </div>
+        `);
+        addressInfo.open(map, addressMarker);
+      }
+
+      /*
+       * 도로 레이어
+       */
+      document.getElementById("cityCheck").onchange = function () {
+        setLayer("city", this.checked);
+      };
+
+      document.getElementById("ruralCheck").onchange = function () {
+        setLayer("rural", this.checked);
+      };
+
+      function setLayer(layerId, visible) {
+        const layer = LAYERS[layerId];
+
+        layer.visible = visible;
+
+        layer.shapes.forEach(function (shape) {
+          shape.setMap(visible ? map : null);
+        });
+
+        if (
+          !visible &&
+          selectedKey &&
+          groups.get(selectedKey)?.layerId === layerId
+        ) {
+          resetSelection();
+        }
+
+        infoWindow.close();
+        updateLabels();
+      }
+
+      /*
+       * GeoJSON 불러오기
+       */
+      Promise.all([
+        loadGeoJSON("city"),
+        loadGeoJSON("rural")
+      ])
+      .then(function () {
+        makeLists();
+
+        if (!allBounds.isEmpty()) {
+          map.setBounds(allBounds);
+        }
+
+        updateLabels();
+      })
+      .catch(function (error) {
+        console.error(error);
+
+        alert(
+          "GeoJSON 파일을 불러오지 못했습니다.\n" +
+          "index.html, city_roads.geojson, roads.geojson이\n" +
+          "같은 폴더에 있는지 확인하세요."
+        );
+      });
+
+      async function loadGeoJSON(layerId) {
+        const response =
+          await fetch(LAYERS[layerId].file);
+
+        if (!response.ok) {
+          throw new Error(
+            LAYERS[layerId].file +
+            " 불러오기 실패"
+          );
+        }
+
+        const data = await response.json();
+
+        data.features.forEach(function (feature) {
+          addFeature(feature, layerId);
+        });
+      }
+
+      function addFeature(feature, layerId) {
+        const properties = feature.properties || {};
+        const lines = getLines(feature.geometry);
+
+        if (!lines.length) return;
+
+        const number = getNumber(properties, layerId);
+
+        if (layerId === "rural") {
+          const length = parseRoadLength(properties["연장"]);
+          ruralTotalLengths.set(
+            number,
+            (ruralTotalLengths.get(number) || 0) + length
+          );
+        }
+        const groupKey = layerId + "::" + number;
+        const color = getColor(properties, layerId);
+        const statusKey = getRoadStatusKey(properties, layerId);
+
+        if (!groups.has(groupKey)) {
+          groups.set(groupKey, {
+            key: groupKey,
+            number: number,
+            layerId: layerId,
+            bounds: new kakao.maps.LatLngBounds(),
+            roads: []
+          });
+        }
+
+        const group = groups.get(groupKey);
+
+        lines.forEach(function (coordinates) {
+          const path = coordinates.map(function (coordinate) {
+            const normalized = normalizeCoordinate(coordinate);
+            const position = new kakao.maps.LatLng(
+              normalized[1],
+              normalized[0]
+            );
+
+            group.bounds.extend(position);
+            allBounds.extend(position);
+
+            return position;
+          });
+
+          if (path.length < 2) return;
+
+          group.roads.push(
+            drawRoad(
+              path,
+              properties,
+              layerId,
+              groupKey,
+              color,
+              statusKey
+            )
+          );
+        });
+
+        addLabel(lines, properties, layerId);
+      }
+
+      function normalizeCoordinate(coordinate) {
+        const x = Number(coordinate && coordinate[0]);
+        const y = Number(coordinate && coordinate[1]);
+
+        if (!Number.isFinite(x) || !Number.isFinite(y)) {
+          return [0, 0];
+        }
+
+        if (Math.abs(x) > 180 || Math.abs(y) > 90) {
+          const radius = 6378137;
+          const lng = x / radius * 180 / Math.PI;
+          const lat = (2 * Math.atan(Math.exp(y / radius)) - Math.PI / 2) * 180 / Math.PI;
+          return [lng, lat];
+        }
+
+        return [x, y];
+      }
+
+      function getLines(geometry) {
+        if (!geometry) return [];
+
+        if (geometry.type === "LineString") {
+          return [geometry.coordinates];
+        }
+
+        if (geometry.type === "MultiLineString") {
+          return geometry.coordinates;
+        }
+
+        return [];
+      }
+
+      /*
+       * 도로선
+       */
+      function drawRoad(
+        path,
+        properties,
+        layerId,
+        groupKey,
+        color,
+        statusKey
+      ) {
+        const styleKey = getStyleKey(properties, layerId);
+        const style = ROAD_STYLES[styleKey];
+
+        const baseLine = new kakao.maps.Polyline({
+          map: map,
+          path: path,
+          strokeWeight: style.base,
+          strokeColor: style.baseColor,
+          strokeOpacity: style.baseOpacity / 100,
+          strokeStyle: "solid",
+          zIndex: 4
+        });
+
+        const roadLine = new kakao.maps.Polyline({
+          map: map,
+          path: path,
+          strokeWeight:
+            statusKey === "UNOPENED"
+              ? STATUS_STYLES.UNOPENED_SIZE
+              : style.top,
+          strokeColor: style.color,
+          strokeOpacity: style.topOpacity / 100,
+          strokeStyle: getStatusStrokeStyle(statusKey),
+          zIndex: 5
+        });
+
+        LAYERS[layerId].shapes.push(
+          baseLine,
+          roadLine
+        );
+
+          const road = {
+          baseLine,
+          roadLine,
+          color: style.color,
+          styleKey,
+          statusKey,
+          groupKey
+        };
+
+        [baseLine, roadLine].forEach(function (line) {
+          kakao.maps.event.addListener(
+            line,
+            "click",
+            function (event) {
+              if (measureMode) {
+                kakao.maps.event.preventMap();
+                addMeasurePoint(event.latLng);
+                return;
+              }
+
+              if (roadviewMode) {
+                openRoadview(event.latLng);
+                return;
+              }
+
+              kakao.maps.event.preventMap();
+
+              showInfo(
+                event.latLng,
+                properties,
+                layerId
+              );
+            }
+          );
+
+          kakao.maps.event.addListener(
+            line,
+            "mouseover",
+            function () {
+              if (
+                !roadviewMode &&
+                selectedKey !== groupKey
+              ) {
+                roadLine.setOptions({
+                  strokeColor: "#FFFF00",
+                  strokeWeight: getRoadStrokeWeight(road) + 2
+                });
+              }
+            }
+          );
+
+          kakao.maps.event.addListener(
+            line,
+            "mouseout",
+            function () {
+              if (
+                !roadviewMode &&
+                selectedKey !== groupKey
+              ) {
+                restoreRoad(road);
+              }
+            }
+          );
+        });
+
+        return road;
+      }
+
+      function restoreRoad(road) {
+        const style = ROAD_STYLES[road.styleKey];
+
+        road.roadLine.setOptions({
+          strokeColor: style.color,
+          strokeWeight: getRoadStrokeWeight(road),
+          strokeOpacity: style.topOpacity / 100,
+          strokeStyle: getStatusStrokeStyle(road.statusKey)
+        });
+      }
+
+      /*
+       * 도로 라벨
+       */
+      function addLabel(lines, properties, layerId) {
+        const longest = lines.reduce(
+          function (a, b) {
+            return b.length > a.length ? b : a;
+          },
+          []
+        );
+
+        if (!longest.length) return;
+
+        const coordinate =
+          longest[Math.floor(longest.length / 2)];
+
+        const text = layerId === "city"
+          ? getNumber(properties, layerId)
+          : safe(properties.NUM);
+
+        if (text === "-") return;
+
+        const className = layerId === "city"
+          ? "road-label city"
+          : "road-label";
+
+        const label = new kakao.maps.CustomOverlay({
+          position: new kakao.maps.LatLng(
+            coordinate[1],
+            coordinate[0]
+          ),
+
+          content:
+            '<div class="' +
+            className +
+            '">' +
+            escapeHTML(text) +
+            "</div>",
+
+          xAnchor: 0.5,
+          yAnchor: 0.5,
+          zIndex: 3
+        });
+
+        LAYERS[layerId].labels.push(label);
+      }
+
+      function updateLabels() {
+        Object.entries(LAYERS).forEach(
+          function ([layerId, layer]) {
+            const scaleVisible =
+              layerId === "city" ||
+              currentScaleDenominator <= 50000;
+
+            layer.labels.forEach(
+              function (label) {
+                label.setMap(
+                  layer.visible && scaleVisible ? map : null
+                );
+              }
+            );
+          }
+        );
+      }
+
+      /*
+       * 노선목록 생성
+       */
+      function makeLists() {
+        makeLayerList("city", "cityList");
+        makeLayerList("rural", "ruralList");
+        filterRoadList(document.getElementById("roadSearch").value);
+      }
+
+      function makeLayerList(layerId, elementId) {
+        const container =
+          document.getElementById(elementId);
+
+        container.innerHTML = "";
+
+        Array.from(groups.values())
+          .filter(function (group) {
+            return group.layerId === layerId;
+          })
+          .sort(function (a, b) {
+            return a.number.localeCompare(
+              b.number,
+              "ko",
+              { numeric: true }
+            );
+          })
+          .forEach(function (group) {
+            const button =
+              document.createElement("button");
+
+            button.className = "list-item";
+            button.dataset.key = group.key;
+
+            button.textContent =
+              layerId === "city"
+                ? "시도 " + group.number
+                : group.number;
+
+            button.onclick = function () {
+              selectGroup(group.key);
+            };
+
+            container.appendChild(button);
+          });
+      }
+
+      function selectGroup(groupKey) {
+        const group = groups.get(groupKey);
+
+        if (!group) return;
+
+        addressInfo.close();
+        addressMarker.setMap(null);
+
+        if (!LAYERS[group.layerId].visible) {
+          const checkId =
+            group.layerId === "city"
+              ? "cityCheck"
+              : "ruralCheck";
+
+          document.getElementById(
+            checkId
+          ).checked = true;
+
+          setLayer(group.layerId, true);
+        }
+
+        resetSelection();
+        selectedKey = groupKey;
+
+        group.roads.forEach(function (road) {
+          road.roadLine.setOptions({
+            strokeColor: COLORS.SELECTED,
+            strokeWeight: getRoadStrokeWeight(road, true)
+          });
+        });
+
+        document
+          .querySelectorAll(".list-item")
+          .forEach(function (item) {
+            if (item.dataset.key === groupKey) {
+              item.classList.add("selected");
+            }
+          });
+
+        if (!group.bounds.isEmpty()) {
+          map.setBounds(group.bounds);
+        }
+      }
+
+      function resetSelection() {
+        if (!selectedKey) return;
+
+        const group = groups.get(selectedKey);
+
+        if (group) {
+          group.roads.forEach(restoreRoad);
+        }
+
+        document
+          .querySelectorAll(".list-item.selected")
+          .forEach(function (item) {
+            item.classList.remove("selected");
+          });
+
+        selectedKey = null;
+      }
+
+      /*
+       * 속성 팝업
+       */
+      function showInfo(position, properties, layerId) {
+        addressInfo.close();
+        addressMarker.setMap(null);
+
+        infoWindow.setContent(
+          layerId === "city"
+            ? cityPopup(properties)
+            : ruralPopup(properties)
+        );
+
+        infoWindow.setPosition(position);
+        infoWindow.open(map);
+      }
+
+      function row(title, value, unit = "") {
+        return (
+          '<div class="popup-row">' +
+          '<div class="popup-label">' + escapeHTML(title) + '</div>' +
+          '<div class="popup-value">' + escapeHTML(safe(value)) + unit + '</div>' +
+          '</div>'
+        );
+      }
+
+      function cityPopup(properties) {
+        return `
+          <div class="road-popup">
+            <button
+              class="popup-close"
+              onclick="closeRoadPopup()"
+            >×</button>
+
+            <div class="popup-title">
+              시도 ${escapeHTML(
+                getNumber(properties, "city")
+              )}
+            </div>
+
+            <div class="road-attributes">
+              ${row("도로구분", "시도")}
+              ${row("노선번호", properties.number)}
+              ${row("개설상태", properties["개설여부"])}
+              ${row("검토", properties["검토"])}
+              ${row("연장", properties["연장"], " m")}
+              ${row("시점", properties["시점"])}
+              ${row("종점", properties["종점"])}
+            </div>
+          </div>
+        `;
+      }
+
+      function ruralPopup(properties) {
+        return `
+          <div class="road-popup">
+            <button
+              class="popup-close"
+              onclick="closeRoadPopup()"
+            >×</button>
+
+            <div class="popup-title">
+              ${escapeHTML(safe(properties.number))}
+            </div>
+
+            <div class="road-attributes">
+              ${row("노선번호", properties.number)}
+              ${row("구분", properties.GUBUN)}
+              ${row("개설상태", properties.Opened)}
+              ${row("차선", properties["차선"])}
+              ${row("도로폭", properties["도로폭"], " m")}
+              ${row("총연장", formatRoadLength(ruralTotalLengths.get(getNumber(properties, "rural")) || 0), " km")}
+              ${row("연장", properties["연장"], " km")}
+              ${row("기점", properties["기점"])}
+              ${row("종점", properties["종점"])}
+              ${row("비고", properties["비고"])}
+            </div>
+          </div>
+        `;
+      }
+
+      window.closeRoadPopup = function () {
+        infoWindow.close();
+      };
+
+      window.closeAddressPopup = function () {
+        addressInfo.close();
+        addressMarker.setMap(null);
+      };
+
+      function showAddressInfo(position) {
+        geocoder.coord2Address(
+          position.getLng(),
+          position.getLat(),
+          function (result, status) {
+            if (
+              status !== kakao.maps.services.Status.OK ||
+              !result.length
+            ) {
+              return;
+            }
+
+            const data = result[0];
+            const parcelAddress = data.address
+              ? data.address.address_name
+              : "정보 없음";
+
+            const roadAddress = data.road_address
+              ? data.road_address.address_name
+              : "정보 없음";
+
+            const content = `
+              <div class="road-popup">
+                <button
+                  class="popup-close"
+                  onclick="closeAddressPopup()"
+                >×</button>
+
+                <div class="popup-title">지번 정보</div>
+                ${row("지번주소", parcelAddress)}
+                ${row("도로명주소", roadAddress)}
+                ${row("위도", position.getLat().toFixed(7))}
+                ${row("경도", position.getLng().toFixed(7))}
+              </div>
+            `;
+
+            addressMarker.setPosition(position);
+            addressMarker.setMap(map);
+            addressInfo.setContent(content);
+            addressInfo.open(map, addressMarker);
+          }
+        );
+      }
+
+      /*
+       * 지도 클릭
+       */
+      kakao.maps.event.addListener(
+        map,
+        "click",
+        function (event) {
+          if (measureMode) {
+            addMeasurePoint(event.latLng);
+            return;
+          }
+
+          infoWindow.close();
+          addressInfo.close();
+          addressMarker.setMap(null);
+          resetSelection();
+
+          if (roadviewMode) {
+            openRoadview(event.latLng);
+            return;
+          }
+
+          if (document.getElementById("districtCheck").checked) {
+            showAddressInfo(event.latLng);
+          }
+        }
+      );
+
+      /*
+       * 로드뷰 켜기와 끄기
+       */
+      roadviewBtn.onclick = function () {
+        if (roadviewMode) {
+          stopRoadview();
+        } else {
+          startRoadview();
+        }
+      };
+
+      function startRoadview() {
+        if (!roadviewOverlay) {
+          roadviewOverlay =
+            new kakao.maps.RoadviewOverlay();
+
+          roadviewClient =
+            new kakao.maps.RoadviewClient();
+
+          roadview =
+            new kakao.maps.Roadview(
+              document.getElementById("roadview")
+            );
+        }
+
+        roadviewMode = true;
+        roadviewOverlay.setMap(map);
+        roadviewBtn.classList.add("active");
+
+        infoWindow.close();
+        resetSelection();
+      }
+
+      function stopRoadview() {
+        roadviewMode = false;
+        roadviewBtn.classList.remove("active");
+
+        if (roadviewOverlay) {
+          roadviewOverlay.setMap(null);
+        }
+
+        closeRoadviewPanel();
+      }
+
+      /*
+       * 로드뷰 열기
+       */
+      function openRoadview(position) {
+        if (!roadviewMode || !roadviewClient) {
+          return;
+        }
+
+        roadviewClient.getNearestPanoId(
+          position,
+          100,
+          function (panoId) {
+            if (panoId === null) {
+              return;
+            }
+
+            roadviewPanel.style.display = "block";
+
+            setTimeout(function () {
+              roadview.relayout();
+              roadview.setPanoId(
+                panoId,
+                position
+              );
+            }, 0);
+          }
+        );
+      }
+
+      /*
+       * 로드뷰 창 닫기
+       * 파란색 로드뷰 도로는 유지
+       */
+      document.getElementById(
+        "roadviewClose"
+      ).onclick = function () {
+        closeRoadviewPanel();
+      };
+
+      function closeRoadviewPanel() {
+        roadviewPanel.style.display = "none";
+        roadviewPanel.classList.remove("fullscreen");
+        fullscreenBtn.textContent = "전체화면";
+      }
+
+      /*
+       * 로드뷰 전체화면
+       */
+      fullscreenBtn.onclick = function () {
+        const fullscreen =
+          roadviewPanel.classList.toggle(
+            "fullscreen"
+          );
+
+        fullscreenBtn.textContent =
+          fullscreen
+            ? "원래크기"
+            : "전체화면";
+
+        setTimeout(function () {
+          if (roadview) {
+            roadview.relayout();
+          }
+        }, 50);
+      };
+
+      /*
+       * ESC 키로 전체화면만 해제
+       */
+      document.addEventListener(
+        "keydown",
+        function (event) {
+          if (
+            event.key === "Escape" &&
+            roadviewPanel.classList.contains(
+              "fullscreen"
+            )
+          ) {
+            roadviewPanel.classList.remove(
+              "fullscreen"
+            );
+
+            fullscreenBtn.textContent =
+              "전체화면";
+
+            setTimeout(function () {
+              roadview.relayout();
+            }, 50);
+          }
+        }
+      );
+
+      /*
+       * 속성값 처리
+       */
+      function getNumber(properties, layerId) {
+        if (layerId === "city") {
+          return safe(properties.number);
+        }
+
+        return safe(
+          properties.number ||
+          properties.NUM
+        );
+      }
+
+      function getColor(properties, layerId) {
+        if (layerId === "city") {
+          return COLORS.CITY;
+        }
+
+        const type = String(
+          properties.GUBUN || ""
+        ).trim();
+
+        if (type === "면도") {
+          return COLORS.MYEON;
+        }
+
+        if (type === "리도") {
+          return COLORS.RI;
+        }
+
+        if (type === "농도") {
+          return COLORS.FARM;
+        }
+
+        return COLORS.OTHER;
+      }
+
+      function getStyleKey(properties, layerId) {
+        if (layerId === "city") return "CITY";
+
+        const type = String(properties.GUBUN || "").trim();
+
+        if (type === "면도") return "MYEON";
+        if (type === "리도") return "RI";
+        return "FARM";
+      }
+
+      function getRoadStatusKey(properties, layerId) {
+        if (layerId === "city") {
+          const status = String(properties["개설여부"] || "").trim();
+          if (status.includes("미개설")) return "UNOPENED";
+          return "NORMAL";
+        }
+
+        const status = String(properties.Opened || "").trim();
+        if (status.includes("미개설")) return "UNOPENED";
+        if (status.includes("미확장")) return "UNEXPANDED";
+        return "NORMAL";
+      }
+
+      function getStatusStrokeStyle(statusKey) {
+        if (statusKey === "UNOPENED") {
+          return STATUS_STYLES.UNOPENED_GAP;
+        }
+        if (statusKey === "UNEXPANDED") {
+          return STATUS_STYLES.UNEXPANDED;
+        }
+        return "solid";
+      }
+
+      function getRoadStrokeWeight(road, selected = false) {
+        const weight = road.statusKey === "UNOPENED"
+          ? STATUS_STYLES.UNOPENED_SIZE
+          : ROAD_STYLES[road.styleKey].top;
+
+        return weight + (selected ? 3 : 0);
+      }
+
+      function parseRoadLength(value) {
+        const number = Number(String(value ?? "").replace(/,/g, "").trim());
+        return Number.isFinite(number) ? number : 0;
+      }
+
+      function formatRoadLength(value) {
+        const rounded = Math.round((Number(value) + Number.EPSILON) * 1000) / 1000;
+        return rounded.toLocaleString("ko-KR", { maximumFractionDigits: 3 });
+      }
+
+      function safe(value) {
+        if (
+          value === undefined ||
+          value === null ||
+          String(value).trim() === ""
+        ) {
+          return "-";
+        }
+
+        return String(value);
+      }
+
+      function escapeHTML(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+    });
+  </script>
+</body>
+</html>
