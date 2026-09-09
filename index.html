@@ -1097,6 +1097,32 @@
       #mapTools { right: 8px; }
       #scaleControl { right: 8px; bottom: 8px; }
     }
+
+    /* 공간파일(GeoJSON / SHP) 불러오기 */
+    #spatialPanel {
+      display: none; position: absolute; top: 46px; right: 0; width: 360px;
+      max-height: calc(100vh - 80px); overflow: auto; background: rgba(255,255,255,.98);
+      border: 1px solid #bbb; border-radius: 8px; box-shadow: 0 3px 12px rgba(0,0,0,.22);
+      padding: 12px; box-sizing: border-box; color: #222; z-index: 50;
+    }
+    .spatial-title { font-weight: 700; font-size: 15px; margin-bottom: 5px; }
+    .spatial-note { font-size: 11px; line-height: 1.45; color: #666; margin-bottom: 10px; }
+    #spatialFileInput { display:none; }
+    #spatialOpenBtn { width:100%; padding:9px; border:1px solid #888; border-radius:5px; background:#f7f7f7; cursor:pointer; font-weight:700; }
+    #spatialOpenBtn:hover { background:#eee; }
+    #spatialLayerList { margin-top:10px; display:grid; gap:8px; }
+    .import-layer { border:1px solid #d4d4d4; border-radius:6px; padding:9px; background:#fff; }
+    .import-layer-head { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+    .import-layer-name { flex:1; min-width:0; font-size:12px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .import-delete { border:0; background:#eee; border-radius:4px; cursor:pointer; padding:3px 7px; }
+    .import-style-grid { display:grid; grid-template-columns:82px 1fr; gap:6px 8px; align-items:center; font-size:11px; }
+    .import-style-grid input[type="number"], .import-style-grid select { width:100%; box-sizing:border-box; }
+    .import-style-grid input[type="color"] { width:42px; height:26px; padding:1px; border:1px solid #aaa; }
+    .import-style-grid input[type="range"] { width:100%; }
+    .import-label-row { display:flex; gap:5px; align-items:center; }
+    .import-label-row select { flex:1; min-width:0; }
+    .import-status { font-size:11px; color:#555; margin-top:7px; }
+    .imported-map-label { white-space:nowrap; padding:2px 5px; border-radius:3px; background:rgba(255,255,255,.88); border:1px solid rgba(0,0,0,.25); font-weight:700; text-shadow:0 1px 1px #fff; pointer-events:none; }
   </style>
 </head>
 
@@ -1179,6 +1205,19 @@
     <div class="base-map-menu">
       <button id="normalBtn">지도</button>
       <button id="skyBtn" class="active">스카이뷰</button>
+    </div>
+
+
+    <!-- 공간파일 불러오기 -->
+    <div class="tool-wrap">
+      <button id="spatialBtn" class="tool-button" title="GeoJSON / SHP 불러오기">파일</button>
+      <div id="spatialPanel">
+        <div class="spatial-title">공간파일 불러오기</div>
+        <div class="spatial-note">GeoJSON(.geojson/.json), SHP ZIP 또는 SHP 세트(.shp+.shx+.dbf+.prj)를 선택할 수 있습니다. SHP 세트는 관련 파일을 한 번에 선택하세요.</div>
+        <button id="spatialOpenBtn" type="button">GeoJSON / SHP 파일 선택</button>
+        <input id="spatialFileInput" type="file" multiple accept=".geojson,.json,.zip,.shp,.shx,.dbf,.prj,.cpg">
+        <div id="spatialLayerList"></div>
+      </div>
     </div>
 
     <!-- 로드뷰 -->
@@ -1341,6 +1380,8 @@
     <div id="roadviewMiniMap" aria-label="로드뷰 현재 위치 지도"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/shpjs@latest/dist/shp.js"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=28421f6917a018f0097983c23e04865e&libraries=services&autoload=false"></script>
 
   <script>
@@ -2041,6 +2082,13 @@
       const layerPanel = document.getElementById("layerPanel");
       const styleBtn = document.getElementById("styleBtn");
       const stylePanel = document.getElementById("stylePanel");
+      const spatialBtn = document.getElementById("spatialBtn");
+      const spatialPanel = document.getElementById("spatialPanel");
+      const spatialOpenBtn = document.getElementById("spatialOpenBtn");
+      const spatialFileInput = document.getElementById("spatialFileInput");
+      const spatialLayerList = document.getElementById("spatialLayerList");
+      const importedLayers = new Map();
+      let importedLayerSeq = 0;
       const hybridCheck = document.getElementById("hybridCheck");
 
       const roadviewPanel =
@@ -2099,6 +2147,8 @@
 
         stylePanel.style.display = "none";
         styleBtn.classList.remove("active");
+        spatialPanel.style.display = "none";
+        spatialBtn.classList.remove("active");
       };
 
       layerPanel.onclick = function (event) {
@@ -2117,6 +2167,8 @@
         styleBtn.classList.toggle("active", !opened);
         layerPanel.style.display = "none";
         layerBtn.classList.remove("active");
+        spatialPanel.style.display = "none";
+        spatialBtn.classList.remove("active");
       };
 
       stylePanel.onclick = function (event) {
@@ -2128,7 +2180,142 @@
         layerBtn.classList.remove("active");
         stylePanel.style.display = "none";
         styleBtn.classList.remove("active");
+        spatialPanel.style.display = "none";
+        spatialBtn.classList.remove("active");
       });
+
+
+      spatialBtn.onclick = function (event) {
+        event.stopPropagation();
+        const opened = spatialPanel.style.display === "block";
+        spatialPanel.style.display = opened ? "none" : "block";
+        spatialBtn.classList.toggle("active", !opened);
+        layerPanel.style.display = "none"; layerBtn.classList.remove("active");
+        stylePanel.style.display = "none"; styleBtn.classList.remove("active");
+      };
+      spatialPanel.onclick = function (event) { event.stopPropagation(); };
+      spatialOpenBtn.onclick = function () { spatialFileInput.click(); };
+      spatialFileInput.onchange = async function () {
+        const files = Array.from(spatialFileInput.files || []);
+        if (!files.length) return;
+        try { await importSpatialFiles(files); }
+        catch (error) { console.error(error); alert("공간파일을 읽지 못했습니다.\n" + (error.message || error)); }
+        spatialFileInput.value = "";
+      };
+
+      async function importSpatialFiles(files) {
+        const geoFiles = files.filter(f => /\.(geojson|json)$/i.test(f.name));
+        const zipFiles = files.filter(f => /\.zip$/i.test(f.name));
+        const shpFiles = files.filter(f => /\.shp$/i.test(f.name));
+
+        for (const file of geoFiles) {
+          const data = JSON.parse(await file.text());
+          addImportedGeoJSON(file.name, data);
+        }
+        for (const file of zipFiles) {
+          if (typeof shp !== "function") throw new Error("SHP 해석 라이브러리를 불러오지 못했습니다.");
+          const data = await shp(await file.arrayBuffer());
+          addShpResult(file.name.replace(/\.zip$/i, ""), data);
+        }
+        if (shpFiles.length) {
+          if (typeof JSZip === "undefined" || typeof shp !== "function") throw new Error("SHP 해석 라이브러리를 불러오지 못했습니다.");
+          const byBase = new Map();
+          files.filter(f => /\.(shp|shx|dbf|prj|cpg)$/i.test(f.name)).forEach(function(file) {
+            const base = file.name.replace(/\.[^.]+$/, "").toLowerCase();
+            if (!byBase.has(base)) byBase.set(base, []);
+            byBase.get(base).push(file);
+          });
+          for (const [base, setFiles] of byBase) {
+            if (!setFiles.some(f => /\.shp$/i.test(f.name))) continue;
+            const zip = new JSZip();
+            for (const file of setFiles) zip.file(file.name, await file.arrayBuffer());
+            const packed = await zip.generateAsync({type:"arraybuffer"});
+            addShpResult(setFiles.find(f => /\.shp$/i.test(f.name)).name.replace(/\.shp$/i,""), await shp(packed));
+          }
+        }
+        if (!geoFiles.length && !zipFiles.length && !shpFiles.length) throw new Error("지원되는 GeoJSON 또는 SHP 파일이 없습니다.");
+      }
+
+      function addShpResult(name, data) {
+        if (Array.isArray(data)) data.forEach((item, i) => addImportedGeoJSON(item.fileName || (name + " " + (i+1)), item));
+        else addImportedGeoJSON(name, data);
+      }
+
+      function addImportedGeoJSON(name, data) {
+        if (data && data.type === "Feature") data = {type:"FeatureCollection", features:[data]};
+        if (!data || !Array.isArray(data.features)) throw new Error(name + ": FeatureCollection 형식이 아닙니다.");
+        const supported = data.features.filter(f => importedGeometryLines(f.geometry).length);
+        if (!supported.length) throw new Error(name + ": 표시할 선(LineString/MultiLineString/Polygon)이 없습니다.");
+        const id = "import-" + (++importedLayerSeq);
+        const fields = Array.from(new Set(supported.flatMap(f => Object.keys(f.properties || {}))));
+        const layer = { id, name, features:supported, fields, visible:true, color:"#ff3b30", weight:4, opacity:90, strokeStyle:"solid", labelField:"", labelSize:12, shapes:[], labels:[], bounds:new kakao.maps.LatLngBounds() };
+        importedLayers.set(id, layer);
+        drawImportedLayer(layer);
+        renderImportedLayerControls(layer);
+        if (!layer.bounds.isEmpty()) map.setBounds(layer.bounds);
+      }
+
+      function importedGeometryLines(geometry) {
+        if (!geometry) return [];
+        if (geometry.type === "LineString") return [geometry.coordinates];
+        if (geometry.type === "MultiLineString") return geometry.coordinates;
+        if (geometry.type === "Polygon") return geometry.coordinates;
+        if (geometry.type === "MultiPolygon") return geometry.coordinates.flat();
+        return [];
+      }
+
+      function clearImportedGraphics(layer) {
+        layer.shapes.forEach(x => x.setMap(null));
+        layer.labels.forEach(x => x.setMap(null));
+        layer.shapes=[]; layer.labels=[];
+      }
+
+      function drawImportedLayer(layer) {
+        clearImportedGraphics(layer);
+        layer.bounds = new kakao.maps.LatLngBounds();
+        layer.features.forEach(function(feature) {
+          const lines = importedGeometryLines(feature.geometry);
+          lines.forEach(function(coords) {
+            const path = coords.map(function(c) {
+              const n=normalizeCoordinate(c); const pos=new kakao.maps.LatLng(n[1],n[0]); layer.bounds.extend(pos); return pos;
+            }).filter(Boolean);
+            if (path.length < 2) return;
+            const line = new kakao.maps.Polyline({map:layer.visible?map:null,path,strokeWeight:layer.weight,strokeColor:layer.color,strokeOpacity:layer.opacity/100,strokeStyle:layer.strokeStyle,zIndex:7});
+            layer.shapes.push(line);
+          });
+          if (layer.labelField) addImportedLabel(layer, feature, lines);
+        });
+      }
+
+      function addImportedLabel(layer, feature, lines) {
+        const value=(feature.properties||{})[layer.labelField];
+        if (value===undefined || value===null || String(value).trim()==="") return;
+        const longest=lines.reduce((a,b)=>b.length>a.length?b:a,[]); if(!longest.length)return;
+        const c=normalizeCoordinate(longest[Math.floor(longest.length/2)]);
+        const label=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(c[1],c[0]),content:'<div class="imported-map-label" style="font-size:'+layer.labelSize+'px">'+escapeHTML(value)+'</div>',xAnchor:.5,yAnchor:.5,zIndex:8});
+        label.setMap(layer.visible?map:null); layer.labels.push(label);
+      }
+
+      function renderImportedLayerControls(layer) {
+        const box=document.createElement("div"); box.className="import-layer"; box.dataset.layerId=layer.id;
+        const options=['<option value="">라벨 없음</option>'].concat(layer.fields.map(f=>'<option value="'+escapeHTML(f)+'">'+escapeHTML(f)+'</option>')).join("");
+        box.innerHTML='<div class="import-layer-head"><input class="imp-visible" type="checkbox" checked><span class="import-layer-name" title="'+escapeHTML(layer.name)+'">'+escapeHTML(layer.name)+'</span><button class="import-delete" type="button">삭제</button></div>'+ 
+          '<div class="import-style-grid"><span>선 색상</span><input class="imp-color" type="color" value="'+layer.color+'">'+
+          '<span>선 두께</span><input class="imp-weight" type="number" min="1" max="30" value="'+layer.weight+'">'+
+          '<span>투명도</span><input class="imp-opacity" type="range" min="0" max="100" step="5" value="'+layer.opacity+'">'+
+          '<span>선 모양</span><select class="imp-stroke"><option value="solid">실선</option><option value="shortdash">짧은 대시</option><option value="dash">대시</option><option value="longdash">긴 대시</option><option value="dot">점선</option></select>'+ 
+          '<span>라벨 필드</span><select class="imp-label">'+options+'</select>'+ 
+          '<span>라벨 크기</span><input class="imp-label-size" type="number" min="8" max="40" value="12"></div><div class="import-status">'+layer.features.length.toLocaleString('ko-KR')+'개 객체</div>';
+        spatialLayerList.prepend(box);
+        const redraw=function(){
+          layer.visible=box.querySelector('.imp-visible').checked; layer.color=box.querySelector('.imp-color').value;
+          layer.weight=Math.max(1,Math.min(30,Number(box.querySelector('.imp-weight').value)||4)); layer.opacity=Number(box.querySelector('.imp-opacity').value);
+          layer.strokeStyle=box.querySelector('.imp-stroke').value; layer.labelField=box.querySelector('.imp-label').value;
+          layer.labelSize=Math.max(8,Math.min(40,Number(box.querySelector('.imp-label-size').value)||12)); drawImportedLayer(layer);
+        };
+        box.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',redraw));
+        box.querySelector('.import-delete').onclick=function(){clearImportedGraphics(layer); importedLayers.delete(layer.id); box.remove();};
+      }
 
       initStylePanel();
 
