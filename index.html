@@ -3280,12 +3280,15 @@
               poly.setMap(map);
             });
             (otherGroup.hitPolygons || []).forEach(function(poly) {
-              poly.setMap(map);
+              poly.setMap(otherGroup.hoverDismissed ? null : map);
             });
             if (otherGroup.label) {
               otherGroup.label.setMap(map);
             }
           });
+
+          updateTownshipLabelPointerEvents();
+          resetTownshipStyles();
         }, 0);
 
         // 선택 면 색상은 한 번만 보여주고 이후 경계선만 유지
@@ -3500,6 +3503,8 @@
       }
 
       function restoreInteractionLayers() {
+        activeTownshipHoverGroup = null;
+        map.setCursor("");
         updateBoundaryVisibility();
 
         if (BOUNDARY_LAYERS.townshipBoundary.visible) {
@@ -3621,6 +3626,7 @@
               if (road.hitLine && !road.hitLine.getMap()) {
                 road.hitLine.setMap(map);
               }
+              road._visible = true;
             });
 
             updateLabels();
@@ -3783,42 +3789,9 @@
         }
       }
 
-      // Windows에서는 드래그가 시작되기 전에 사용자 도형을 먼저 내려
-      // 첫 프레임부터 카카오 기본지도만 움직이게 한다.
+      // 지도 클릭 대상(읍면/노선)을 보존하기 위해 pointerdown에서는
+      // 사용자 도형을 숨기지 않고 실제 dragstart가 발생한 뒤에만 경량 모드로 전환함.
       const performanceMapElement = document.getElementById("map");
-
-      function prepareWindowsPanFastMode(event) {
-        if (!IS_WINDOWS) return;
-        if (event && event.button !== undefined && event.button !== 0) return;
-        if (measureMode || roadviewMode) return;
-        if (windowsPanPrepared || windowsZoomFastMode) return;
-
-        windowsPanPrepared = true;
-        windowsDragFastMode = true;
-        document.body.classList.add("map-interacting");
-        hideAllRoadsForWindowsPan();
-      }
-
-      performanceMapElement.addEventListener(
-        "pointerdown",
-        prepareWindowsPanFastMode,
-        { capture: true, passive: true }
-      );
-
-
-      performanceMapElement.addEventListener(
-        "pointerup",
-        function() {
-          if (!IS_WINDOWS || !windowsPanPrepared) return;
-
-          // 실제 지도 이동이 없었던 단순 클릭은 idle이 발생하지 않을 수 있어 즉시 복원.
-          setTimeout(function() {
-            if (!windowsPanPrepared) return;
-            refreshMapAfterInteraction();
-          }, 60);
-        },
-        { capture: true, passive: true }
-      );
 
       // Windows에서는 wheel 확대/축소가 시작되기 직전에 사용자 도형을 숨긴다.
       // Kakao 기본지도만 확대되므로 SVG/Overlay 변환 비용이 크게 줄어든다.
@@ -3835,20 +3808,34 @@
       }, true);
 
       kakao.maps.event.addListener(map, "dragstart", function() {
+        // 드래그 시작 시 남아 있던 읍면 hover 강조를 정상 상태로 되돌림.
+        if (activeTownshipHoverGroup) {
+          if (selectedTownshipName === activeTownshipHoverGroup.name) {
+            setTownshipGroupStyle(activeTownshipHoverGroup, "selected");
+          } else {
+            setTownshipGroupStyle(activeTownshipHoverGroup, "normal");
+          }
+          activeTownshipHoverGroup = null;
+          map.setCursor("");
+        }
+
         if (!IS_WINDOWS) {
           hideLayerLabelsForInteraction();
           return;
         }
 
-        if (!windowsPanPrepared) {
-          windowsPanPrepared = true;
-          windowsDragFastMode = true;
-          document.body.classList.add("map-interacting");
-          hideAllRoadsForWindowsPan();
-        }
+        windowsPanPrepared = true;
+        windowsDragFastMode = true;
+        document.body.classList.add("map-interacting");
+
+        // 실제 화면 이동이 시작된 뒤에만 숨김.
+        // 단순 클릭은 이 코드가 실행되지 않으므로 읍면/노선 선택 이벤트가 유지됨.
+        hideAllRoadsForWindowsPan();
       });
 
       kakao.maps.event.addListener(map, "dragend", function() {
+        activeTownshipHoverGroup = null;
+        map.setCursor("");
         // 전체 복원은 idle에서 한 번만 수행.
       });
 
