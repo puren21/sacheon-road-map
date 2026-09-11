@@ -3326,6 +3326,27 @@
       document.getElementById("cityOverviewBtn").onclick = showTownshipOverview;
 
       let currentScaleDenominator = null;
+      let lastRoadScaleTier = null;
+      let lastBoundaryVisibilitySignature = "";
+      let lastDongLabelVisible = null;
+
+      function getRoadScaleTier(scale) {
+        if (!Number.isFinite(scale)) return "init";
+        if (scale >= 100000) return "100k+";
+        if (scale >= 50000) return "50k-100k";
+        if (scale >= 25000) return "25k-50k";
+        return "under25k";
+      }
+
+      function getBoundaryVisibilitySignature() {
+        return Object.keys(BOUNDARY_LAYERS).map(function(layerId) {
+          const layer = BOUNDARY_LAYERS[layerId];
+          const scaleVisible =
+            !Number.isFinite(currentScaleDenominator) ||
+            currentScaleDenominator <= layer.maxScale;
+          return layerId + ":" + (layer.visible && scaleVisible ? "1" : "0");
+        }).join("|");
+      }
 
       function updateScale() {
         const mapElement = document.getElementById("map");
@@ -3354,13 +3375,30 @@
         document.getElementById("scaleRatio").textContent =
           "축척 1:" + denominator.toLocaleString("ko-KR");
 
-        // 축척이 바뀔 때 도로선과 라벨을 반드시 함께 갱신함.
-        applyRoadVisibility();
-        updateLabels();
-        updateBoundaryVisibility();
-        resetTownshipStyles();
-        updateRiLabelVisibility();
-        updateTownshipLabelVisibility();
+        // 도로 표시/투명도 규칙이 실제로 달라지는 축척 단계에서만 전체 갱신.
+        const roadTier = getRoadScaleTier(currentScaleDenominator);
+        if (roadTier !== lastRoadScaleTier) {
+          lastRoadScaleTier = roadTier;
+          applyRoadVisibility();
+          updateLabels();
+        }
+
+        // 행정경계도 실제 표시 여부가 바뀔 때만 갱신.
+        const boundarySignature = getBoundaryVisibilitySignature();
+        if (boundarySignature !== lastBoundaryVisibilitySignature) {
+          lastBoundaryVisibilitySignature = boundarySignature;
+          updateBoundaryVisibility();
+        }
+
+        // 동 명칭은 1:61,000 경계 통과시에만 다시 갱신.
+        const dongLabelVisible =
+          Number.isFinite(currentScaleDenominator) &&
+          currentScaleDenominator <= 61000;
+
+        if (dongLabelVisible !== lastDongLabelVisible) {
+          lastDongLabelVisible = dongLabelVisible;
+          updateTownshipLabelVisibility();
+        }
       }
 
       function distanceMeters(a, b) {
@@ -3403,6 +3441,42 @@
       installTownshipHoverDismissClick();
       watchPopupSafeAreaChanges();
 
+      let roadInteractionLightMode = false;
+
+      function enterRoadInteractionLightMode() {
+        if (roadInteractionLightMode) return;
+        roadInteractionLightMode = true;
+
+        allRoads.forEach(function(road) {
+          if (road.hitLine) road.hitLine.setMap(null);
+          if (road.selectionInnerLine) road.selectionInnerLine.setMap(null);
+        });
+      }
+
+      function exitRoadInteractionLightMode() {
+        if (!roadInteractionLightMode) return;
+        roadInteractionLightMode = false;
+
+        allRoads.forEach(function(road) {
+          const visible =
+            LAYERS[road.layerId].visible &&
+            roadStatusFilters[road.statusKey] &&
+            isRoadLayerVisibleAtScale(road.layerId);
+
+          if (road.hitLine) {
+            road.hitLine.setMap(visible ? map : null);
+          }
+
+          if (road.selectionInnerLine) {
+            road.selectionInnerLine.setMap(visible ? map : null);
+          }
+        });
+
+        if (selectedRoadGroupKey) {
+          setRoadGroupHighlight(selectedRoadGroupKey, true);
+        }
+      }
+
       kakao.maps.event.addListener(map, "idle", updateScale);
 
       kakao.maps.event.addListener(map, "center_changed", function() {
@@ -3412,6 +3486,8 @@
       });
 
       kakao.maps.event.addListener(map, "bounds_changed", function() {
+        enterRoadInteractionLightMode();
+
         if (roadPopupOverlay) {
           scheduleRoadPopupSafeViewportCheck();
         }
@@ -3419,21 +3495,20 @@
 
       kakao.maps.event.addListener(map, "zoom_changed", function() {
         setTimeout(function() {
-          if (selectedRoadGroupKey) {
-            setRoadGroupHighlight(selectedRoadGroupKey, true);
-          }
           restoreSelectedRoadPopup();
           scheduleRoadPopupSafeViewportCheck();
         }, 0);
 
-        // 줌 렌더링이 끝난 뒤 한 번 더 확인하여 사라진 팝업을 확실히 복구.
+        // 줌 렌더링이 끝난 뒤 팝업만 한 번 더 확인.
         setTimeout(function() {
           restoreSelectedRoadPopup();
           scheduleRoadPopupSafeViewportCheck();
-        }, 180);
+        }, 160);
       });
 
       kakao.maps.event.addListener(map, "idle", function() {
+        exitRoadInteractionLightMode();
+
         if (selectedRoadGroupKey) {
           setRoadGroupHighlight(selectedRoadGroupKey, true);
         }
@@ -4034,10 +4109,19 @@
         }
       }
 
+      let basePlaceViewportCheckPending = false;
+
       function scheduleBasePlacePopupViewportCheck() {
+        if (basePlaceViewportCheckPending) return;
+        basePlaceViewportCheckPending = true;
+
         requestAnimationFrame(function() {
           keepBasePlacePopupInViewport();
-          requestAnimationFrame(keepBasePlacePopupInViewport);
+
+          requestAnimationFrame(function() {
+            keepBasePlacePopupInViewport();
+            basePlaceViewportCheckPending = false;
+          });
         });
       }
 
@@ -5900,7 +5984,7 @@
         let lastError = null;
         for (const file of fileCandidates) {
           try {
-            const response = await fetch(encodeURI(file), { cache: "no-store" });
+            const response = await fetch(encodeURI(file), { cache: "default" });
             if (!response.ok) throw new Error(file + " HTTP " + response.status);
             const data = await response.json();
             if (!data || data.type !== "FeatureCollection" || !Array.isArray(data.features)) {
@@ -5982,7 +6066,7 @@
 
       async function loadGeoJSON(layerId) {
         const response =
-          await fetch(LAYERS[layerId].file);
+          await fetch(LAYERS[layerId].file, { cache: "default" });
 
         if (!response.ok) {
           throw new Error(
@@ -6873,7 +6957,12 @@
         }
       }
 
+      let roadPopupViewportCheckPending = false;
+
       function scheduleRoadPopupSafeViewportCheck() {
+        if (roadPopupViewportCheckPending) return;
+        roadPopupViewportCheckPending = true;
+
         requestAnimationFrame(function() {
           // 지도 이동/확대축소/창 크기 변경 후에도 항상 우상단 위치로 복귀
           placeRoadPopupTopRight();
@@ -6882,6 +6971,7 @@
           requestAnimationFrame(function() {
             placeRoadPopupTopRight();
             keepRoadPopupInSafeViewport();
+            roadPopupViewportCheckPending = false;
           });
         });
       }
