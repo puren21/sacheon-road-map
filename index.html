@@ -2021,11 +2021,6 @@
       text-overflow: clip !important;
     }
 
-    /* Windows Chromium/Safari 계열 확대·축소 시 합성 레이어 안정화 */
-    #map {
-      transform: translateZ(0);
-      backface-visibility: hidden;
-    }
 
     @media (prefers-reduced-motion: no-preference) {
       body.windows-performance-mode .road-label,
@@ -3536,13 +3531,31 @@
       }
 
       function hideAllRoadsForWindowsPan() {
+        // 이동/확대축소 중에도 본선(roadLine)은 계속 유지함.
+        // 무거운 장식선/클릭선/라벨/경계만 잠시 제거.
         allRoads.forEach(function(road) {
-          [road.baseLine, road.roadLine, road.hitLine, road.selectionInnerLine]
-            .forEach(function(line) {
-              if (line && line.getMap()) {
-                line.setMap(null);
-              }
+          if (!road._visible) return;
+
+          if (road.baseLine && road.baseLine.getMap()) {
+            road.baseLine.setMap(null);
+          }
+          if (road.hitLine && road.hitLine.getMap()) {
+            road.hitLine.setMap(null);
+          }
+          if (road.selectionInnerLine && road.selectionInnerLine.getMap()) {
+            road.selectionInnerLine.setMap(null);
+          }
+
+          if (road.roadLine && !road.roadLine.getMap()) {
+            road.roadLine.setMap(map);
+          }
+
+          // 조작 중에는 본선만 조금 얇게 유지
+          if (road.roadLine) {
+            road.roadLine.setOptions({
+              strokeWeight: Math.max(2.2, getRoadStrokeWeight(road) - 0.7)
             });
+          }
         });
 
         hideLayerLabelsForInteraction();
@@ -3576,14 +3589,13 @@
         const viewport = getBufferedViewportBox();
         const visualTier = getRoadScaleTier(currentScaleDenominator);
         const pathTier = getRoadPathTier();
-
         const visibleRoads = [];
 
         allRoads.forEach(function(road) {
           const visible = roadShouldBeVisibleNow(road, viewport);
-          road._visible = visible;
 
           if (!visible) {
+            road._visible = false;
             [road.baseLine, road.roadLine, road.hitLine, road.selectionInnerLine]
               .forEach(function(line) {
                 if (line && line.getMap()) line.setMap(null);
@@ -3591,65 +3603,47 @@
             return;
           }
 
+          road._visible = true;
           applyRoadPathTier(road, pathTier);
 
-          // 1단계: 본선만 먼저 표시
+          // 본선은 즉시 표시
           if (road.roadLine && !road.roadLine.getMap()) {
             road.roadLine.setMap(map);
           }
 
-          if (road.baseLine && road.baseLine.getMap()) road.baseLine.setMap(null);
-          if (road.hitLine && road.hitLine.getMap()) road.hitLine.setMap(null);
-          if (road.selectionInnerLine && road.selectionInnerLine.getMap()) {
-            road.selectionInnerLine.setMap(null);
-          }
-
           applyRoadNormalVisualStyle(road);
           road._visualTier = visualTier;
+
+          // 외곽선과 흰 중앙선도 같은 갱신에서 즉시 복원
+          if (road.baseLine && !road.baseLine.getMap()) {
+            road.baseLine.setMap(map);
+          }
+          if (road.selectionInnerLine && !road.selectionInnerLine.getMap()) {
+            road.selectionInnerLine.setMap(map);
+          }
+
           visibleRoads.push(road);
         });
 
-        // 2단계: 외곽선 + 중앙 흰선
+        // 클릭용 투명선과 라벨만 다음 프레임에 복원.
+        // requestIdleCallback을 사용하지 않아 늦게 뜨는 현상 제거.
         requestAnimationFrame(function() {
-          if (token !== deferredRoadRestoreToken || windowsDragFastMode || windowsZoomFastMode) {
-            return;
-          }
+          if (
+            token !== deferredRoadRestoreToken ||
+            windowsDragFastMode ||
+            windowsZoomFastMode
+          ) return;
 
           visibleRoads.forEach(function(road) {
-            if (road.baseLine && !road.baseLine.getMap()) {
-              road.baseLine.setMap(map);
-            }
-            if (road.selectionInnerLine && !road.selectionInnerLine.getMap()) {
-              road.selectionInnerLine.setMap(map);
+            if (road.hitLine && !road.hitLine.getMap()) {
+              road.hitLine.setMap(map);
             }
           });
 
-          // 3단계: 클릭용 투명선 + 라벨은 브라우저가 한가할 때 복원
-          const finish = function() {
-            if (
-              token !== deferredRoadRestoreToken ||
-              windowsDragFastMode ||
-              windowsZoomFastMode
-            ) return;
+          updateLabels();
 
-            visibleRoads.forEach(function(road) {
-              if (road.hitLine && !road.hitLine.getMap()) {
-                road.hitLine.setMap(map);
-              }
-              road._visible = true;
-            });
-
-            updateLabels();
-
-            if (selectedRoadGroupKey) {
-              setRoadGroupHighlight(selectedRoadGroupKey, true);
-            }
-          };
-
-          if ("requestIdleCallback" in window) {
-            requestIdleCallback(finish, { timeout: 120 });
-          } else {
-            setTimeout(finish, 35);
+          if (selectedRoadGroupKey) {
+            setRoadGroupHighlight(selectedRoadGroupKey, true);
           }
         });
       }
@@ -3707,7 +3701,12 @@
           return;
         }
 
-        invalidateRoadVisibilityCache();
+        // 본선은 유지하고 있으므로 전체 캐시 초기화를 하지 않음.
+        Object.values(LAYERS).forEach(function(layer) {
+          layer.labels.forEach(function(labelItem) {
+            labelItem._visible = false;
+          });
+        });
       }
 
       function setRoadZoomLightMode(enabled) {
@@ -3777,7 +3776,6 @@
         updateScale();
 
         if (IS_WINDOWS && (wasWindowsDragFastMode || wasWindowsZoomFastMode)) {
-          invalidateRoadVisibilityCache();
           restoreInteractionLayers();
           restoreRoadsInStages();
         } else {
@@ -6043,8 +6041,8 @@
 
         const latSpan = Math.max(0.00001, ne.getLat() - sw.getLat());
         const lngSpan = Math.max(0.00001, ne.getLng() - sw.getLng());
-        const padLat = latSpan * 0.02;
-        const padLng = lngSpan * 0.02;
+        const padLat = latSpan * 0.08;
+        const padLng = lngSpan * 0.08;
 
         return {
           minLat: sw.getLat() - padLat,
@@ -6752,7 +6750,7 @@
         const hitLine = new kakao.maps.Polyline({
           map: null,
           path: displayPath,
-          strokeWeight: Math.max(12, style.base + 6),
+          strokeWeight: Math.max(10, style.base + 4),
           strokeColor: "#000000",
           strokeOpacity: 0.01,
           strokeStyle: "solid",
