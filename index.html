@@ -3461,6 +3461,8 @@
       }
       let windowsZoomFastMode = false;
       let windowsDragFastMode = false;
+      let windowsPanPrepared = false;
+      let deferredRoadRestoreToken = 0;
       let zoomLightMode = false;
       let zoomRestoreTimer = null;
 
@@ -3518,6 +3520,124 @@
         }
       }
 
+      function hideAllRoadsForWindowsPan() {
+        allRoads.forEach(function(road) {
+          [road.baseLine, road.roadLine, road.hitLine, road.selectionInnerLine]
+            .forEach(function(line) {
+              if (line && line.getMap()) {
+                line.setMap(null);
+              }
+            });
+        });
+
+        hideLayerLabelsForInteraction();
+        hideBoundaryLayersForInteraction();
+      }
+
+      function invalidateRoadVisibilityCache() {
+        allRoads.forEach(function(road) {
+          road._visible = false;
+          road._visualTier = null;
+        });
+
+        Object.values(LAYERS).forEach(function(layer) {
+          layer.labels.forEach(function(labelItem) {
+            labelItem._visible = false;
+          });
+        });
+      }
+
+      function roadShouldBeVisibleNow(road, viewport) {
+        return (
+          LAYERS[road.layerId].visible &&
+          roadStatusFilters[road.statusKey] &&
+          isRoadLayerVisibleAtScale(road.layerId) &&
+          extentIntersectsViewport(road.extent, viewport)
+        );
+      }
+
+      function restoreRoadsInStages() {
+        const token = ++deferredRoadRestoreToken;
+        const viewport = getBufferedViewportBox();
+        const visualTier = getRoadScaleTier(currentScaleDenominator);
+        const pathTier = getRoadPathTier();
+
+        const visibleRoads = [];
+
+        allRoads.forEach(function(road) {
+          const visible = roadShouldBeVisibleNow(road, viewport);
+          road._visible = visible;
+
+          if (!visible) {
+            [road.baseLine, road.roadLine, road.hitLine, road.selectionInnerLine]
+              .forEach(function(line) {
+                if (line && line.getMap()) line.setMap(null);
+              });
+            return;
+          }
+
+          applyRoadPathTier(road, pathTier);
+
+          // 1단계: 본선만 먼저 표시
+          if (road.roadLine && !road.roadLine.getMap()) {
+            road.roadLine.setMap(map);
+          }
+
+          if (road.baseLine && road.baseLine.getMap()) road.baseLine.setMap(null);
+          if (road.hitLine && road.hitLine.getMap()) road.hitLine.setMap(null);
+          if (road.selectionInnerLine && road.selectionInnerLine.getMap()) {
+            road.selectionInnerLine.setMap(null);
+          }
+
+          applyRoadNormalVisualStyle(road);
+          road._visualTier = visualTier;
+          visibleRoads.push(road);
+        });
+
+        // 2단계: 외곽선 + 중앙 흰선
+        requestAnimationFrame(function() {
+          if (token !== deferredRoadRestoreToken || windowsDragFastMode || windowsZoomFastMode) {
+            return;
+          }
+
+          visibleRoads.forEach(function(road) {
+            if (road.baseLine && !road.baseLine.getMap()) {
+              road.baseLine.setMap(map);
+            }
+            if (road.selectionInnerLine && !road.selectionInnerLine.getMap()) {
+              road.selectionInnerLine.setMap(map);
+            }
+          });
+
+          // 3단계: 클릭용 투명선 + 라벨은 브라우저가 한가할 때 복원
+          const finish = function() {
+            if (
+              token !== deferredRoadRestoreToken ||
+              windowsDragFastMode ||
+              windowsZoomFastMode
+            ) return;
+
+            visibleRoads.forEach(function(road) {
+              if (road.hitLine && !road.hitLine.getMap()) {
+                road.hitLine.setMap(map);
+              }
+            });
+
+            updateLabels();
+
+            if (selectedRoadGroupKey) {
+              setRoadGroupHighlight(selectedRoadGroupKey, true);
+            }
+          };
+
+          if ("requestIdleCallback" in window) {
+            requestIdleCallback(finish, { timeout: 120 });
+          } else {
+            setTimeout(finish, 35);
+          }
+        });
+      }
+
       function hideRoadDecorationForInteraction() {
         allRoads.forEach(function(road) {
           if (!road._visible) return;
@@ -3566,30 +3686,12 @@
         windowsZoomFastMode = enabled;
 
         if (enabled) {
-          allRoads.forEach(function(road) {
-            [road.baseLine, road.roadLine, road.hitLine, road.selectionInnerLine]
-              .forEach(function(line) {
-                if (line && line.getMap()) line.setMap(null);
-              });
-          });
-
-          hideLayerLabelsForInteraction();
-          hideBoundaryLayersForInteraction();
+          deferredRoadRestoreToken += 1;
+          hideAllRoadsForWindowsPan();
           return;
         }
 
-        allRoads.forEach(function(road) {
-          road._visible = false;
-          road._visualTier = null;
-        });
-
-        Object.values(LAYERS).forEach(function(layer) {
-          layer.labels.forEach(function(labelItem) {
-            labelItem._visible = false;
-          });
-        });
-
-        restoreInteractionLayers();
+        invalidateRoadVisibilityCache();
       }
 
       function setRoadZoomLightMode(enabled) {
@@ -3646,25 +3748,29 @@
 
       function refreshMapAfterInteraction() {
         document.body.classList.remove("map-interacting");
+
         const wasWindowsDragFastMode = windowsDragFastMode;
+        const wasWindowsZoomFastMode = windowsZoomFastMode;
 
         setWindowsZoomFastMode(false);
         setRoadZoomLightMode(false);
 
         windowsDragFastMode = false;
+        windowsPanPrepared = false;
 
         updateScale();
-        applyRoadVisibility();
 
-        if (wasWindowsDragFastMode && IS_WINDOWS) {
-          restoreRoadDecorationAfterInteraction();
+        if (IS_WINDOWS && (wasWindowsDragFastMode || wasWindowsZoomFastMode)) {
+          invalidateRoadVisibilityCache();
           restoreInteractionLayers();
-        }
+          restoreRoadsInStages();
+        } else {
+          applyRoadVisibility();
+          updateLabels();
 
-        updateLabels();
-
-        if (selectedRoadGroupKey) {
-          setRoadGroupHighlight(selectedRoadGroupKey, true);
+          if (selectedRoadGroupKey) {
+            setRoadGroupHighlight(selectedRoadGroupKey, true);
+          }
         }
 
         restoreSelectedRoadPopup();
@@ -3677,12 +3783,49 @@
         }
       }
 
-      // Windows에서는 wheel 확대/축소가 시작되기 직전에 사용자 도형을 숨긴다.
-      // Kakao 기본지도만 확대되므로 SVG/Overlay 변환 비용이 크게 줄어든다.
+      // Windows에서는 드래그가 시작되기 전에 사용자 도형을 먼저 내려
+      // 첫 프레임부터 카카오 기본지도만 움직이게 한다.
       const performanceMapElement = document.getElementById("map");
 
+      function prepareWindowsPanFastMode(event) {
+        if (!IS_WINDOWS) return;
+        if (event && event.button !== undefined && event.button !== 0) return;
+        if (measureMode || roadviewMode) return;
+        if (windowsPanPrepared || windowsZoomFastMode) return;
+
+        windowsPanPrepared = true;
+        windowsDragFastMode = true;
+        document.body.classList.add("map-interacting");
+        hideAllRoadsForWindowsPan();
+      }
+
+      performanceMapElement.addEventListener(
+        "pointerdown",
+        prepareWindowsPanFastMode,
+        { capture: true, passive: true }
+      );
+
+
+      performanceMapElement.addEventListener(
+        "pointerup",
+        function() {
+          if (!IS_WINDOWS || !windowsPanPrepared) return;
+
+          // 실제 지도 이동이 없었던 단순 클릭은 idle이 발생하지 않을 수 있어 즉시 복원.
+          setTimeout(function() {
+            if (!windowsPanPrepared) return;
+            refreshMapAfterInteraction();
+          }, 60);
+        },
+        { capture: true, passive: true }
+      );
+
+      // Windows에서는 wheel 확대/축소가 시작되기 직전에 사용자 도형을 숨긴다.
+      // Kakao 기본지도만 확대되므로 SVG/Overlay 변환 비용이 크게 줄어든다.
       performanceMapElement.addEventListener("wheel", function() {
         if (!IS_WINDOWS) return;
+        document.body.classList.add("map-interacting");
+        deferredRoadRestoreToken += 1;
         setWindowsZoomFastMode(true);
       }, { capture: true, passive: true });
 
@@ -3692,19 +3835,16 @@
       }, true);
 
       kakao.maps.event.addListener(map, "dragstart", function() {
-        hideLayerLabelsForInteraction();
+        if (!IS_WINDOWS) {
+          hideLayerLabelsForInteraction();
+          return;
+        }
 
-        if (IS_WINDOWS) {
+        if (!windowsPanPrepared) {
+          windowsPanPrepared = true;
           windowsDragFastMode = true;
           document.body.classList.add("map-interacting");
-
-          allRoads.forEach(function(road) {
-            if (!road._visible) return;
-            applyRoadPathTier(road, "coarse");
-          });
-
-          hideRoadDecorationForInteraction();
-          hideBoundaryLayersForInteraction();
+          hideAllRoadsForWindowsPan();
         }
       });
 
@@ -5906,8 +6046,8 @@
 
         const latSpan = Math.max(0.00001, ne.getLat() - sw.getLat());
         const lngSpan = Math.max(0.00001, ne.getLng() - sw.getLng());
-        const padLat = latSpan * 0.04;
-        const padLng = lngSpan * 0.04;
+        const padLat = latSpan * 0.02;
+        const padLng = lngSpan * 0.02;
 
         return {
           minLat: sw.getLat() - padLat,
