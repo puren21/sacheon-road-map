@@ -2036,6 +2036,11 @@
       }
     }
 
+    body.windows-performance-mode.map-interacting .road-label,
+    body.windows-performance-mode.map-interacting .township-select-label {
+      visibility: hidden !important;
+    }
+
   </style>
 </head>
 
@@ -3455,72 +3460,46 @@
         document.body.classList.add("windows-performance-mode");
       }
       let windowsZoomFastMode = false;
-      let windowsZoomRestorePending = false;
+      let windowsDragFastMode = false;
       let zoomLightMode = false;
       let zoomRestoreTimer = null;
 
-      function setWindowsZoomFastMode(enabled) {
-        if (!IS_WINDOWS) return;
-        if (windowsZoomFastMode === enabled) return;
-
-        windowsZoomFastMode = enabled;
-
-        if (enabled) {
-          // Windows 확대/축소 중에는 사용자 도형을 전부 내려 기본지도 렌더링만 남김.
-          allRoads.forEach(function(road) {
-            [road.baseLine, road.roadLine, road.hitLine, road.selectionInnerLine]
-              .forEach(function(line) {
-                if (line && line.getMap()) line.setMap(null);
-              });
-          });
-
-          Object.values(LAYERS).forEach(function(layer) {
-            layer.labels.forEach(function(labelItem) {
-              if (labelItem.overlay.getMap()) {
-                labelItem.overlay.setMap(null);
-              }
-            });
-          });
-
-          Object.values(BOUNDARY_LAYERS).forEach(function(layer) {
-            layer.shapes.forEach(function(shape) {
-              if (shape.getMap()) shape.setMap(null);
-            });
-          });
-
-          townshipSelectGroups.forEach(function(group) {
-            group.polygons.forEach(function(poly) {
-              if (poly.getMap()) poly.setMap(null);
-            });
-            (group.skyBackPolygons || []).forEach(function(poly) {
-              if (poly.getMap()) poly.setMap(null);
-            });
-            (group.hitPolygons || []).forEach(function(poly) {
-              if (poly.getMap()) poly.setMap(null);
-            });
-            if (group.label && group.label.getMap()) {
-              group.label.setMap(null);
-            }
-          });
-
-          return;
-        }
-
-        // 다음 갱신에서 현재 화면에 필요한 도형만 다시 올리도록 캐시를 무효화.
-        allRoads.forEach(function(road) {
-          road._visible = false;
-          road._visualTier = null;
-        });
-
+      function hideLayerLabelsForInteraction() {
         Object.values(LAYERS).forEach(function(layer) {
           layer.labels.forEach(function(labelItem) {
-            labelItem._visible = false;
+            if (labelItem.overlay.getMap()) {
+              labelItem.overlay.setMap(null);
+            }
+          });
+        });
+      }
+
+      function hideBoundaryLayersForInteraction() {
+        Object.values(BOUNDARY_LAYERS).forEach(function(layer) {
+          layer.shapes.forEach(function(shape) {
+            if (shape.getMap()) shape.setMap(null);
           });
         });
 
+        townshipSelectGroups.forEach(function(group) {
+          group.polygons.forEach(function(poly) {
+            if (poly.getMap()) poly.setMap(null);
+          });
+          (group.skyBackPolygons || []).forEach(function(poly) {
+            if (poly.getMap()) poly.setMap(null);
+          });
+          (group.hitPolygons || []).forEach(function(poly) {
+            if (poly.getMap()) poly.setMap(null);
+          });
+          if (group.label && group.label.getMap()) {
+            group.label.setMap(null);
+          }
+        });
+      }
+
+      function restoreInteractionLayers() {
         updateBoundaryVisibility();
 
-        // 읍면 경계/선택영역 복원
         if (BOUNDARY_LAYERS.townshipBoundary.visible) {
           townshipSelectGroups.forEach(function(group) {
             group.polygons.forEach(function(poly) {
@@ -3537,6 +3516,80 @@
           updateTownshipLabelVisibility();
           resetTownshipStyles();
         }
+      }
+
+      function hideRoadDecorationForInteraction() {
+        allRoads.forEach(function(road) {
+          if (!road._visible) return;
+
+          // 이동 중에는 본선만 남기고 나머지 도형을 숨겨 렌더링 비용 절감.
+          if (road.baseLine && road.baseLine.getMap()) {
+            road.baseLine.setMap(null);
+          }
+          if (road.hitLine && road.hitLine.getMap()) {
+            road.hitLine.setMap(null);
+          }
+          if (road.selectionInnerLine && road.selectionInnerLine.getMap()) {
+            road.selectionInnerLine.setMap(null);
+          }
+
+          if (road.roadLine) {
+            road.roadLine.setOptions({
+              strokeWeight: Math.max(2, getRoadStrokeWeight(road) - 1.2)
+            });
+          }
+        });
+      }
+
+      function restoreRoadDecorationAfterInteraction() {
+        allRoads.forEach(function(road) {
+          if (!road._visible) return;
+
+          if (road.baseLine && !road.baseLine.getMap()) {
+            road.baseLine.setMap(map);
+          }
+          if (road.hitLine && !road.hitLine.getMap()) {
+            road.hitLine.setMap(map);
+          }
+          if (road.selectionInnerLine && !road.selectionInnerLine.getMap()) {
+            road.selectionInnerLine.setMap(map);
+          }
+
+          applyRoadNormalVisualStyle(road);
+        });
+      }
+
+      function setWindowsZoomFastMode(enabled) {
+        if (!IS_WINDOWS) return;
+        if (windowsZoomFastMode === enabled) return;
+
+        windowsZoomFastMode = enabled;
+
+        if (enabled) {
+          allRoads.forEach(function(road) {
+            [road.baseLine, road.roadLine, road.hitLine, road.selectionInnerLine]
+              .forEach(function(line) {
+                if (line && line.getMap()) line.setMap(null);
+              });
+          });
+
+          hideLayerLabelsForInteraction();
+          hideBoundaryLayersForInteraction();
+          return;
+        }
+
+        allRoads.forEach(function(road) {
+          road._visible = false;
+          road._visualTier = null;
+        });
+
+        Object.values(LAYERS).forEach(function(layer) {
+          layer.labels.forEach(function(labelItem) {
+            labelItem._visible = false;
+          });
+        });
+
+        restoreInteractionLayers();
       }
 
       function setRoadZoomLightMode(enabled) {
@@ -3592,10 +3645,22 @@
       }
 
       function refreshMapAfterInteraction() {
+        document.body.classList.remove("map-interacting");
+        const wasWindowsDragFastMode = windowsDragFastMode;
+
         setWindowsZoomFastMode(false);
         setRoadZoomLightMode(false);
+
+        windowsDragFastMode = false;
+
         updateScale();
         applyRoadVisibility();
+
+        if (wasWindowsDragFastMode && IS_WINDOWS) {
+          restoreRoadDecorationAfterInteraction();
+          restoreInteractionLayers();
+        }
+
         updateLabels();
 
         if (selectedRoadGroupKey) {
@@ -3627,26 +3692,24 @@
       }, true);
 
       kakao.maps.event.addListener(map, "dragstart", function() {
-        Object.values(LAYERS).forEach(function(layer) {
-          layer.labels.forEach(function(labelItem) {
-            if (labelItem.overlay.getMap()) {
-              labelItem.overlay.setMap(null);
-            }
-          });
-        });
+        hideLayerLabelsForInteraction();
 
         if (IS_WINDOWS) {
+          windowsDragFastMode = true;
+          document.body.classList.add("map-interacting");
+
           allRoads.forEach(function(road) {
             if (!road._visible) return;
-
-            if (road.hitLine && road.hitLine.getMap()) {
-              road.hitLine.setMap(null);
-            }
-            if (road.selectionInnerLine && road.selectionInnerLine.getMap()) {
-              road.selectionInnerLine.setMap(null);
-            }
+            applyRoadPathTier(road, "coarse");
           });
+
+          hideRoadDecorationForInteraction();
+          hideBoundaryLayersForInteraction();
         }
+      });
+
+      kakao.maps.event.addListener(map, "dragend", function() {
+        // 전체 복원은 idle에서 한 번만 수행.
       });
 
       // 무거운 도로 재계산은 지도 조작이 끝난 뒤 한 번만 실행.
@@ -3655,6 +3718,7 @@
       // 줌 중에는 팝업만 유지하고, 도로 갱신은 idle에서 처리.
       kakao.maps.event.addListener(map, "zoom_changed", function() {
         if (IS_WINDOWS) {
+          document.body.classList.add("map-interacting");
           setWindowsZoomFastMode(true);
         } else {
           setRoadZoomLightMode(true);
@@ -3662,14 +3726,6 @@
 
         clearTimeout(zoomRestoreTimer);
 
-        restoreSelectedRoadPopup();
-
-        if (roadPopupOverlay) {
-          scheduleRoadPopupSafeViewportCheck();
-        }
-        if (basePlaceOverlay && parcelInfoPopupActive) {
-          scheduleBasePlacePopupViewportCheck();
-        }
       });
 
       let resizeRefreshTimer = null;
@@ -5886,7 +5942,7 @@
       }
 
       function applyRoadVisibility() {
-        if (windowsZoomFastMode) return;
+        if (windowsZoomFastMode || windowsDragFastMode) return;
 
         const viewport = getBufferedViewportBox();
         const visualTier = getRoadScaleTier(currentScaleDenominator);
@@ -6748,7 +6804,7 @@
       }
 
       function updateLabels() {
-        if (windowsZoomFastMode) return;
+        if (windowsZoomFastMode || windowsDragFastMode) return;
 
         const bounds = map.getBounds();
 
