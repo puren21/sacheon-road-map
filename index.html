@@ -2021,6 +2021,12 @@
       text-overflow: clip !important;
     }
 
+    /* Windows Chromium/Safari 계열 확대·축소 시 합성 레이어 안정화 */
+    #map {
+      transform: translateZ(0);
+      backface-visibility: hidden;
+    }
+
   </style>
 </head>
 
@@ -3435,7 +3441,63 @@
       installTownshipHoverDismissClick();
       watchPopupSafeAreaChanges();
 
+      let zoomLightMode = false;
+      let zoomRestoreTimer = null;
+
+      function setRoadZoomLightMode(enabled) {
+        if (zoomLightMode === enabled) return;
+        zoomLightMode = enabled;
+
+        allRoads.forEach(function(road) {
+          if (!road._visible) return;
+
+          if (enabled) {
+            if (road.baseLine && road.baseLine.getMap()) {
+              road.baseLine.setMap(null);
+            }
+            if (road.hitLine && road.hitLine.getMap()) {
+              road.hitLine.setMap(null);
+            }
+            if (road.selectionInnerLine && road.selectionInnerLine.getMap()) {
+              road.selectionInnerLine.setMap(null);
+            }
+
+            // 확대·축소 중에는 본선만 유지하고 두께도 약간 줄여 GPU/SVG 부담 감소
+            if (road.roadLine) {
+              road.roadLine.setOptions({
+                strokeWeight: Math.max(2.2, getRoadStrokeWeight(road) - 0.8)
+              });
+            }
+          } else {
+            // idle 후 원래 렌더링 복원
+            if (road.baseLine && !road.baseLine.getMap()) {
+              road.baseLine.setMap(map);
+            }
+            if (road.hitLine && !road.hitLine.getMap()) {
+              road.hitLine.setMap(map);
+            }
+            if (road.selectionInnerLine && !road.selectionInnerLine.getMap()) {
+              road.selectionInnerLine.setMap(map);
+            }
+            applyRoadNormalVisualStyle(road);
+          }
+        });
+
+        Object.values(LAYERS).forEach(function(layer) {
+          layer.labels.forEach(function(labelItem) {
+            if (enabled) {
+              if (labelItem.overlay.getMap()) {
+                labelItem.overlay.setMap(null);
+              }
+            } else {
+              labelItem._visible = false;
+            }
+          });
+        });
+      }
+
       function refreshMapAfterInteraction() {
+        setRoadZoomLightMode(false);
         updateScale();
         applyRoadVisibility();
         updateLabels();
@@ -3454,11 +3516,30 @@
         }
       }
 
+      kakao.maps.event.addListener(map, "dragstart", function() {
+        Object.values(LAYERS).forEach(function(layer) {
+          layer.labels.forEach(function(labelItem) {
+            if (labelItem.overlay.getMap()) {
+              labelItem.overlay.setMap(null);
+            }
+          });
+        });
+      });
+
       // 무거운 도로 재계산은 지도 조작이 끝난 뒤 한 번만 실행.
       kakao.maps.event.addListener(map, "idle", refreshMapAfterInteraction);
 
       // 줌 중에는 팝업만 유지하고, 도로 갱신은 idle에서 처리.
       kakao.maps.event.addListener(map, "zoom_changed", function() {
+        setRoadZoomLightMode(true);
+
+        clearTimeout(zoomRestoreTimer);
+        zoomRestoreTimer = setTimeout(function() {
+          // 연속 휠 입력이 멈춘 뒤에만 복원을 시도.
+          // 실제 전체 갱신은 idle 이벤트에서 수행됨.
+          if (!zoomLightMode) return;
+        }, 120);
+
         restoreSelectedRoadPopup();
 
         if (roadPopupOverlay) {
@@ -5647,8 +5728,8 @@
 
         const latSpan = Math.max(0.00001, ne.getLat() - sw.getLat());
         const lngSpan = Math.max(0.00001, ne.getLng() - sw.getLng());
-        const padLat = latSpan * 0.18;
-        const padLng = lngSpan * 0.18;
+        const padLat = latSpan * 0.08;
+        const padLng = lngSpan * 0.08;
 
         return {
           minLat: sw.getLat() - padLat,
@@ -6179,6 +6260,79 @@
       /*
        * 도로선
        */
+      function pointSegmentDistanceSq(p, a, b) {
+        const x = p.getLng(), y = p.getLat();
+        const x1 = a.getLng(), y1 = a.getLat();
+        const x2 = b.getLng(), y2 = b.getLat();
+
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+
+        if (dx === 0 && dy === 0) {
+          const px = x - x1;
+          const py = y - y1;
+          return px * px + py * py;
+        }
+
+        let t = ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy);
+        t = Math.max(0, Math.min(1, t));
+
+        const qx = x1 + t * dx;
+        const qy = y1 + t * dy;
+        const ex = x - qx;
+        const ey = y - qy;
+
+        return ex * ex + ey * ey;
+      }
+
+      function simplifyLatLngPath(path, toleranceDeg) {
+        if (!path || path.length <= 3) return path;
+
+        const sqTolerance = toleranceDeg * toleranceDeg;
+        const keep = new Uint8Array(path.length);
+        keep[0] = 1;
+        keep[path.length - 1] = 1;
+
+        const stack = [[0, path.length - 1]];
+
+        while (stack.length) {
+          const pair = stack.pop();
+          const first = pair[0];
+          const last = pair[1];
+
+          let maxDist = 0;
+          let index = -1;
+
+          for (let i = first + 1; i < last; i++) {
+            const dist = pointSegmentDistanceSq(path[i], path[first], path[last]);
+            if (dist > maxDist) {
+              maxDist = dist;
+              index = i;
+            }
+          }
+
+          if (index > 0 && maxDist > sqTolerance) {
+            keep[index] = 1;
+            stack.push([first, index], [index, last]);
+          }
+        }
+
+        const result = [];
+        for (let i = 0; i < path.length; i++) {
+          if (keep[i]) result.push(path[i]);
+        }
+
+        return result.length >= 2 ? result : path;
+      }
+
+      function getDisplaySimplifyTolerance(styleKey) {
+        // 약 0.8~1.7m 수준. 도로 형태는 유지하면서 좌표 수만 줄임.
+        if (styleKey === "CITY") return 0.000008;
+        if (styleKey === "MYEON") return 0.000010;
+        if (styleKey === "RI") return 0.000013;
+        return 0.000016;
+      }
+
       function drawRoad(
         path,
         properties,
@@ -6189,6 +6343,11 @@
       ) {
         const styleKey = getStyleKey(properties, layerId);
         const style = ROAD_STYLES[styleKey];
+
+        const displayPath = simplifyLatLngPath(
+          path,
+          getDisplaySimplifyTolerance(styleKey)
+        );
 
         const extent = path.reduce(function(box, point) {
           const lat = point.getLat();
@@ -6207,7 +6366,7 @@
 
         const baseLine = new kakao.maps.Polyline({
           map: null,
-          path: path,
+          path: displayPath,
           strokeWeight: style.base,
           strokeColor: style.baseColor,
           strokeOpacity: style.baseOpacity / 100,
@@ -6217,7 +6376,7 @@
 
         const roadLine = new kakao.maps.Polyline({
           map: null,
-          path: path,
+          path: displayPath,
           // 전체 외곽 두께(style.base)는 유지하면서 가운데 색상띠만 넓혀 3중 구조로 표현
           strokeWeight: style.mid,
           strokeColor: style.color,
@@ -6229,7 +6388,7 @@
         /* 보이는 선보다 넓은 투명 클릭 영역으로 선택 감도를 높입니다. */
         const hitLine = new kakao.maps.Polyline({
           map: null,
-          path: path,
+          path: displayPath,
           strokeWeight: Math.max(18, style.base + 10),
           strokeColor: "#000000",
           strokeOpacity: 0.01,
@@ -6245,7 +6404,7 @@
 
           const selectionInnerLine = new kakao.maps.Polyline({
           map: null,
-          path: path,
+          path: displayPath,
           // 일반 노선도 중앙에 흰색 실선을 넣어 3중선으로 표현
           strokeWeight: style.inner,
           strokeColor: "#FFFFFF",
@@ -6422,18 +6581,20 @@
           const scaleVisible = isRoadLayerVisibleAtScale(layerId);
 
           layer.labels.forEach(function(labelItem) {
-            const inViewport =
-              !bounds ||
-              !labelItem.position ||
-              bounds.contain(labelItem.position);
+            let visible = false;
 
-            const visible =
-              layer.visible &&
-              scaleVisible &&
-              inViewport &&
-              labelItem.statusKeys.some(function(key) {
-                return roadStatusFilters[key];
-              });
+            if (layer.visible && scaleVisible) {
+              const inViewport =
+                !bounds ||
+                !labelItem.position ||
+                bounds.contain(labelItem.position);
+
+              visible =
+                inViewport &&
+                labelItem.statusKeys.some(function(key) {
+                  return roadStatusFilters[key];
+                });
+            }
 
             if (labelItem._visible !== visible) {
               labelItem.overlay.setMap(visible ? map : null);
