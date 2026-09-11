@@ -1615,6 +1615,412 @@
       box-sizing: border-box;
     }
 
+    /* =========================
+       카카오 바탕지도 장소정보
+       ========================= */
+    .base-place-popup {
+      position: relative;
+      width: 300px;
+      max-width: calc(100vw - 28px);
+      overflow: hidden;
+      color: #202124;
+      background: rgba(255,255,255,.98);
+      border: 1px solid rgba(0,0,0,.10);
+      border-radius: 16px;
+      box-shadow: 0 8px 26px rgba(0,0,0,.20);
+      font-size: 13px;
+      line-height: 1.45;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .base-place-popup-head {
+      position: relative;
+      padding: 13px 42px 11px 15px;
+      background: #f7f8fa;
+      border-bottom: 1px solid #eceff1;
+      cursor: default;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .base-place-popup-head * {
+      cursor: default;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* 상단 제목(지번)은 선택/복사 가능 */
+    .base-place-popup-title {
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      cursor: text !important;
+    }
+
+    /* 아래 본문 텍스트도 모두 선택/복사 가능 */
+    .base-place-popup-body,
+    .base-place-popup-row,
+    .base-place-popup-label,
+    .base-place-popup-value {
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      cursor: text !important;
+    }
+
+    .base-place-popup-head .base-place-popup-close {
+      cursor: pointer;
+    }
+
+    .base-place-popup-category {
+      margin-bottom: 3px;
+      color: #7a7f85;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .base-place-popup-title {
+      color: #202124;
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.25;
+      word-break: keep-all;
+    }
+
+    .base-place-popup-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 27px;
+      height: 27px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: #e9ecef;
+      color: #5f6368;
+      font-size: 18px;
+      line-height: 27px;
+      cursor: pointer;
+    }
+
+    .base-place-popup-body {
+      padding: 10px 15px 12px;
+    }
+
+    .base-place-popup-row {
+      display: grid;
+      grid-template-columns: 68px minmax(0, 1fr);
+      gap: 7px;
+      padding: 4px 0;
+    }
+
+    .base-place-popup-label {
+      color: #858a90;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .base-place-popup-value {
+      color: #30343a;
+      overflow-wrap: anywhere;
+    }
+
+    .base-place-popup-link {
+      display: inline-block;
+      margin-top: 7px;
+      color: #1a73e8;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .base-place-popup-link:hover {
+      text-decoration: underline;
+    }
+
+    .base-place-popup-status {
+      padding: 14px 15px;
+      color: #5f6368;
+      background: rgba(255,255,255,.98);
+      border: 1px solid rgba(0,0,0,.10);
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.16);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    /* 우클릭 지번보기 메뉴 */
+    .parcel-context-menu {
+      min-width: 116px;
+      overflow: hidden;
+      background: rgba(255,255,255,.99);
+      border: 1px solid rgba(0,0,0,.16);
+      border-radius: 8px;
+      box-shadow: 0 5px 18px rgba(0,0,0,.24);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .parcel-context-menu button {
+      width: 100%;
+      padding: 10px 14px;
+      border: 0;
+      background: transparent;
+      color: #202124;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .parcel-context-menu button:hover {
+      background: #f1f4f7;
+    }
+
+    /* 주소보기: 카카오맵 주소 카드 느낌 */
+    /* =========================
+       지번정보 팝업 - 노선정보 팝업과 동일한 카드 스타일
+       ========================= */
+    .base-place-popup.address-view-popup {
+      position: relative;
+      width: 320px;
+      max-width: calc(100vw - 28px);
+      overflow: hidden;
+      color: #202124;
+      background: rgba(255,255,255,.98);
+      border: 0;
+      border-radius: 22px;
+      box-shadow: 0 10px 32px rgba(0,0,0,.18);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .base-place-popup.address-view-popup::after {
+      display: none;
+    }
+
+    .address-view-popup .base-place-popup-head {
+      position: relative;
+      min-height: 82px;
+      margin: 0;
+      padding: 18px 52px 12px 18px;
+      background: #f7f8fa;
+      border-bottom: 1px solid #eceff1;
+      border-top-left-radius: 22px;
+      border-top-right-radius: 22px;
+    }
+
+    .address-view-popup .base-place-popup-title {
+      margin: 0;
+      color: #202124;
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.28;
+      letter-spacing: -.45px;
+      white-space: normal !important;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      max-width: 100%;
+      padding-right: 4px;
+    }
+
+    .address-view-popup .base-place-popup-category {
+      margin-top: 7px;
+      color: #5f6368;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .address-view-popup .base-place-popup-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: #f1f3f4;
+      color: #5f6368;
+      font-size: 21px;
+      font-weight: 400;
+      line-height: 30px;
+      cursor: pointer;
+    }
+
+    .address-view-popup .base-place-popup-close:hover {
+      background: #e5e8eb;
+    }
+
+    .address-view-popup .base-place-popup-body {
+      padding: 10px 18px 16px;
+      background: #fff;
+    }
+
+    .address-view-popup .base-place-popup-row {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid #f1f3f4;
+      line-height: 1.35;
+    }
+
+    .address-view-popup .base-place-popup-row:last-of-type {
+      border-bottom: 0;
+    }
+
+    .address-view-popup .base-place-popup-label {
+      color: #767b80;
+      font-size: 12.5px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .address-view-popup .base-place-popup-value {
+      color: #202124;
+      font-size: 13.5px;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+      word-break: keep-all;
+    }
+
+    .address-view-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid #e1e5e9;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .address-view-action {
+      min-height: 52px;
+      height: auto;
+      padding: 7px 6px 6px;
+      border: 0;
+      border-right: 1px solid #e1e5e9;
+      background: #fff;
+      color: #555;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.15;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .address-view-action:last-child {
+      border-right: 0;
+    }
+
+    .address-view-action:hover {
+      background: #f5f7fa;
+    }
+
+    .address-view-action.cadastral.active {
+      background: #eef5ff;
+      color: #1a73e8;
+    }
+
+    .address-view-action .cadastral-label {
+      display: block;
+      white-space: normal;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
+      max-width: 100%;
+    }
+
+    .address-view-action-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      margin: 0 auto 4px;
+      line-height: 1;
+    }
+
+    .address-view-action-icon svg {
+      width: 20px;
+      height: 20px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .address-view-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      z-index: 99999;
+      padding: 8px 12px;
+      border-radius: 7px;
+      background: rgba(30,35,40,.9);
+      color: #fff;
+      font-size: 12px;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    /* 주소보기 위치 마커 - 참조 이미지형 파란 핀 */
+    .address-view-pin {
+      position: relative;
+      width: 42px;
+      height: 54px;
+      transform: translate(-21px, -50px);
+      pointer-events: none;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,.34));
+    }
+
+    .address-view-pin-head {
+      position: absolute;
+      left: 4px;
+      top: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #3d93f6;
+      border: 2px solid #fff;
+      box-sizing: border-box;
+    }
+
+    .address-view-pin-head::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #fff;
+      transform: translate(-50%, -50%);
+    }
+
+    .address-view-pin-tail {
+      position: absolute;
+      left: 13px;
+      top: 25px;
+      width: 16px;
+      height: 22px;
+      background: #3d93f6;
+      clip-path: polygon(50% 100%, 0 0, 100% 0);
+    }
+
+    .address-view-action.cadastral.active {
+      background: #eef5ff;
+      color: #1a73e8;
+    }
+
+    .address-view-popup .base-place-popup-title {
+      overflow: visible !important;
+      text-overflow: clip !important;
+    }
+
   </style>
 </head>
 
@@ -2460,8 +2866,326 @@
       }
 
 
+      let parcelContextOverlay = null;
+      let parcelContextPosition = null;
+
+      function closeParcelContextMenu() {
+        if (parcelContextOverlay) {
+          try { parcelContextOverlay.setMap(null); } catch (e) {}
+          parcelContextOverlay = null;
+        }
+        parcelContextPosition = null;
+      }
+
+      function setParcelCadastralOverlayVisible(visible) {
+        const districtCheck = document.getElementById("districtCheck");
+
+        try {
+          if (visible) {
+            // 중복 추가를 피하기 위해 한번 제거 후 다시 추가.
+            map.removeOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+            map.addOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+          } else {
+            map.removeOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+          }
+        } catch (e) {}
+
+        if (districtCheck) {
+          districtCheck.checked = !!visible;
+        }
+      }
+
+      function enableCadastralOverlay() {
+        setParcelCadastralOverlayVisible(true);
+      }
+
+      function normalizeProvinceFullName(address) {
+        if (!address) return "";
+
+        const replacements = [
+          ["경남 ", "경상남도 "],
+          ["경북 ", "경상북도 "],
+          ["전남 ", "전라남도 "],
+          ["전북 ", "전북특별자치도 "],
+          ["충남 ", "충청남도 "],
+          ["충북 ", "충청북도 "],
+          ["강원 ", "강원특별자치도 "],
+          ["제주 ", "제주특별자치도 "]
+        ];
+
+        let result = String(address);
+        replacements.forEach(function(pair) {
+          if (result.indexOf(pair[0]) === 0) {
+            result = pair[1] + result.slice(pair[0].length);
+          }
+        });
+
+        return result;
+      }
+
+      function showAddressViewToast(message) {
+        const old = document.querySelector(".address-view-toast");
+        if (old) old.remove();
+
+        const toast = document.createElement("div");
+        toast.className = "address-view-toast";
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(function() {
+          toast.remove();
+        }, 1300);
+      }
+
+      function copyAddressViewValue(value, message) {
+        if (!value) return;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(value).then(function() {
+            showAddressViewToast(message || "복사했습니다.");
+          }).catch(function() {
+            const ta = document.createElement("textarea");
+            ta.value = value;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            ta.remove();
+            showAddressViewToast(message || "복사했습니다.");
+          });
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = value;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          showAddressViewToast(message || "복사했습니다.");
+        }
+      }
+
+      function openAddressViewRoute(position, label) {
+        if (!position) return;
+
+        const lat = position.getLat();
+        const lng = position.getLng();
+        const name = encodeURIComponent(label || "선택 위치");
+
+        window.open(
+          "https://map.kakao.com/link/to/" + name + "," + lat + "," + lng,
+          "_blank",
+          "noopener"
+        );
+      }
+
+      function showParcelInfo(position) {
+        if (!position) return;
+
+        closeParcelContextMenu();
+        closeBasePlacePopup();
+
+        parcelInfoPopupActive = true;
+        parcelCadastralVisible = false;
+
+        // 지번보기 최초 실행 시 연속지적도는 보이지 않게 함.
+        try {
+          map.removeOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+        } catch (e) {}
+
+        const districtCheck = document.getElementById("districtCheck");
+        if (districtCheck) {
+          districtCheck.checked = false;
+        }
+
+        if (map.getLevel() > 4) {
+          map.setLevel(4, { anchor: position });
+        }
+
+        // 참조 이미지와 유사한 파란 위치 핀
+        const markerContent = document.createElement("div");
+        markerContent.className = "address-view-pin";
+        markerContent.innerHTML =
+          '<div class="address-view-pin-head"></div>' +
+          '<div class="address-view-pin-tail"></div>';
+
+        addressViewMarker = new kakao.maps.CustomOverlay({
+          map: map,
+          position: position,
+          content: markerContent,
+          xAnchor: 0,
+          yAnchor: 0,
+          zIndex: 140
+        });
+
+        const requestId = ++basePlaceSearchSequence;
+
+        geocoder.coord2Address(
+          position.getLng(),
+          position.getLat(),
+          function(result, status) {
+            if (requestId !== basePlaceSearchSequence) return;
+
+            const item =
+              status === kakao.maps.services.Status.OK && result && result.length
+                ? (result[0] || {})
+                : {};
+
+            const road = item.road_address || {};
+            const jibun = item.address || {};
+
+            const fullJibunAddress = normalizeProvinceFullName(jibun.address_name);
+            const fullRoadAddress = normalizeProvinceFullName(road.address_name);
+
+            const title =
+              fullJibunAddress ||
+              fullRoadAddress ||
+              ("위도 " + position.getLat().toFixed(7) + ", 경도 " + position.getLng().toFixed(7));
+
+            const copyAddress =
+              fullJibunAddress ||
+              fullRoadAddress ||
+              title;
+
+            const html =
+              '<div class="base-place-popup-head">' +
+                '<div class="base-place-popup-title">' + escapeBasePlaceHtml(title) + '</div>' +
+                '<div class="base-place-popup-category">지번 정보</div>' +
+                '<button class="base-place-popup-close" type="button" aria-label="닫기">×</button>' +
+              '</div>' +
+              '<div class="base-place-popup-body">' +
+                basePlaceRow("지번", fullJibunAddress) +
+                basePlaceRow("도로명", fullRoadAddress) +
+                basePlaceRow("법정동", jibun.region_3depth_name) +
+                '<div class="address-view-actions">' +
+                  '<button class="address-view-action copy-address" type="button">' +
+                    '<span class="address-view-action-icon" aria-hidden="true">' +
+                      '<svg viewBox="0 0 24 24">' +
+                        '<rect x="8" y="8" width="10" height="11" rx="2"></rect>' +
+                        '<path d="M6 16H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>' +
+                      '</svg>' +
+                    '</span>주소복사' +
+                  '</button>' +
+                  '<button class="address-view-action cadastral" type="button">' +
+                    '<span class="address-view-action-icon" aria-hidden="true">' +
+                      '<svg viewBox="0 0 24 24">' +
+                        '<path d="M4 6.5 9 4l6 2.5L20 4v13.5L15 20l-6-2.5L4 20z"></path>' +
+                        '<path d="M9 4v13.5"></path>' +
+                        '<path d="M15 6.5V20"></path>' +
+                      '</svg>' +
+                    '</span><span class="cadastral-label">연속지적도 보기</span>' +
+                  '</button>' +
+                '</div>' +
+              '</div>';
+
+            showBasePlaceOverlay(
+              position,
+              html,
+              "base-place-popup address-view-popup",
+              true
+            );
+
+            parcelInfoPopupActive = true;
+
+            const popup = document.querySelector(".address-view-popup");
+            if (!popup) return;
+
+            const copyAddressButton = popup.querySelector(".copy-address");
+            const cadastralButton = popup.querySelector(".cadastral");
+            const cadastralLabel = popup.querySelector(".cadastral-label");
+
+            if (copyAddressButton) {
+              copyAddressButton.addEventListener("click", function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                copyAddressViewValue(copyAddress, "주소를 복사했습니다.");
+              });
+            }
+
+
+            if (cadastralButton) {
+              cadastralButton.addEventListener("click", function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                parcelCadastralVisible = !parcelCadastralVisible;
+
+                try {
+                  if (parcelCadastralVisible) {
+                    map.removeOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+                    map.addOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+                  } else {
+                    map.removeOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+                  }
+                } catch (e) {}
+
+                if (districtCheck) {
+                  districtCheck.checked = parcelCadastralVisible;
+                }
+
+                cadastralButton.classList.toggle("active", parcelCadastralVisible);
+
+                if (cadastralLabel) {
+                  cadastralLabel.textContent =
+                    parcelCadastralVisible
+                      ? "연속지적도 끄기"
+                      : "연속지적도 보기";
+                }
+              });
+            }
+
+          }
+        );
+      }
+
+      function showParcelContextMenu(position) {
+        if (!position || measureMode) return;
+
+        closeParcelContextMenu();
+
+        // 다른 위치에서 다시 우클릭하면 이전 지번창/연속지적도는 먼저 종료.
+        if (parcelInfoPopupActive || basePlaceOverlay) {
+          closeBasePlacePopup();
+        }
+
+        parcelContextPosition = position;
+
+        const content = document.createElement("div");
+        content.className = "parcel-context-menu";
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "지번보기";
+        button.addEventListener("click", function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          try { kakao.maps.event.preventMap(); } catch (e) {}
+
+          const targetPosition = parcelContextPosition;
+          showParcelInfo(targetPosition);
+        });
+
+        content.appendChild(button);
+
+        // 메뉴 조작이 지도 드래그/클릭으로 전달되지 않게 차단
+        ["mousedown", "pointerdown", "touchstart"].forEach(function(type) {
+          content.addEventListener(type, function(event) {
+            event.stopPropagation();
+            try { kakao.maps.event.preventMap(); } catch (e) {}
+          }, true);
+        });
+
+        parcelContextOverlay = new kakao.maps.CustomOverlay({
+          map: map,
+          position: position,
+          content: content,
+          xAnchor: 0,
+          yAnchor: 0,
+          zIndex: 1000
+        });
+      }
+
       kakao.maps.event.addListener(map, "rightclick", function(mouseEvent) {
-        copyMapCoordinate(mouseEvent.latLng);
+        if (measureMode) return;
+        showParcelContextMenu(mouseEvent.latLng);
       });
 
       function selectTownship(name) {
@@ -3101,6 +3825,35 @@
           : Math.round(squareMeters).toLocaleString("ko-KR") + " m²";
       }
 
+      // 카카오 바탕지도의 지명/상호 주변을 클릭하면 가장 가까운 장소 상세정보 표시.
+      // SDK는 바탕지도 라벨 자체의 DOM/클릭 이벤트를 노출하지 않으므로,
+      // 클릭 좌표 반경 내 카카오 Places 결과 중 가장 가까운 장소를 사용함.
+      kakao.maps.event.addListener(map, "click", function(event) {
+        // 일반 왼쪽 클릭에서는 지번/장소 팝업을 새로 띄우지 않음.
+        // 기존 지번보기 상태가 있으면 팝업과 연속지적도를 함께 종료.
+        closeParcelContextMenu();
+
+        if (parcelInfoPopupActive || basePlaceOverlay) {
+          closeBasePlacePopup();
+        }
+
+        if (measureMode || roadviewMode) return;
+        if (Date.now() < suppressBasePlaceClickUntil) return;
+      });
+
+      // 지번정보 팝업은 닫기 전까지 지도 이동/확대·축소 중에도 화면 안에 유지
+      ["center_changed", "bounds_changed", "zoom_changed", "idle"].forEach(function(eventName) {
+        kakao.maps.event.addListener(map, eventName, function() {
+          if (!basePlaceOverlay || !parcelInfoPopupActive) return;
+          scheduleBasePlacePopupViewportCheck();
+        });
+      });
+
+      window.addEventListener("resize", function() {
+        if (!basePlaceOverlay || !parcelInfoPopupActive) return;
+        scheduleBasePlacePopupViewportCheck();
+      });
+
       kakao.maps.event.addListener(map, "mousemove", function (event) {
         if (!measureMode || !measurePoints.length) return;
         measureMousePosition = event.latLng;
@@ -3115,10 +3868,12 @@
 
       /* 지도 내부 객체 위에서도 우클릭 완료가 동작하고 기본 메뉴는 열리지 않게 합니다. */
       document.getElementById("map").addEventListener("contextmenu", function (event) {
-        if (!measureMode) return;
         event.preventDefault();
-        event.stopPropagation();
-        finishMeasure();
+
+        if (measureMode) {
+          event.stopPropagation();
+          finishMeasure();
+        }
       }, true);
 
       document.addEventListener("keydown", function (event) {
@@ -3139,6 +3894,426 @@
 
       const geocoder = new kakao.maps.services.Geocoder();
       const places = new kakao.maps.services.Places();
+
+      let basePlaceOverlay = null;
+      let basePlaceSearchSequence = 0;
+      let parcelInfoPopupActive = false;
+      let addressViewMarker = null;
+      let parcelCadastralVisible = false;
+      let suppressBasePlaceClickUntil = 0;
+
+      const BASE_PLACE_CATEGORY_CODES = [
+        "MT1", "CS2", "PS3", "SC4", "AC5", "PK6",
+        "OL7", "SW8", "BK9", "CT1", "AG2", "PO3",
+        "AT4", "AD5", "FD6", "CE7", "HP8", "PM9"
+      ];
+
+      function escapeBasePlaceHtml(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function closeBasePlacePopup() {
+        basePlaceSearchSequence += 1;
+
+        if (basePlaceOverlay) {
+          try { basePlaceOverlay.setMap(null); } catch (e) {}
+          basePlaceOverlay = null;
+        }
+
+        if (parcelCadastralVisible) {
+          try {
+            map.removeOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+          } catch (e) {}
+
+          const districtCheck = document.getElementById("districtCheck");
+          if (districtCheck) {
+            districtCheck.checked = false;
+          }
+
+          parcelCadastralVisible = false;
+        }
+
+        parcelInfoPopupActive = false;
+
+        if (addressViewMarker) {
+          try { addressViewMarker.setMap(null); } catch (e) {}
+          addressViewMarker = null;
+        }
+      }
+
+      window.closeBasePlacePopup = closeBasePlacePopup;
+
+      function stopBasePlacePopupMapInteraction(element) {
+        if (!element || element.dataset.mapBlocked) return;
+
+        // 지도 조작으로 이벤트가 전달되는 것만 차단.
+        // click은 캡처 단계에서 막지 않아 버튼/링크의 실제 click이 정상 동작하게 함.
+        ["mousedown", "mousemove", "pointerdown", "pointermove", "touchstart", "touchmove"].forEach(function(type) {
+          element.addEventListener(type, function(event) {
+            try { kakao.maps.event.preventMap(); } catch (e) {}
+            event.stopPropagation();
+          }, true);
+        });
+
+        element.addEventListener("click", function(event) {
+          event.stopPropagation();
+          try { kakao.maps.event.preventMap(); } catch (e) {}
+        }, false);
+
+        element.dataset.mapBlocked = "1";
+      }
+
+      function keepBasePlacePopupInViewport() {
+        if (!basePlaceOverlay) return;
+
+        const mapContainer = document.getElementById("map");
+        if (!mapContainer) return;
+
+        const popup = mapContainer.querySelector(".address-view-popup, .base-place-popup");
+        if (!popup) return;
+
+        const mapRect = mapContainer.getBoundingClientRect();
+        const popupRect = popup.getBoundingClientRect();
+
+        const margin = 14;
+        let dx = 0;
+        let dy = 0;
+
+        // 좌측 메뉴가 열려 있으면 그 오른쪽을 안전영역 시작점으로 사용
+        let safeLeft = mapRect.left + margin;
+        const listPanel = document.getElementById("listPanel");
+        if (listPanel && getComputedStyle(listPanel).display !== "none") {
+          const panelRect = listPanel.getBoundingClientRect();
+          if (panelRect.width > 0 && panelRect.height > 0) {
+            safeLeft = Math.max(safeLeft, panelRect.right + margin);
+          }
+        }
+
+        const safeRight = mapRect.right - margin;
+        const safeTop = mapRect.top + margin;
+        const safeBottom = mapRect.bottom - margin;
+
+        if (popupRect.left < safeLeft) {
+          dx += safeLeft - popupRect.left;
+        } else if (popupRect.right > safeRight) {
+          dx -= popupRect.right - safeRight;
+        }
+
+        if (popupRect.top < safeTop) {
+          dy += safeTop - popupRect.top;
+        } else if (popupRect.bottom > safeBottom) {
+          dy -= popupRect.bottom - safeBottom;
+        }
+
+        if (!dx && !dy) return;
+
+        try {
+          const projection = map.getProjection();
+          if (!projection) return;
+
+          const currentPosition = basePlaceOverlay.getPosition();
+          const currentPoint = projection.containerPointFromCoords(currentPosition);
+          if (!currentPoint) return;
+
+          const nextPoint = new kakao.maps.Point(
+            currentPoint.x + dx,
+            currentPoint.y + dy
+          );
+
+          const nextPosition = projection.coordsFromContainerPoint(nextPoint);
+          if (nextPosition) {
+            basePlaceOverlay.setPosition(nextPosition);
+          }
+        } catch (e) {
+          console.warn("지번 팝업 화면 보정 실패:", e);
+        }
+      }
+
+      function scheduleBasePlacePopupViewportCheck() {
+        requestAnimationFrame(function() {
+          keepBasePlacePopupInViewport();
+          requestAnimationFrame(keepBasePlacePopupInViewport);
+        });
+      }
+
+      function enableBasePlacePopupDrag(content) {
+        if (!content || !basePlaceOverlay) return;
+
+        const header = content.querySelector(".base-place-popup-head");
+        if (!header) return;
+
+        let dragging = false;
+        let startClientX = 0;
+        let startClientY = 0;
+        let startPoint = null;
+
+        function getContainerPointFromLatLng(latLng) {
+          const projection = map.getProjection();
+          if (!projection || typeof projection.containerPointFromCoords !== "function") return null;
+          return projection.containerPointFromCoords(latLng);
+        }
+
+        function getLatLngFromContainerPoint(point) {
+          const projection = map.getProjection();
+          if (!projection || typeof projection.coordsFromContainerPoint !== "function") return null;
+          return projection.coordsFromContainerPoint(point);
+        }
+
+        function onPointerDown(event) {
+          const head = event.target.closest(".base-place-popup-head");
+          if (!head || !content.contains(head)) return;
+
+          // 닫기 버튼 또는 제목 텍스트 위에서는 팝업 드래그를 시작하지 않음.
+          // 제목은 마우스로 선택/복사 가능하게 유지.
+          if (event.target.closest(".base-place-popup-close")) return;
+          if (event.target.closest(".base-place-popup-title")) return;
+          if (event.target.closest(".base-place-popup-body")) return;
+
+          if (!basePlaceOverlay) return;
+
+          const currentPosition = basePlaceOverlay.getPosition();
+          const cp = getContainerPointFromLatLng(currentPosition);
+          if (!cp) return;
+
+          dragging = true;
+          startClientX = event.clientX;
+          startClientY = event.clientY;
+          startPoint = cp;
+
+          try { content.setPointerCapture?.(event.pointerId); } catch (e) {}
+          try { kakao.maps.event.preventMap(); } catch (e) {}
+
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
+        function onPointerMove(event) {
+          if (!dragging || !basePlaceOverlay || !startPoint) return;
+
+          const dx = event.clientX - startClientX;
+          const dy = event.clientY - startClientY;
+          const nextPoint = new kakao.maps.Point(
+            startPoint.x + dx,
+            startPoint.y + dy
+          );
+          const nextLatLng = getLatLngFromContainerPoint(nextPoint);
+
+          if (nextLatLng) {
+            basePlaceOverlay.setPosition(nextLatLng);
+          }
+
+          try { kakao.maps.event.preventMap(); } catch (e) {}
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
+        function endDrag(event) {
+          if (!dragging) return;
+          dragging = false;
+          startPoint = null;
+
+          try { content.releasePointerCapture?.(event.pointerId); } catch (e) {}
+          try { kakao.maps.event.preventMap(); } catch (e) {}
+          event.stopPropagation();
+
+          scheduleBasePlacePopupViewportCheck();
+        }
+
+        // content 캡처 단계에서 헤더 여부를 확인하므로
+        // 지도 이벤트 차단 로직과 충돌하지 않음.
+        content.addEventListener("pointerdown", onPointerDown, true);
+        content.addEventListener("pointermove", onPointerMove, true);
+        content.addEventListener("pointerup", endDrag, true);
+        content.addEventListener("pointercancel", endDrag, true);
+      }
+
+      function showBasePlaceOverlay(position, html, className, preserveParcelLayer) {
+        // 일반 팝업은 기존 상태를 모두 정리하지만,
+        // 지번보기 팝업은 연속지적도 상태를 유지한 채 기존 팝업만 교체.
+        if (preserveParcelLayer) {
+          if (basePlaceOverlay) {
+            try { basePlaceOverlay.setMap(null); } catch (e) {}
+            basePlaceOverlay = null;
+          }
+        } else {
+          closeBasePlacePopup();
+        }
+
+        const content = document.createElement("div");
+        content.className = className || "base-place-popup";
+        content.innerHTML = html;
+        stopBasePlacePopupMapInteraction(content);
+
+        const closeButton = content.querySelector(".base-place-popup-close");
+        if (closeButton) {
+          closeButton.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeBasePlacePopup();
+          });
+        }
+
+        basePlaceOverlay = new kakao.maps.CustomOverlay({
+          map: map,
+          position: position,
+          content: content,
+          xAnchor: 0.5,
+          yAnchor: 1.29,
+          zIndex: 150
+        });
+
+        enableBasePlacePopupDrag(content);
+
+        // 최초 표시 직후에도 팝업이 화면 안에 있도록 보정
+        setTimeout(scheduleBasePlacePopupViewportCheck, 0);
+      }
+
+      function basePlaceRow(label, value) {
+        if (!value) return "";
+        return (
+          '<div class="base-place-popup-row">' +
+            '<div class="base-place-popup-label">' + escapeBasePlaceHtml(label) + '</div>' +
+            '<div class="base-place-popup-value">' + escapeBasePlaceHtml(value) + '</div>' +
+          '</div>'
+        );
+      }
+
+      function showBasePlaceDetails(place) {
+        parcelInfoPopupActive = false;
+
+        const position = new kakao.maps.LatLng(
+          Number(place.y),
+          Number(place.x)
+        );
+
+        const category =
+          place.category_name ||
+          place.category_group_name ||
+          "장소";
+
+        let html =
+          '<div class="base-place-popup-head">' +
+            '<div class="base-place-popup-category">' + escapeBasePlaceHtml(category) + '</div>' +
+            '<div class="base-place-popup-title">' + escapeBasePlaceHtml(place.place_name || "장소정보") + '</div>' +
+            '<button class="base-place-popup-close" type="button" onclick="closeBasePlacePopup()" aria-label="닫기">×</button>' +
+          '</div>' +
+          '<div class="base-place-popup-body">' +
+            basePlaceRow("도로명", place.road_address_name) +
+            basePlaceRow("지번", place.address_name) +
+            basePlaceRow("전화", place.phone);
+
+        if (place.place_url) {
+          html +=
+            '<a class="base-place-popup-link" href="' +
+            escapeBasePlaceHtml(place.place_url) +
+            '" target="_blank" rel="noopener noreferrer">카카오맵 상세보기</a>';
+        }
+
+        html += '</div>';
+
+        showBasePlaceOverlay(position, html, "base-place-popup");
+      }
+
+      function showClickedAddressFallback(position, requestId) {
+        geocoder.coord2Address(
+          position.getLng(),
+          position.getLat(),
+          function(result, status) {
+            if (requestId !== basePlaceSearchSequence) return;
+            if (status !== kakao.maps.services.Status.OK || !result || !result.length) {
+              closeBasePlacePopup();
+              return;
+            }
+
+            const item = result[0] || {};
+            const road = item.road_address || {};
+            const jibun = item.address || {};
+
+            const title =
+              road.building_name ||
+              jibun.region_3depth_name ||
+              jibun.region_2depth_name ||
+              "위치정보";
+
+            const html =
+              '<div class="base-place-popup-head">' +
+                '<div class="base-place-popup-category">위치정보</div>' +
+                '<div class="base-place-popup-title">' + escapeBasePlaceHtml(title) + '</div>' +
+                '<button class="base-place-popup-close" type="button" onclick="closeBasePlacePopup()" aria-label="닫기">×</button>' +
+              '</div>' +
+              '<div class="base-place-popup-body">' +
+                basePlaceRow("도로명", road.address_name) +
+                basePlaceRow("지번", jibun.address_name) +
+              '</div>';
+
+            showBasePlaceOverlay(position, html, "base-place-popup");
+          }
+        );
+      }
+
+      // 일반 지도 클릭에서는 호출하지 않음.
+      // 필요 시 별도 기능에서만 사용할 수 있도록 함수는 유지.
+      function findNearestBaseMapPlace(position) {
+        if (!position || measureMode || roadviewMode) return;
+
+        const requestId = ++basePlaceSearchSequence;
+        let pending = BASE_PLACE_CATEGORY_CODES.length;
+        let candidates = [];
+
+        showBasePlaceOverlay(
+          position,
+          "주변 장소정보를 찾는 중입니다.",
+          "base-place-popup-status"
+        );
+
+        // showBasePlaceOverlay가 sequence를 증가시키므로 현재 요청 번호를 다시 확정.
+        const activeRequestId = ++basePlaceSearchSequence;
+
+        function finishOne(data, status) {
+          if (activeRequestId !== basePlaceSearchSequence) return;
+
+          if (status === kakao.maps.services.Status.OK && Array.isArray(data)) {
+            candidates = candidates.concat(data);
+          }
+
+          pending -= 1;
+          if (pending > 0) return;
+
+          if (candidates.length) {
+            candidates.sort(function(a, b) {
+              const da = Number(a.distance || Number.MAX_SAFE_INTEGER);
+              const db = Number(b.distance || Number.MAX_SAFE_INTEGER);
+              return da - db;
+            });
+
+            const nearest = candidates[0];
+
+            // 지도 라벨을 클릭한 느낌을 유지하기 위해 지나치게 먼 장소는 채택하지 않음.
+            if (Number(nearest.distance || 99999) <= 120) {
+              showBasePlaceDetails(nearest);
+              return;
+            }
+          }
+
+          // 왼쪽 클릭에서는 등록 장소가 없으면 아무 팝업도 띄우지 않음.
+          // 지번 확인은 마우스 오른쪽 클릭 → "지번 보기"에서만 수행.
+          closeBasePlacePopup();
+        }
+
+        BASE_PLACE_CATEGORY_CODES.forEach(function(code) {
+          places.categorySearch(code, finishOne, {
+            location: position,
+            radius: 120,
+            sort: kakao.maps.services.SortBy.DISTANCE
+          });
+        });
+      }
+
       const addressMarker = new kakao.maps.Marker();
       const addressInfo = new kakao.maps.InfoWindow({
         removable: false,
@@ -5015,6 +6190,7 @@
               }
 
               kakao.maps.event.preventMap();
+              suppressBasePlaceClickUntil = Date.now() + 350;
 
               showInfo(event.latLng, groupKey, road);
             }
