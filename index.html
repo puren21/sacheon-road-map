@@ -2582,6 +2582,11 @@
       function setTownshipGroupStyle(group, mode) {
         if (!group) return;
 
+        // 읍면 선택/강조는 초기화면에서만 활성화함.
+        if (!townshipStartMode && (mode === "selected" || mode === "hover")) {
+          mode = "normal";
+        }
+
         const selected = mode === "selected";
         const hover = mode === "hover";
 
@@ -2703,7 +2708,8 @@
 
       function resetTownshipStyles() {
         townshipSelectGroups.forEach(function(group) {
-          if (selectedTownshipName === group.name) {
+          // 읍면 강조 기능은 초기 선택화면에서만 사용함.
+          if (townshipStartMode && selectedTownshipName === group.name) {
             setTownshipGroupStyle(group, "selected");
           } else {
             setTownshipGroupStyle(group, "normal");
@@ -3233,22 +3239,24 @@
         document.body.classList.add("township-selected");
         document.getElementById("cityOverviewBtn").style.display = "block";
 
-        // 모든 읍면 경계와 라벨은 계속 지도에 남겨
-        // 확대 후에도 주변 읍면을 바로 다시 선택할 수 있게 함.
+        // 읍면 선택은 초기화면에서만 사용함.
+        // 선택 후에는 경계/라벨만 남기고 hover·클릭용 hit polygon은 제거함.
         townshipSelectGroups.forEach(function(otherGroup) {
           otherGroup.polygons.forEach(function(poly) {
             poly.setMap(map);
           });
           (otherGroup.hitPolygons || []).forEach(function(poly) {
-            poly.setMap(map);
+            poly.setMap(null);
           });
+          otherGroup.hoverDismissed = true;
           if (otherGroup.label) {
             otherGroup.label.setMap(map);
           }
         });
 
+        activeTownshipHoverGroup = null;
+        map.setCursor("");
         resetTownshipStyles();
-        setTownshipGroupStyle(group, "selected");
 
         // 선택한 읍면의 전체 범위가 보이도록 이동/확대
         map.setBounds(group.bounds);
@@ -3274,13 +3282,13 @@
           applyRoadVisibility();
           updateLabels();
 
-          // 확대 후에도 주변 읍면 선택영역과 라벨은 계속 유지
+          // 확대 후에도 경계와 라벨만 유지하고 읍면 선택/강조 영역은 비활성화함.
           townshipSelectGroups.forEach(function(otherGroup) {
             otherGroup.polygons.forEach(function(poly) {
               poly.setMap(map);
             });
             (otherGroup.hitPolygons || []).forEach(function(poly) {
-              poly.setMap(otherGroup.hoverDismissed ? null : map);
+              poly.setMap(null);
             });
             if (otherGroup.label) {
               otherGroup.label.setMap(map);
@@ -3296,13 +3304,13 @@
           townshipSelectionFillShown = false;
           resetTownshipStyles();
 
-          // 면색상 제거 후에도 주변 읍면 선택영역은 계속 유지
+          // 선택 후에는 읍면 경계/라벨만 유지하고 강조용 hit polygon은 계속 비활성화함.
           townshipSelectGroups.forEach(function(otherGroup) {
             otherGroup.polygons.forEach(function(poly) {
               poly.setMap(map);
             });
             (otherGroup.hitPolygons || []).forEach(function(poly) {
-              poly.setMap(map);
+              poly.setMap(null);
             });
             if (otherGroup.label) {
               otherGroup.label.setMap(map);
@@ -3516,7 +3524,9 @@
               poly.setMap(isSkyViewMode ? map : null);
             });
             (group.hitPolygons || []).forEach(function(poly) {
-              poly.setMap(group.hoverDismissed ? null : map);
+              poly.setMap(
+                townshipStartMode && !group.hoverDismissed ? map : null
+              );
             });
           });
 
@@ -6222,6 +6232,7 @@
           group.hitPolygons.push(hitPolygon);
 
           kakao.maps.event.addListener(hitPolygon, "mouseover", function() {
+            if (!townshipStartMode) return;
             if (group.hoverDismissed) return;
 
             // 현재 선택된 읍면은 이후 선택 불가.
@@ -6236,6 +6247,7 @@
           });
 
           kakao.maps.event.addListener(hitPolygon, "mouseout", function() {
+            if (!townshipStartMode) return;
             if (group.hoverDismissed) return;
 
             if (selectedTownshipName === name) {
@@ -6289,25 +6301,24 @@
           el.textContent = group.name;
           el.style.pointerEvents = "auto";
           el.addEventListener("click", function(event) {
+            if (!townshipStartMode) return;
+
             event.preventDefault();
             event.stopPropagation();
 
-            if (townshipStartMode) {
-              if (selectedTownshipName === group.name) return;
-              selectTownship(group.name);
-              return;
-            }
-
-            dismissTownshipHoverLayer(group);
+            if (selectedTownshipName === group.name) return;
+            selectTownship(group.name);
           });
 
           el.addEventListener("mouseenter", function() {
+            if (!townshipStartMode) return;
             if (group.hoverDismissed) return;
             if (selectedTownshipName === group.name) return;
             setTownshipGroupStyle(group, "hover");
           });
 
           el.addEventListener("mouseleave", function() {
+            if (!townshipStartMode) return;
             if (group.hoverDismissed) return;
             if (selectedTownshipName === group.name) return;
             setTownshipGroupStyle(group, "normal");
