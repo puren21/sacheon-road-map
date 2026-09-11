@@ -2027,6 +2027,15 @@
       backface-visibility: hidden;
     }
 
+    @media (prefers-reduced-motion: no-preference) {
+      body.windows-performance-mode .road-label,
+      body.windows-performance-mode .township-select-label,
+      body.windows-performance-mode .base-place-popup {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+
   </style>
 </head>
 
@@ -3441,8 +3450,94 @@
       installTownshipHoverDismissClick();
       watchPopupSafeAreaChanges();
 
+      const IS_WINDOWS = /Windows/i.test(navigator.userAgent);
+      if (IS_WINDOWS) {
+        document.body.classList.add("windows-performance-mode");
+      }
+      let windowsZoomFastMode = false;
+      let windowsZoomRestorePending = false;
       let zoomLightMode = false;
       let zoomRestoreTimer = null;
+
+      function setWindowsZoomFastMode(enabled) {
+        if (!IS_WINDOWS) return;
+        if (windowsZoomFastMode === enabled) return;
+
+        windowsZoomFastMode = enabled;
+
+        if (enabled) {
+          // Windows 확대/축소 중에는 사용자 도형을 전부 내려 기본지도 렌더링만 남김.
+          allRoads.forEach(function(road) {
+            [road.baseLine, road.roadLine, road.hitLine, road.selectionInnerLine]
+              .forEach(function(line) {
+                if (line && line.getMap()) line.setMap(null);
+              });
+          });
+
+          Object.values(LAYERS).forEach(function(layer) {
+            layer.labels.forEach(function(labelItem) {
+              if (labelItem.overlay.getMap()) {
+                labelItem.overlay.setMap(null);
+              }
+            });
+          });
+
+          Object.values(BOUNDARY_LAYERS).forEach(function(layer) {
+            layer.shapes.forEach(function(shape) {
+              if (shape.getMap()) shape.setMap(null);
+            });
+          });
+
+          townshipSelectGroups.forEach(function(group) {
+            group.polygons.forEach(function(poly) {
+              if (poly.getMap()) poly.setMap(null);
+            });
+            (group.skyBackPolygons || []).forEach(function(poly) {
+              if (poly.getMap()) poly.setMap(null);
+            });
+            (group.hitPolygons || []).forEach(function(poly) {
+              if (poly.getMap()) poly.setMap(null);
+            });
+            if (group.label && group.label.getMap()) {
+              group.label.setMap(null);
+            }
+          });
+
+          return;
+        }
+
+        // 다음 갱신에서 현재 화면에 필요한 도형만 다시 올리도록 캐시를 무효화.
+        allRoads.forEach(function(road) {
+          road._visible = false;
+          road._visualTier = null;
+        });
+
+        Object.values(LAYERS).forEach(function(layer) {
+          layer.labels.forEach(function(labelItem) {
+            labelItem._visible = false;
+          });
+        });
+
+        updateBoundaryVisibility();
+
+        // 읍면 경계/선택영역 복원
+        if (BOUNDARY_LAYERS.townshipBoundary.visible) {
+          townshipSelectGroups.forEach(function(group) {
+            group.polygons.forEach(function(poly) {
+              poly.setMap(map);
+            });
+            (group.skyBackPolygons || []).forEach(function(poly) {
+              poly.setMap(isSkyViewMode ? map : null);
+            });
+            (group.hitPolygons || []).forEach(function(poly) {
+              poly.setMap(group.hoverDismissed ? null : map);
+            });
+          });
+
+          updateTownshipLabelVisibility();
+          resetTownshipStyles();
+        }
+      }
 
       function setRoadZoomLightMode(enabled) {
         if (zoomLightMode === enabled) return;
@@ -3497,6 +3592,7 @@
       }
 
       function refreshMapAfterInteraction() {
+        setWindowsZoomFastMode(false);
         setRoadZoomLightMode(false);
         updateScale();
         applyRoadVisibility();
@@ -3516,6 +3612,20 @@
         }
       }
 
+      // Windows에서는 wheel 확대/축소가 시작되기 직전에 사용자 도형을 숨긴다.
+      // Kakao 기본지도만 확대되므로 SVG/Overlay 변환 비용이 크게 줄어든다.
+      const performanceMapElement = document.getElementById("map");
+
+      performanceMapElement.addEventListener("wheel", function() {
+        if (!IS_WINDOWS) return;
+        setWindowsZoomFastMode(true);
+      }, { capture: true, passive: true });
+
+      performanceMapElement.addEventListener("dblclick", function() {
+        if (!IS_WINDOWS) return;
+        setWindowsZoomFastMode(true);
+      }, true);
+
       kakao.maps.event.addListener(map, "dragstart", function() {
         Object.values(LAYERS).forEach(function(layer) {
           layer.labels.forEach(function(labelItem) {
@@ -3524,6 +3634,19 @@
             }
           });
         });
+
+        if (IS_WINDOWS) {
+          allRoads.forEach(function(road) {
+            if (!road._visible) return;
+
+            if (road.hitLine && road.hitLine.getMap()) {
+              road.hitLine.setMap(null);
+            }
+            if (road.selectionInnerLine && road.selectionInnerLine.getMap()) {
+              road.selectionInnerLine.setMap(null);
+            }
+          });
+        }
       });
 
       // 무거운 도로 재계산은 지도 조작이 끝난 뒤 한 번만 실행.
@@ -3531,14 +3654,13 @@
 
       // 줌 중에는 팝업만 유지하고, 도로 갱신은 idle에서 처리.
       kakao.maps.event.addListener(map, "zoom_changed", function() {
-        setRoadZoomLightMode(true);
+        if (IS_WINDOWS) {
+          setWindowsZoomFastMode(true);
+        } else {
+          setRoadZoomLightMode(true);
+        }
 
         clearTimeout(zoomRestoreTimer);
-        zoomRestoreTimer = setTimeout(function() {
-          // 연속 휠 입력이 멈춘 뒤에만 복원을 시도.
-          // 실제 전체 갱신은 idle 이벤트에서 수행됨.
-          if (!zoomLightMode) return;
-        }, 120);
 
         restoreSelectedRoadPopup();
 
@@ -5728,8 +5850,8 @@
 
         const latSpan = Math.max(0.00001, ne.getLat() - sw.getLat());
         const lngSpan = Math.max(0.00001, ne.getLng() - sw.getLng());
-        const padLat = latSpan * 0.08;
-        const padLng = lngSpan * 0.08;
+        const padLat = latSpan * 0.04;
+        const padLng = lngSpan * 0.04;
 
         return {
           minLat: sw.getLat() - padLat,
@@ -5764,8 +5886,11 @@
       }
 
       function applyRoadVisibility() {
+        if (windowsZoomFastMode) return;
+
         const viewport = getBufferedViewportBox();
         const visualTier = getRoadScaleTier(currentScaleDenominator);
+        const pathTier = getRoadPathTier();
 
         allRoads.forEach(function(road) {
           const visible =
@@ -5777,6 +5902,10 @@
           if (road._visible !== visible) {
             setRoadObjectMap(road, visible);
             road._visible = visible;
+          }
+
+          if (visible) {
+            applyRoadPathTier(road, pathTier);
           }
 
           // 같은 축척 단계에서는 동일 스타일을 다시 setOptions 하지 않음.
@@ -6333,6 +6462,34 @@
         return 0.000016;
       }
 
+      function getRoadPathTier() {
+        const scale = Number(currentScaleDenominator);
+        if (!Number.isFinite(scale)) return "fine";
+        if (scale >= 50000) return "coarse";
+        if (scale >= 25000) return "medium";
+        return "fine";
+      }
+
+      function roadPathForTier(road, tier) {
+        if (tier === "coarse") return road.pathCoarse || road.pathMedium || road.pathFine;
+        if (tier === "medium") return road.pathMedium || road.pathFine;
+        return road.pathFine;
+      }
+
+      function applyRoadPathTier(road, tier) {
+        if (!road || road._pathTier === tier) return;
+
+        const path = roadPathForTier(road, tier);
+        if (!path) return;
+
+        [road.baseLine, road.roadLine, road.hitLine, road.selectionInnerLine]
+          .forEach(function(line) {
+            if (line) line.setPath(path);
+          });
+
+        road._pathTier = tier;
+      }
+
       function drawRoad(
         path,
         properties,
@@ -6344,9 +6501,21 @@
         const styleKey = getStyleKey(properties, layerId);
         const style = ROAD_STYLES[styleKey];
 
+        const baseTolerance = getDisplaySimplifyTolerance(styleKey);
+
         const displayPath = simplifyLatLngPath(
           path,
-          getDisplaySimplifyTolerance(styleKey)
+          baseTolerance
+        );
+
+        const mediumPath = simplifyLatLngPath(
+          path,
+          baseTolerance * 3.2
+        );
+
+        const coarsePath = simplifyLatLngPath(
+          path,
+          baseTolerance * 7.0
         );
 
         const extent = path.reduce(function(box, point) {
@@ -6389,7 +6558,7 @@
         const hitLine = new kakao.maps.Polyline({
           map: null,
           path: displayPath,
-          strokeWeight: Math.max(18, style.base + 10),
+          strokeWeight: Math.max(12, style.base + 6),
           strokeColor: "#000000",
           strokeOpacity: 0.01,
           strokeStyle: "solid",
@@ -6425,6 +6594,10 @@
           groupKey,
           properties: properties,
           extent: extent,
+          pathFine: displayPath,
+          pathMedium: mediumPath,
+          pathCoarse: coarsePath,
+          _pathTier: "fine",
           _visible: false,
           _visualTier: null
         };
@@ -6575,6 +6748,8 @@
       }
 
       function updateLabels() {
+        if (windowsZoomFastMode) return;
+
         const bounds = map.getBounds();
 
         Object.entries(LAYERS).forEach(function([layerId, layer]) {
