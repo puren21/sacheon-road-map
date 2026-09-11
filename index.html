@@ -195,6 +195,26 @@
       font-weight: bold;
     }
 
+    .layer-section-label {
+      grid-column: 1 / -1;
+      margin-top: 5px;
+      padding-top: 8px;
+      border-top: 1px solid #e5e7eb;
+      color: #59616b;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: left;
+    }
+
+    .boundary-auto-note {
+      grid-column: 1 / -1;
+      margin-top: -2px;
+      color: #8a9098;
+      font-size: 10px;
+      line-height: 1.4;
+      text-align: left;
+    }
+
     /* 사용자화 설정창 */
     #stylePanel {
       position: absolute;
@@ -928,106 +948,143 @@
     }
 
     /* =========================
-       속성 팝업
+       속성 팝업 - 둥근 카드형
        ========================= */
 
     .road-popup {
       position: relative;
-      width: 244px;
-      max-width: calc(100vw - 20px);
-      padding: 14px 7px 13px;
-      color: #111;
-      background: #fff;
-      border: 1px solid #444;
-      border-radius: 2px;
-      box-shadow: 0 5px 18px #0004;
+      width: 310px;
+      max-width: calc(100vw - 28px);
+      padding: 22px 20px 18px;
+      box-sizing: border-box;
+      color: #202124;
+      background: rgba(255,255,255,.98);
+      border: 0;
+      border-radius: 22px;
+      box-shadow: 0 10px 32px rgba(0,0,0,.18);
       font-size: 14px;
-      line-height: 1.55;
-    }
-
-    /* 노선 속성은 첨부 예시처럼 좌·우 2열 + 중앙 구분선 */
-    .road-attributes {
-      position: relative;
-      margin-top: 7px;
+      line-height: 1.45;
       overflow: hidden;
-      border-radius: 3px;
     }
 
-    .road-attributes::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 78px;
-      width: 1px;
-      background: #9ca3af;
-      z-index: 2;
-      pointer-events: none;
+    /* 팝업 본문 텍스트는 드래그 선택/복사 가능 */
+    .road-popup .road-attributes,
+    .road-popup .popup-row,
+    .road-popup .popup-label,
+    .road-popup .popup-value {
+      user-select: text;
+      -webkit-user-select: text;
+      cursor: text;
     }
 
-    .popup-row {
-      display: grid;
-      grid-template-columns: 78px minmax(0, 1fr);
-      align-items: stretch;
-      min-height: 25px;
-      line-height: 1.25;
+    .popup-eyebrow {
+      margin: 0 40px 5px 0;
+      color: #5f6368;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: -.1px;
     }
 
-    .popup-row:nth-child(odd) .popup-label {
+    .popup-drag-handle {
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .popup-drag-handle * {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .popup-drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .popup-header {
+      margin: -22px -20px 8px;
+      padding: 22px 20px 0;
+      min-height: 74px;
+      position: relative;
+      border-top-left-radius: 22px;
+      border-top-right-radius: 22px;
       background: #f7f8fa;
-    }
-
-    .popup-row:nth-child(even) .popup-label {
-      background: #fbfbfc;
-    }
-
-    .popup-label {
-      display: flex;
-      align-items: center;
-      padding: 2px 5px 2px 2px;
-      font-weight: 700;
-      letter-spacing: -0.2px;
-      white-space: nowrap;
-    }
-
-    .popup-value {
-      display: flex;
-      align-items: center;
-      padding: 2px 2px 2px 8px;
-      background: #fff;
-      overflow-wrap: anywhere;
-      word-break: keep-all;
+      border-bottom: 1px solid #eceff1;
     }
 
     .popup-title {
       margin: 0;
-      padding: 0 32px 8px 1px;
-      border-bottom: 1px solid #aeb4bb;
-      color: #111;
-      font-size: 22px;
-      font-weight: 800;
-      line-height: 1.25;
-      letter-spacing: -0.4px;
+      padding: 0 40px 15px 0;
+      color: #202124;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.22;
+      letter-spacing: -.65px;
+    }
+
+    .road-attributes {
+      margin-top: 2px;
+      padding-top: 4px;
+      border-top: 1px solid #eceff1;
+    }
+
+    .popup-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      align-items: start;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f3f4;
+      line-height: 1.35;
+    }
+
+    .popup-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 2px;
+    }
+
+    .popup-label {
+      color: #767b80;
+      font-size: 12.5px;
+      font-weight: 500;
+      letter-spacing: -.15px;
+      white-space: nowrap;
+    }
+
+    .popup-value {
+      color: #202124;
+      font-size: 13.5px;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+      word-break: keep-all;
+    }
+
+    .popup-value.wrap-status {
+      white-space: normal;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      line-height: 1.5;
     }
 
     .popup-close {
       position: absolute;
-      top: 10px;
-      right: 11px;
-      width: 30px;
-      height: 30px;
+      top: 14px;
+      right: 14px;
+      width: 34px;
+      height: 34px;
       padding: 0;
       border: 0;
       border-radius: 50%;
-      color: #444;
-      background: transparent;
+      color: #5f6368;
+      background: #f1f3f4;
       font-size: 22px;
-      font-weight: bold;
-      line-height: 30px;
+      font-weight: 400;
+      line-height: 32px;
+      cursor: pointer;
     }
 
     .popup-close:hover {
-      background: #f0f1f3;
+      background: #e5e8eb;
     }
 
     /* =========================
@@ -1404,11 +1461,168 @@
       #spatialPanel.minimized { width: 220px; }
       .spatial-body { max-height: calc(100vh - 114px); }
     }
+
+    /* 개선: 외부 공간레이어 관리 도구 */
+    .import-layer-actions { display:flex; gap:4px; align-items:center; }
+    .import-layer-action {
+      min-width:26px; height:26px; padding:0 6px; border:1px solid #d1d5db;
+      border-radius:4px; background:#fff; color:#444; cursor:pointer; font-size:12px;
+      font-weight:700; line-height:24px;
+    }
+    .import-layer-action:hover { background:#eef5ff; border-color:#9cc7f5; }
+    .import-name-input { width:100%; min-width:0; height:30px; padding:4px 7px; border:1px solid #cfd5dc; border-radius:5px; }
+
+    /* 가로형 모바일/작은 태블릿: 하단 시트 대신 좌측 패널 */
+    @media (max-width: 900px) and (orientation: landscape) {
+      #listPanel {
+        top:0; right:auto; bottom:0; left:0;
+        width:190px !important; max-width:48vw; height:100% !important;
+        min-height:0; max-height:none; display:block; border-radius:0;
+        box-shadow:2px 0 12px #0006;
+      }
+      #listResizeHandle {
+        top:0; right:-4px; bottom:0; left:auto;
+        width:8px; height:auto; cursor:ew-resize;
+      }
+      #listResizeHandle::after { display:none; }
+      #listClose {
+        top:50%; right:-16px; width:16px; height:64px;
+        border-radius:0 7px 7px 0; transform:translateY(-50%);
+      }
+      #listOpen {
+        top:50%; right:auto; bottom:auto; left:0;
+        width:16px; height:64px; border-radius:0 7px 7px 0;
+        transform:translateY(-50%);
+      }
+      #listContent { height:calc(100vh - 246px); }
+      body:not(.list-collapsed) #mapTools,
+      body:not(.list-collapsed) #scaleControl { visibility:visible; pointer-events:auto; }
+    }
+
+
+    /* =========================
+       첫 실행 읍면동 선택 화면
+       ========================= */
+    #cityOverviewBtn {
+      position: absolute;
+      top: 15px;
+      left: 205px;
+      z-index: 36;
+      display: none;
+      padding: 10px 14px;
+      border: 1px solid #cfd5dc;
+      border-radius: 7px;
+      background: rgba(255,255,255,.96);
+      box-shadow: 0 2px 8px #0004;
+      color: #27313a;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    #cityOverviewBtn:hover { background:#f3f7fb; }
+    body.list-collapsed #cityOverviewBtn { left: 15px; }
+
+    .township-select-label {
+      pointer-events: auto !important;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      color: #2f3740;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(89, 99, 109, 0.55);
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.2;
+      letter-spacing: -0.2px;
+      white-space: nowrap;
+      user-select: none;
+      transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+    }
+    .township-select-label.selected {
+      color: #1f5f9b;
+      background: rgba(255, 255, 255, 0.98);
+      border-color: rgba(37, 143, 255, 0.72);
+      font-weight: 600;
+    }
+    .ri-select-label {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      color: #59636d;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.1;
+      white-space: nowrap;
+      pointer-events: none;
+      text-shadow: -1px -1px 0 rgba(255,255,255,.95), 1px -1px 0 rgba(255,255,255,.95), -1px 1px 0 rgba(255,255,255,.95), 1px 1px 0 rgba(255,255,255,.95);
+    }
+    #townshipStartGuide {
+      position:absolute;
+      left:50%;
+      top:15px;
+      z-index:35;
+      transform:translateX(-50%);
+      padding:9px 14px;
+      border-radius:8px;
+      background:rgba(30,38,45,.80);
+      color:#fff;
+      box-shadow:0 2px 8px #0004;
+      font-size:13px;
+      font-weight:700;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+    body.township-selected #townshipStartGuide { display:none; }
+
+    @media (max-width:700px) {
+      #cityOverviewBtn { top:58px; left:8px; padding:8px 10px; font-size:12px; }
+      body.list-collapsed #cityOverviewBtn { left:8px; }
+      #townshipStartGuide { top:58px; max-width:calc(100vw - 110px); overflow:hidden; text-overflow:ellipsis; font-size:12px; }
+      .township-select-label {
+      pointer-events: auto !important;
+      cursor: pointer; padding:0; font-size:13px; }
+      .ri-select-label { font-size:10px; }
+    }
+
+    .coord-copy-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      transform: translateX(-50%);
+      z-index: 99999;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(30, 35, 40, 0.88);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .15s ease;
+    }
+    .coord-copy-toast.show {
+      opacity: 1;
+    }
+
+  
+    .road-popup,
+    .road-popup * {
+      box-sizing: border-box;
+    }
+
   </style>
 </head>
 
 <body>
   <div id="map"></div>
+  <button id="cityOverviewBtn" type="button" title="사천시 전체 읍면동 보기">사천시 전체보기</button>
+  <div id="townshipStartGuide">읍면동을 선택하면 해당 지역으로 확대됩니다.</div>
+
 
   <div id="appError" role="alertdialog" aria-live="assertive">
     <div class="app-error-card">
@@ -1514,8 +1728,8 @@
   <!-- 오른쪽 상단 메뉴 -->
   <div class="top-toolbar">
     <div class="base-map-menu">
-      <button id="normalBtn">지도</button>
-      <button id="skyBtn" class="active">스카이뷰</button>
+      <button id="normalBtn" class="active">지도</button>
+      <button id="skyBtn">스카이뷰</button>
     </div>
 
 
@@ -1571,8 +1785,10 @@
         <div class="layer-panel-title">지도설정</div>
 
         <div class="layer-grid">
+          <div class="layer-section-label" style="margin-top:0;padding-top:0;border-top:0;">배경지도</div>
+
           <div class="layer-item">
-            <input id="hybridCheck" type="checkbox" checked>
+            <input id="hybridCheck" type="checkbox">
             <label for="hybridCheck">하이브리드</label>
           </div>
 
@@ -1580,6 +1796,8 @@
             <input id="districtCheck" type="checkbox">
             <label for="districtCheck">지적편집도</label>
           </div>
+
+          <div class="layer-section-label">도로</div>
 
           <div class="layer-item">
             <input id="cityCheck" type="checkbox" checked>
@@ -1590,6 +1808,22 @@
             <input id="ruralCheck" type="checkbox" checked>
             <label for="ruralCheck">농어촌도로</label>
           </div>
+
+          <div class="layer-section-label">행정경계</div>
+
+          
+
+          <div class="layer-item">
+            <input id="townshipBoundaryCheck" type="checkbox" checked>
+            <label for="townshipBoundaryCheck">읍면동</label>
+          </div>
+
+          <div class="layer-item">
+            <input id="riBoundaryCheck" type="checkbox" checked>
+            <label for="riBoundaryCheck">리 경계</label>
+          </div>
+
+          <div class="boundary-auto-note">리 경계는 지도 축척 1:75,000 이하에서 자동 표시됩니다.</div>
         </div>
       </div>
     </div>
@@ -1680,8 +1914,8 @@
               <option value="dash">대시 간격 보통</option>
               <option value="longdash">대시 간격 넓게</option>
               <option value="shortdot">점선 간격 좁게</option>
-              <option value="dot">점선 간격 보통</option>
-              <option value="shortdashdot">짧은 대시+점</option>
+              <option value="shortdash">점선 간격 보통</option>
+              <option value="dash">짧은 대시+점</option>
               <option value="shortdashdotdot">짧은 대시+점 2개</option>
               <option value="dashdot">대시+점</option>
               <option value="longdashdot">긴 대시+점</option>
@@ -1739,20 +1973,22 @@
       const SELECTED_WIDTH = ROAD_WIDTH + 3;
 
       const COLORS = {
-        CITY: "#00B050",
-        MYEON: "#FF3333",
-        RI: "#3300FF",
-        FARM: "#FF9900",
-        OTHER: "#999999",
+        CITY: "#1F6F78",
+        MYEON: "#B85C4A",
+        RI: "#5967A8",
+        FARM: "#A67C2D",
+        OTHER: "#7A7A7A",
         BASE: "#FFFFFF",
-        SELECTED: "#00FF66"
+        SELECTED: "#E60012"
       };
 
       const DEFAULT_STYLES = {
-        CITY:  { color: "#FFFFFF", baseColor: "#00C000", top: 3, base: 6, topOpacity: 80, baseOpacity: 80 },
-        MYEON: { color: "#FFFFFF", baseColor: "#FF00A8", top: 3, base: 6, topOpacity: 80, baseOpacity: 80 },
-        RI:    { color: "#FFFFFF", baseColor: "#2537FF", top: 3, base: 6, topOpacity: 80, baseOpacity: 80 },
-        FARM:  { color: "#FFFFFF", baseColor: "#FF7A00", top: 3, base: 6, topOpacity: 80, baseOpacity: 80 }
+        // 법정 색상과 무관하게 가시성과 상호 구분성을 우선한 팔레트
+        // 3중선: 연한 외곽색 + 본색 + 중앙 흰색
+        CITY:  { color: "#1F6F78", baseColor: "#D7EAEC", top: 3, base: 6.4, mid: 5.4, inner: 1.2, topOpacity: 95, baseOpacity: 100 },
+        MYEON: { color: "#B85C4A", baseColor: "#F1DDD8", top: 3, base: 6.0, mid: 5.0, inner: 1.0, topOpacity: 95, baseOpacity: 100 },
+        RI:    { color: "#5967A8", baseColor: "#DEE2F3", top: 3, base: 5.6, mid: 4.6, inner: 0.9, topOpacity: 95, baseOpacity: 100 },
+        FARM:  { color: "#A67C2D", baseColor: "#EFE5CA", top: 3, base: 5.2, mid: 4.2, inner: 0.8, topOpacity: 95, baseOpacity: 100 }
       };
 
       const DEFAULT_STATUS_STYLES = {
@@ -1765,7 +2001,7 @@
         SCALE: 70
       };
 
-      const STYLE_DEFAULTS_VERSION = "2026-09-09-5";
+      const STYLE_DEFAULTS_VERSION = "2026-09-11-3";
 
       if (
         localStorage.getItem("styleDefaultsVersion") !==
@@ -1838,6 +2074,42 @@
         }
       };
 
+      const BOUNDARY_LAYERS = {
+        cityBoundary: {
+          files: [],
+          visible: false,
+          maxScale: 0,
+          strokeColor: "#000000",
+          strokeWeight: 0,
+          strokeOpacity: 0,
+          strokeStyle: "solid",
+          zIndex: 0,
+          shapes: []
+        },
+        townshipBoundary: {
+          files: ["township_boundary.geojson", "Township Boundary.geojson"],
+          visible: true,
+          maxScale: Infinity,
+          strokeColor: "#4C5863",
+          strokeWeight: 1.0,
+          strokeOpacity: 0.88,
+          strokeStyle: "shortdash",
+          zIndex: 2,
+          shapes: []
+        },
+        riBoundary: {
+          files: ["ri_boundary.geojson", "Ri Boundary.geojson"],
+          visible: true,
+          maxScale: 75000,
+          strokeColor: "#7D8790",
+          strokeWeight: 1,
+          strokeOpacity: 0.72,
+          strokeStyle: "shortdash",
+          zIndex: 1,
+          shapes: []
+        }
+      };
+
       const map = new kakao.maps.Map(
         document.getElementById("map"),
         {
@@ -1846,9 +2118,490 @@
         }
       );
 
-      map.setMapTypeId(kakao.maps.MapTypeId.HYBRID);
+      map.setMapTypeId(kakao.maps.MapTypeId.ROADMAP);
 
-      let currentScaleDenominator = Infinity;
+
+      /* 첫 실행 읍면동 선택 레이어 */
+      const townshipSelectGroups = new Map();
+      const townshipSelectLabels = [];
+      const riSelectLabels = [];
+      const townshipAllBounds = new kakao.maps.LatLngBounds();
+      let roadPopupOverlay = null;
+      let selectedRoadGroupKey = null;
+      let selectedRoadPopupState = null;
+      let selectedRoadObject = null;
+      let selectedTownshipName = null;
+      let townshipStartMode = true;
+      let townshipSelectionFillShown = false;
+      let townshipFillTimer = null;
+      let activeTownshipHoverGroup = null;
+      let isSkyViewMode = false;
+
+      function townshipName(feature) {
+        const p = (feature && feature.properties) || {};
+        return safe(p.NAME || p.EMD_KOR_NM || p.ADM_NM || p.name || "읍면동");
+      }
+
+      function extendBoundsWithPath(bounds, path) {
+        (path || []).forEach(function(pos) { if (pos) bounds.extend(pos); });
+      }
+
+      function midpointOfBounds(bounds) {
+        if (!bounds || bounds.isEmpty()) return map.getCenter();
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        return new kakao.maps.LatLng((sw.getLat()+ne.getLat())/2, (sw.getLng()+ne.getLng())/2);
+      }
+
+      function setTownshipGroupStyle(group, mode) {
+        if (!group) return;
+
+        const selected = mode === "selected";
+        const hover = mode === "hover";
+
+        group.polygons.forEach(function(poly) {
+          let fillOpacity = 0;
+
+          if (selected) {
+            fillOpacity = townshipSelectionFillShown ? (isSkyViewMode ? 0.16 : 0.18) : 0;
+          } else if (hover) {
+            fillOpacity = isSkyViewMode ? 0.12 : 0.16;
+          } else if (townshipStartMode) {
+            fillOpacity = isSkyViewMode ? 0.04 : 0.10;
+          }
+
+          if (isSkyViewMode) {
+            poly.setOptions({
+              strokeWeight: selected ? 3.4 : hover ? 3.0 : 2.6,
+              strokeColor: selected ? "#3DB2FF" : hover ? "#FFE066" : "#FFFFFF",
+              strokeOpacity: 1,
+              strokeStyle: "shortdash",
+              fillColor: selected ? "#258FFF" : hover ? "#FFE066" : "#FFFFFF",
+              fillOpacity: fillOpacity
+            });
+          } else {
+            poly.setOptions({
+              strokeWeight: selected ? 2.2 : hover ? 2.0 : 1.6,
+              strokeColor: selected ? "#258FFF" : hover ? "#3D7194" : "#59636D",
+              strokeOpacity: selected ? 1 : hover ? 1 : 0.92,
+              strokeStyle: "shortdash",
+              fillColor: selected ? "#258FFF" : hover ? "#74A9CF" : "#B8C8D3",
+              fillOpacity: fillOpacity
+            });
+          }
+        });
+
+        (group.skyBackPolygons || []).forEach(function(poly) {
+          const boundaryVisible = BOUNDARY_LAYERS.townshipBoundary.visible;
+          poly.setMap(isSkyViewMode && boundaryVisible ? map : null);
+          poly.setOptions({
+            strokeWeight: selected ? 6.2 : hover ? 5.8 : 5.0,
+            strokeColor: "#111111",
+            strokeOpacity: selected ? 0.82 : hover ? 0.78 : 0.72,
+            strokeStyle: "solid"
+          });
+        });
+
+        if (group.labelEl) {
+          group.labelEl.classList.toggle("selected", selected);
+          if (isSkyViewMode) {
+            group.labelEl.style.background = "rgba(255,255,255,.96)";
+            group.labelEl.style.borderColor = "rgba(0,0,0,.62)";
+            group.labelEl.style.boxShadow = "0 1px 5px rgba(0,0,0,.45)";
+            group.labelEl.style.color = "#111";
+          } else {
+            group.labelEl.style.background = "";
+            group.labelEl.style.borderColor = "";
+            group.labelEl.style.boxShadow = "";
+            group.labelEl.style.color = "";
+          }
+        }
+
+        (group.hitPolygons || []).forEach(function(hit) {
+          if (typeof hit.setOptions === "function") {
+            hit.setOptions({
+              fillOpacity: selected ? 0 : 0.01
+            });
+          }
+        });
+      }
+
+      function dismissTownshipHoverLayer(group) {
+        if (townshipStartMode || !group) return;
+
+        map.setCursor("");
+
+        // 클릭한 읍면만 hover 강조를 해제
+        if (selectedTownshipName === group.name) {
+          setTownshipGroupStyle(group, "selected");
+        } else {
+          setTownshipGroupStyle(group, "normal");
+        }
+
+        // 클릭한 읍면의 투명 hit polygon만 제거.
+        // 다른 주변 읍면의 hit polygon은 유지하므로 hover가 계속 작동함.
+        (group.hitPolygons || []).forEach(function(hit) {
+          hit.setMap(null);
+        });
+
+        group.hoverDismissed = true;
+        if (activeTownshipHoverGroup === group) {
+          activeTownshipHoverGroup = null;
+        }
+      }
+
+      function installTownshipHoverDismissClick() {
+        const mapContainer = document.getElementById("map");
+        if (!mapContainer || mapContainer._townshipHoverDismissClickInstalled) return;
+
+        mapContainer._townshipHoverDismissClickInstalled = true;
+
+        mapContainer.addEventListener("click", function() {
+          if (townshipStartMode) return;
+          if (!activeTownshipHoverGroup) return;
+          if (activeTownshipHoverGroup.hoverDismissed) return;
+
+          // 현재 실제로 hover 중인 읍면만 비활성화.
+          // 폴리곤 자체 click 이벤트에 의존하지 않으므로 모든 읍면에서 동일하게 작동함.
+          dismissTownshipHoverLayer(activeTownshipHoverGroup);
+        }, true);
+      }
+
+      function updateTownshipLabelPointerEvents() {
+        townshipSelectGroups.forEach(function(group) {
+          if (!group.labelEl) return;
+          group.labelEl.style.pointerEvents = townshipStartMode ? "auto" : "none";
+          group.labelEl.style.cursor = townshipStartMode ? "pointer" : "default";
+        });
+      }
+
+      function resetTownshipStyles() {
+        townshipSelectGroups.forEach(function(group) {
+          if (selectedTownshipName === group.name) {
+            setTownshipGroupStyle(group, "selected");
+          } else {
+            setTownshipGroupStyle(group, "normal");
+          }
+        });
+      }
+
+
+      function pointInRing(point, ring) {
+        const x = point[0], y = point[1];
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+          const xi = ring[i][0], yi = ring[i][1];
+          const xj = ring[j][0], yj = ring[j][1];
+          const intersect =
+            ((yi > y) !== (yj > y)) &&
+            (x < (xj - xi) * (y - yi) / ((yj - yi) || 1e-12) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      }
+
+      function distancePointToSegment(px, py, ax, ay, bx, by) {
+        const dx = bx - ax;
+        const dy = by - ay;
+        if (dx === 0 && dy === 0) {
+          const ex = px - ax, ey = py - ay;
+          return Math.sqrt(ex * ex + ey * ey);
+        }
+        let t = ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy);
+        t = Math.max(0, Math.min(1, t));
+        const x = ax + t * dx;
+        const y = ay + t * dy;
+        const ex = px - x, ey = py - y;
+        return Math.sqrt(ex * ex + ey * ey);
+      }
+
+      function distanceToRing(point, ring) {
+        let minDist = Infinity;
+        for (let i = 0; i < ring.length - 1; i++) {
+          const a = ring[i], b = ring[i + 1];
+          const d = distancePointToSegment(point[0], point[1], a[0], a[1], b[0], b[1]);
+          if (d < minDist) minDist = d;
+        }
+        return minDist;
+      }
+
+
+      const townshipManualLabelPositions = {
+        "곤양":   [35.0735317, 127.9978400],
+        "곤양면": [35.0735317, 127.9978400],
+        "곤명":   [35.1123797, 127.9506101],
+        "곤명면": [35.1123797, 127.9506101],
+        "서포":   [35.0138755, 127.9657379],
+        "서포면": [35.0138755, 127.9657379],
+        "축동":   [35.1032921, 128.0601060],
+        "축동면": [35.1032921, 128.0601060],
+        "사천읍": [35.0922707, 128.1151770],
+        "정동":   [35.0390799, 128.1541739],
+        "정동면": [35.0390799, 128.1541739],
+        "사남":   [35.0245989, 128.1187166],
+        "사남면": [35.0245989, 128.1187166],
+        "용현":   [35.0213426, 128.0738465],
+        "용현면": [35.0213426, 128.0738465]
+      };
+
+      function getManualTownshipLabelPosition(name) {
+        if (!name) return null;
+        const key = String(name).trim();
+        const p = townshipManualLabelPositions[key];
+        return p ? new kakao.maps.LatLng(p[0], p[1]) : null;
+      }
+
+      function getTownshipLabelPoint(rings) {
+        if (!rings || !rings.length || !rings[0].length) return null;
+
+        const outer = rings[0];
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        outer.forEach(function(p) {
+          minX = Math.min(minX, p[0]);
+          minY = Math.min(minY, p[1]);
+          maxX = Math.max(maxX, p[0]);
+          maxY = Math.max(maxY, p[1]);
+        });
+
+        // 단순 중심점이 폴리곤 내부에 있으면 후보로 사용
+        let best = [(minX + maxX) / 2, (minY + maxY) / 2];
+        let bestDist = pointInRing(best, outer) ? distanceToRing(best, outer) : -1;
+
+        // 폴리곤 내부에서 경계와 가장 멀리 떨어진 점을 격자 탐색
+        // 읍면명처럼 시각적으로 안정적인 내부 대표점 확보
+        const steps = 24;
+        for (let ix = 0; ix <= steps; ix++) {
+          for (let iy = 0; iy <= steps; iy++) {
+            const x = minX + (maxX - minX) * ix / steps;
+            const y = minY + (maxY - minY) * iy / steps;
+            const p = [x, y];
+
+            if (!pointInRing(p, outer)) continue;
+
+            let inHole = false;
+            for (let h = 1; h < rings.length; h++) {
+              if (pointInRing(p, rings[h])) {
+                inHole = true;
+                break;
+              }
+            }
+            if (inHole) continue;
+
+            const d = distanceToRing(p, outer);
+            if (d > bestDist) {
+              best = p;
+              bestDist = d;
+            }
+          }
+        }
+
+        return best;
+      }
+
+
+      function showCoordCopyToast(message) {
+        const toast = document.getElementById("coordCopyToast");
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.add("show");
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(function() {
+          toast.classList.remove("show");
+        }, 1200);
+      }
+
+      function copyMapCoordinate(latLng) {
+        if (!latLng) return;
+
+        const lat = latLng.getLat().toFixed(7);
+        const lng = latLng.getLng().toFixed(7);
+
+        // 사용자가 읍면명 위치를 알려주기 쉽도록 "위도, 경도" 순서로 복사
+        const textValue = lat + ", " + lng;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(textValue)
+            .then(function() {
+              showCoordCopyToast("좌표 복사됨: " + textValue);
+            })
+            .catch(function() {
+              const ta = document.createElement("textarea");
+              ta.value = textValue;
+              ta.style.position = "fixed";
+              ta.style.opacity = "0";
+              document.body.appendChild(ta);
+              ta.focus();
+              ta.select();
+              try {
+                document.execCommand("copy");
+                showCoordCopyToast("좌표 복사됨: " + textValue);
+              } catch (e) {
+                showCoordCopyToast(textValue);
+              }
+              ta.remove();
+            });
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = textValue;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          try {
+            document.execCommand("copy");
+            showCoordCopyToast("좌표 복사됨: " + textValue);
+          } catch (e) {
+            showCoordCopyToast(textValue);
+          }
+          ta.remove();
+        }
+      }
+
+
+      kakao.maps.event.addListener(map, "rightclick", function(mouseEvent) {
+        copyMapCoordinate(mouseEvent.latLng);
+      });
+
+      function selectTownship(name) {
+        const group = townshipSelectGroups.get(name);
+        if (!group || group.bounds.isEmpty()) return;
+
+        selectedTownshipName = name;
+        townshipStartMode = false;
+        activeTownshipHoverGroup = null;
+        townshipSelectionFillShown = true;
+
+        // 새 읍면 진입 시 주변 읍면 hover 상태 초기화
+        townshipSelectGroups.forEach(function(otherGroup) {
+          otherGroup.hoverDismissed = false;
+          (otherGroup.hitPolygons || []).forEach(function(hit) {
+            hit.setMap(map);
+          });
+        });
+
+        if (townshipFillTimer) {
+          clearTimeout(townshipFillTimer);
+          townshipFillTimer = null;
+        }
+
+        document.body.classList.add("township-selected");
+        document.getElementById("cityOverviewBtn").style.display = "block";
+
+        // 모든 읍면 경계와 라벨은 계속 지도에 남겨
+        // 확대 후에도 주변 읍면을 바로 다시 선택할 수 있게 함.
+        townshipSelectGroups.forEach(function(otherGroup) {
+          otherGroup.polygons.forEach(function(poly) {
+            poly.setMap(map);
+          });
+          (otherGroup.hitPolygons || []).forEach(function(poly) {
+            poly.setMap(map);
+          });
+          if (otherGroup.label) {
+            otherGroup.label.setMap(map);
+          }
+        });
+
+        resetTownshipStyles();
+        setTownshipGroupStyle(group, "selected");
+
+        // 선택한 읍면의 전체 범위가 보이도록 이동/확대
+        map.setBounds(group.bounds);
+
+        // setBounds 이후 축척과 도로/라벨 상태 재계산
+        setTimeout(function() {
+          updateScale();
+
+          // 농어촌도로가 확실히 보이도록 선택 직후 한 단계 더 확대함.
+          // 목표는 대략 1:40,000 전후이며 최소한 1:50,000 미만이 되도록 보정함.
+          let zoomGuard = 0;
+          while (
+            Number.isFinite(currentScaleDenominator) &&
+            currentScaleDenominator >= 40000 &&
+            map.getLevel() > 1 &&
+            zoomGuard < 4
+          ) {
+            map.setLevel(map.getLevel() - 1);
+            updateScale();
+            zoomGuard += 1;
+          }
+
+          applyRoadVisibility();
+          updateLabels();
+
+          // 확대 후에도 주변 읍면 선택영역과 라벨은 계속 유지
+          townshipSelectGroups.forEach(function(otherGroup) {
+            otherGroup.polygons.forEach(function(poly) {
+              poly.setMap(map);
+            });
+            (otherGroup.hitPolygons || []).forEach(function(poly) {
+              poly.setMap(map);
+            });
+            if (otherGroup.label) {
+              otherGroup.label.setMap(map);
+            }
+          });
+        }, 0);
+
+        // 선택 면 색상은 한 번만 보여주고 이후 경계선만 유지
+        townshipFillTimer = setTimeout(function() {
+          townshipSelectionFillShown = false;
+          resetTownshipStyles();
+
+          // 면색상 제거 후에도 주변 읍면 선택영역은 계속 유지
+          townshipSelectGroups.forEach(function(otherGroup) {
+            otherGroup.polygons.forEach(function(poly) {
+              poly.setMap(map);
+            });
+            (otherGroup.hitPolygons || []).forEach(function(poly) {
+              poly.setMap(map);
+            });
+            if (otherGroup.label) {
+              otherGroup.label.setMap(map);
+            }
+          });
+
+          townshipFillTimer = null;
+        }, 700);
+      }
+
+      function showTownshipOverview() {
+        clearSelectedRoadHighlight();
+        selectedTownshipName = null;
+        townshipStartMode = true;
+        activeTownshipHoverGroup = null;
+        updateTownshipLabelPointerEvents();
+
+        townshipSelectGroups.forEach(function(group) {
+          group.hoverDismissed = false;
+          (group.hitPolygons || []).forEach(function(hit) {
+            hit.setMap(map);
+          });
+        });
+        townshipSelectionFillShown = false;
+
+        townshipSelectGroups.forEach(function(group) {
+          (group.hitPolygons || []).forEach(function(hit) {
+            hit.setMap(map);
+          });
+        });
+        if (townshipFillTimer) {
+          clearTimeout(townshipFillTimer);
+          townshipFillTimer = null;
+        }
+        document.body.classList.remove("township-selected");
+        document.getElementById("cityOverviewBtn").style.display = "none";
+        resetTownshipStyles();
+        applyRoadVisibility();
+        updateLabels();
+        updateRiLabelVisibility();
+        if (!townshipAllBounds.isEmpty()) map.setBounds(townshipAllBounds);
+      }
+
+      document.getElementById("cityOverviewBtn").onclick = showTownshipOverview;
+
+      let currentScaleDenominator = null;
 
       function updateScale() {
         const mapElement = document.getElementById("map");
@@ -1876,7 +2629,14 @@
           formatDistance(scaleMeters);
         document.getElementById("scaleRatio").textContent =
           "축척 1:" + denominator.toLocaleString("ko-KR");
+
+        // 축척이 바뀔 때 도로선과 라벨을 반드시 함께 갱신함.
+        applyRoadVisibility();
         updateLabels();
+        updateBoundaryVisibility();
+        resetTownshipStyles();
+        updateRiLabelVisibility();
+        updateTownshipLabelVisibility();
       }
 
       function distanceMeters(a, b) {
@@ -1916,7 +2676,48 @@
           : Math.round(meters).toLocaleString("ko-KR") + " m";
       }
 
+      installTownshipHoverDismissClick();
+      watchPopupSafeAreaChanges();
+
       kakao.maps.event.addListener(map, "idle", updateScale);
+
+      kakao.maps.event.addListener(map, "center_changed", function() {
+        if (roadPopupOverlay) {
+          scheduleRoadPopupSafeViewportCheck();
+        }
+      });
+
+      kakao.maps.event.addListener(map, "bounds_changed", function() {
+        if (roadPopupOverlay) {
+          scheduleRoadPopupSafeViewportCheck();
+        }
+      });
+
+      kakao.maps.event.addListener(map, "zoom_changed", function() {
+        setTimeout(function() {
+          if (selectedRoadGroupKey) {
+            setRoadGroupHighlight(selectedRoadGroupKey, true);
+          }
+          restoreSelectedRoadPopup();
+          scheduleRoadPopupSafeViewportCheck();
+        }, 0);
+
+        // 줌 렌더링이 끝난 뒤 한 번 더 확인하여 사라진 팝업을 확실히 복구.
+        setTimeout(function() {
+          restoreSelectedRoadPopup();
+          scheduleRoadPopupSafeViewportCheck();
+        }, 180);
+      });
+
+      kakao.maps.event.addListener(map, "idle", function() {
+        if (selectedRoadGroupKey) {
+          setRoadGroupHighlight(selectedRoadGroupKey, true);
+        }
+        restoreSelectedRoadPopup();
+        scheduleRoadPopupSafeViewportCheck();
+      });
+
+
       window.addEventListener("resize", updateScale);
       setTimeout(updateScale, 0);
 
@@ -2111,7 +2912,8 @@
           measureShape = new kakao.maps.Polygon({
             map: map,
             path: path,
-            strokeWeight: 3,
+            zIndex: 50,
+            strokeWeight: 2.8,
             strokeColor: "#f01818",
             strokeOpacity: 0.8,
             strokeStyle: "solid",
@@ -2392,17 +3194,21 @@
        * 지도와 스카이뷰
        */
       normalBtn.onclick = function () {
+        isSkyViewMode = false;
         map.setMapTypeId(kakao.maps.MapTypeId.ROADMAP);
 
         normalBtn.classList.add("active");
         skyBtn.classList.remove("active");
+        resetTownshipStyles();
       };
 
       skyBtn.onclick = function () {
+        isSkyViewMode = true;
         setSkyMap();
 
         skyBtn.classList.add("active");
         normalBtn.classList.remove("active");
+        resetTownshipStyles();
       };
 
       hybridCheck.onchange = function () {
@@ -2412,11 +3218,8 @@
       };
 
       function setSkyMap() {
-        map.setMapTypeId(
-          hybridCheck.checked
-            ? kakao.maps.MapTypeId.HYBRID
-            : kakao.maps.MapTypeId.SKYVIEW
-        );
+        // 카카오맵의 하이브리드처럼 위성영상 위에 도로/지명 정보를 함께 표시
+        map.setMapTypeId(kakao.maps.MapTypeId.HYBRID);
       }
 
       /*
@@ -2577,6 +3380,7 @@
           fillColor:"#4a90e2", fillOpacity:35,
           pointColor:"#ff3b30", pointSize:12,
           labelField:"", labelSize:12, shapes:[], labels:[],
+          zIndex:20 + importedLayerSeq,
           bounds:new kakao.maps.LatLngBounds()
         };
         importedLayers.set(id, layer);
@@ -2598,6 +3402,7 @@
 
       function importedPosition(coordinate, bounds) {
         const normalized = normalizeCoordinate(coordinate);
+        if (!normalized) return null;
         const position = new kakao.maps.LatLng(normalized[1], normalized[0]);
         if (bounds) bounds.extend(position);
         return position;
@@ -2675,12 +3480,12 @@
           if (!geometry) return;
 
           importedGeometryLines(geometry).forEach(function(coords) {
-            const path = coords.map(function(c) { return importedPosition(c, layer.bounds); });
+            const path = coords.map(function(c) { return importedPosition(c, layer.bounds); }).filter(Boolean);
             if (path.length < 2) return;
             const lineShape = new kakao.maps.Polyline({
               map:layer.visible?map:null, path,
               strokeWeight:layer.weight, strokeColor:layer.color,
-              strokeOpacity:layer.opacity/100, strokeStyle:layer.strokeStyle, zIndex:7
+              strokeOpacity:layer.opacity/100, strokeStyle:layer.strokeStyle, zIndex:layer.zIndex
             });
             bindImportedShapeClick(lineShape, feature, layer);
             layer.shapes.push(lineShape);
@@ -2691,14 +3496,14 @@
             : geometry.type === "MultiPolygon" ? geometry.coordinates : [];
           polygons.forEach(function(rings) {
             const paths = rings.map(function(ring) {
-              return ring.map(function(c) { return importedPosition(c, layer.bounds); });
+              return ring.map(function(c) { return importedPosition(c, layer.bounds); }).filter(Boolean);
             }).filter(function(path) { return path.length >= 3; });
             if (!paths.length) return;
             const polygonShape = new kakao.maps.Polygon({
               map:layer.visible?map:null, path:paths,
               strokeWeight:layer.weight, strokeColor:layer.color,
               strokeOpacity:layer.opacity/100, strokeStyle:layer.strokeStyle,
-              fillColor:layer.fillColor, fillOpacity:layer.fillOpacity/100, zIndex:7
+              fillColor:layer.fillColor, fillOpacity:layer.fillOpacity/100, zIndex:layer.zIndex
             });
             bindImportedShapeClick(polygonShape, feature, layer);
             layer.shapes.push(polygonShape);
@@ -2709,6 +3514,7 @@
             : geometry.type === "MultiPoint" ? geometry.coordinates : [];
           points.forEach(function(coordinate) {
             const position = importedPosition(coordinate, layer.bounds);
+            if (!position) return;
             const pointElement = document.createElement('div');
             pointElement.className = 'imported-point';
             pointElement.style.width = layer.pointSize + 'px';
@@ -2722,7 +3528,7 @@
             const point = new kakao.maps.CustomOverlay({
               map:layer.visible?map:null, position,
               content:pointElement,
-              xAnchor:.5, yAnchor:.5, zIndex:8
+              xAnchor:.5, yAnchor:.5, zIndex:layer.zIndex + 1
             });
             layer.shapes.push(point);
           });
@@ -2731,16 +3537,48 @@
         });
       }
 
+      function polygonLabelPosition(geometry) {
+        const coordinates = [];
+        collectImportedCoordinates(geometry && geometry.coordinates, coordinates);
+        if (!coordinates.length) return null;
+        let x = 0, y = 0, count = 0;
+        coordinates.forEach(function(c) {
+          const normalized = normalizeCoordinate(c);
+          if (!normalized) return;
+          x += normalized[0]; y += normalized[1]; count++;
+        });
+        return count ? new kakao.maps.LatLng(y / count, x / count) : null;
+      }
+
+      function importedFeatureLabelPosition(feature) {
+        const geometry = feature && feature.geometry;
+        if (!geometry) return null;
+        if (geometry.type === "Point") return importedPosition(geometry.coordinates);
+        if (geometry.type === "MultiPoint") return importedPosition(geometry.coordinates[0]);
+        if (geometry.type === "LineString" || geometry.type === "MultiLineString") {
+          const paths = importedGeometryLines(geometry).map(function(coords) {
+            return coords.map(function(c) { return importedPosition(c); }).filter(Boolean);
+          }).filter(function(path) { return path.length; });
+          return midpointAcrossPaths(paths);
+        }
+        if (geometry.type === "Polygon" || geometry.type === "MultiPolygon") {
+          return polygonLabelPosition(geometry);
+        }
+        return null;
+      }
+
       function addImportedLabel(layer, feature) {
-        const value=(feature.properties||{})[layer.labelField];
-        if (value===undefined || value===null || String(value).trim()==="") return;
-        const coordinates=[];
-        collectImportedCoordinates(feature.geometry && feature.geometry.coordinates, coordinates);
-        if (!coordinates.length) return;
-        const bounds=new kakao.maps.LatLngBounds();
-        coordinates.forEach(function(c) { importedPosition(c, bounds); });
-        const label=new kakao.maps.CustomOverlay({position:boundsCenter(bounds),content:'<div class="imported-map-label" style="font-size:'+layer.labelSize+'px">'+escapeHTML(value)+'</div>',xAnchor:.5,yAnchor:.5,zIndex:9});
-        label.setMap(layer.visible?map:null); layer.labels.push(label);
+        const value = (feature.properties || {})[layer.labelField];
+        if (value === undefined || value === null || String(value).trim() === "") return;
+        const position = importedFeatureLabelPosition(feature);
+        if (!position) return;
+        const label = new kakao.maps.CustomOverlay({
+          position,
+          content:'<div class="imported-map-label" style="font-size:'+layer.labelSize+'px">'+escapeHTML(value)+'</div>',
+          xAnchor:.5, yAnchor:.5, zIndex:layer.zIndex + 2
+        });
+        label.setMap(layer.visible ? map : null);
+        layer.labels.push(label);
       }
 
       function renderImportedLayerControls(layer) {
@@ -2759,13 +3597,19 @@
             '<label class="import-visible-wrap" title="레이어 표시/숨김"><input class="imp-visible" type="checkbox" checked><span>표시</span></label>' +
             '<span class="import-layer-name" title="' + escapeHTML(layer.name) + '">' + escapeHTML(layer.name) + '</span>' +
             '<span class="import-status">' + layer.features.length.toLocaleString('ko-KR') + '개</span>' +
+            '<span class="import-layer-actions">' +
+              '<button class="import-layer-action imp-zoom" type="button" title="레이어 전체보기">⌖</button>' +
+              '<button class="import-layer-action imp-up" type="button" title="위로">↑</button>' +
+              '<button class="import-layer-action imp-down" type="button" title="아래로">↓</button>' +
+            '</span>' +
           '</div>' +
           '<div class="import-layer-detail">' +
             '<div class="import-style-grid">' +
+              '<span>레이어명</span><input class="import-name-input imp-name" type="text" value="' + escapeHTML(layer.name) + '">' +
               '<span>선 색상</span><input class="imp-color" type="color" value="' + layer.color + '">' +
               '<span>선 두께</span><input class="imp-weight" type="number" min="1" max="30" value="' + layer.weight + '">' +
               '<span>선 투명도</span><input class="imp-opacity" type="range" min="0" max="100" step="5" value="' + layer.opacity + '">' +
-              '<span>선 모양</span><select class="imp-stroke"><option value="solid">실선</option><option value="shortdash">짧은 대시</option><option value="dash">대시</option><option value="longdash">긴 대시</option><option value="dot">점선</option></select>' +
+              '<span>선 모양</span><select class="imp-stroke"><option value="solid">실선</option><option value="shortdash">짧은 대시</option><option value="dash">대시</option><option value="longdash">긴 대시</option><option value="shortdash">점선</option></select>' +
               '<span>면 색상</span><input class="imp-fill-color" type="color" value="' + layer.fillColor + '">' +
               '<span>면 투명도</span><input class="imp-fill-opacity" type="range" min="0" max="100" step="5" value="' + layer.fillOpacity + '">' +
               '<span>포인트 색상</span><input class="imp-point-color" type="color" value="' + layer.pointColor + '">' +
@@ -2781,12 +3625,16 @@
         const head = box.querySelector('.import-layer-head');
         const visible = box.querySelector('.imp-visible');
         head.addEventListener('click', function (event) {
-          if (event.target.closest('.import-visible-wrap')) return;
+          if (event.target.closest('.import-visible-wrap') || event.target.closest('.import-layer-actions')) return;
           box.classList.toggle('active');
         });
 
         const redraw = function () {
           layer.visible = visible.checked;
+          layer.name = box.querySelector('.imp-name').value.trim() || layer.name;
+          const nameNode = box.querySelector('.import-layer-name');
+          nameNode.textContent = layer.name;
+          nameNode.title = layer.name;
           layer.color = box.querySelector('.imp-color').value;
           layer.weight = Math.max(1, Math.min(30, Number(box.querySelector('.imp-weight').value) || 4));
           layer.opacity = Number(box.querySelector('.imp-opacity').value);
@@ -2804,6 +3652,25 @@
           el.addEventListener('input', redraw);
           el.addEventListener('change', redraw);
         });
+
+        box.querySelector('.imp-zoom').onclick = function (event) {
+          event.stopPropagation();
+          if (!layer.bounds.isEmpty()) map.setBounds(layer.bounds);
+        };
+        box.querySelector('.imp-up').onclick = function (event) {
+          event.stopPropagation();
+          layer.zIndex += 5;
+          drawImportedLayer(layer);
+          const prev = box.previousElementSibling;
+          if (prev) spatialLayerList.insertBefore(box, prev);
+        };
+        box.querySelector('.imp-down').onclick = function (event) {
+          event.stopPropagation();
+          layer.zIndex = Math.max(10, layer.zIndex - 5);
+          drawImportedLayer(layer);
+          const next = box.nextElementSibling;
+          if (next) spatialLayerList.insertBefore(next, box);
+        };
 
         box.querySelector('.import-delete').onclick = function () {
           clearImportedGraphics(layer);
@@ -2831,6 +3698,7 @@
           [color, baseColor, top, base, topOpacity, baseOpacity].forEach(function (input) {
             input.addEventListener("input", function () {
               ROAD_STYLES[key] = {
+                ...ROAD_STYLES[key],
                 color: color.value,
                 baseColor: baseColor.value,
                 top: limitNumber(top.value, 1, 20),
@@ -3020,6 +3888,41 @@
             );
           }
         };
+
+      function setBoundaryLayer(layerId, visible) {
+        if (!BOUNDARY_LAYERS[layerId]) return;
+        BOUNDARY_LAYERS[layerId].visible = visible;
+        if (layerId === "townshipBoundary") {
+          townshipSelectGroups.forEach(function(group) {
+            group.polygons.forEach(function(poly) { poly.setMap(visible ? map : null); });
+            (group.skyBackPolygons || []).forEach(function(poly) {
+              poly.setMap(visible && isSkyViewMode ? map : null);
+            });
+            if (group.label) group.label.setMap(visible ? map : null);
+          });
+          resetTownshipStyles();
+        }
+        updateBoundaryVisibility();
+      }
+
+      function updateBoundaryVisibility() {
+        Object.keys(BOUNDARY_LAYERS).forEach(function(layerId) {
+          const layer = BOUNDARY_LAYERS[layerId];
+          const scaleVisible = !Number.isFinite(currentScaleDenominator) || currentScaleDenominator <= layer.maxScale;
+          const show = layer.visible && scaleVisible;
+          layer.shapes.forEach(function(shape) {
+            shape.setMap(show ? map : null);
+          });
+        });
+      }
+
+      
+      document.getElementById("townshipBoundaryCheck").onchange = function () {
+        setBoundaryLayer("townshipBoundary", this.checked);
+      };
+      document.getElementById("riBoundaryCheck").onchange = function () {
+        setBoundaryLayer("riBoundary", this.checked);
+      };
 
       /*
        * 노선목록
@@ -3423,37 +4326,474 @@
         updateLabels();
       }
 
+      // 지도 친화형 도로 스타일
+      // 시도 #4F8C78 / 면도 #C97B55 / 리도 #6789A3 / 농도 #B99A62
+      // 바탕선은 흰색 5px, 본선은 약 2.8px 기준
+      // 미확장 dash, 미개설 shortdash
+
+      function isRoadLayerVisibleAtScale(layerId) {
+        const scale = Number(currentScaleDenominator);
+
+        // 축척값이 아직 계산되지 않은 초기 순간에는 표시하지 않음.
+        if (!Number.isFinite(scale)) return false;
+
+        // 1:100,000 이상에서는 모든 도로와 도로 라벨을 숨김.
+        if (scale >= 100000) return false;
+
+        // 1:50,000 이상 ~ 1:100,000 미만에서는 시도만 표시.
+        if (scale >= 50000) return layerId === "city";
+
+        // 1:50,000 미만에서는 시도 + 농어촌도로 모두 표시.
+        return true;
+      }
+
+      function getRoadDisplayOpacity(styleKey) {
+        const scale = Number(currentScaleDenominator);
+
+        // 축척값 계산 전에는 기본값 사용.
+        if (!Number.isFinite(scale)) {
+          return { base: 1, top: 0.95, inner: 1 };
+        }
+
+        // 1:50,000 이상에서는 기존 표시 규칙상 시도만 보임.
+        if (scale >= 50000) {
+          return {
+            base: styleKey === "CITY" ? 1.00 : 0.00,
+            top:  styleKey === "CITY" ? 0.95 : 0.00,
+            inner:styleKey === "CITY" ? 0.95 : 0.00
+          };
+        }
+
+        // 1:25,000 ~ 1:50,000:
+        // 전체 도로망을 볼 때 리도/농도는 강하게 톤다운하여 복잡도를 낮춤.
+        if (scale >= 25000) {
+          const mediumScaleOpacity = {
+            CITY:  { base: 0.95, top: 0.92, inner: 0.90 },
+            MYEON: { base: 0.82, top: 0.78, inner: 0.72 },
+            RI:    { base: 0.58, top: 0.55, inner: 0.42 },
+            FARM:  { base: 0.38, top: 0.35, inner: 0.22 }
+          };
+          return mediumScaleOpacity[styleKey] || mediumScaleOpacity.FARM;
+        }
+
+        // 1:25,000 이하:
+        // 상세 확인 단계이므로 리도/농도도 다시 충분히 선명하게 표시.
+        const closeScaleOpacity = {
+          CITY:  { base: 1.00, top: 0.95, inner: 0.95 },
+          MYEON: { base: 0.92, top: 0.88, inner: 0.85 },
+          RI:    { base: 0.80, top: 0.76, inner: 0.70 },
+          FARM:  { base: 0.72, top: 0.68, inner: 0.58 }
+        };
+        return closeScaleOpacity[styleKey] || closeScaleOpacity.FARM;
+      }
+
+      function applyRoadNormalVisualStyle(road) {
+        if (!road) return;
+
+        // 선택된 노선은 축척별 투명도 적용 대상에서 제외.
+        if (selectedRoadGroupKey && road.groupKey === selectedRoadGroupKey) {
+          return;
+        }
+
+        const style = ROAD_STYLES[road.styleKey];
+        const opacity = getRoadDisplayOpacity(road.styleKey);
+
+        if (road.baseLine) {
+          road.baseLine.setOptions({
+            strokeColor: style.baseColor,
+            strokeWeight: style.base,
+            strokeOpacity: (style.baseOpacity / 100) * opacity.base,
+            strokeStyle: "solid",
+            zIndex: 20
+          });
+        }
+
+        if (road.roadLine) {
+          road.roadLine.setOptions({
+            strokeColor: style.color,
+            strokeWeight: style.mid,
+            strokeOpacity: (style.topOpacity / 100) * opacity.top,
+            strokeStyle: getStatusStrokeStyle(road.statusKey),
+            zIndex: 30
+          });
+        }
+
+        if (road.selectionInnerLine) {
+          road.selectionInnerLine.setOptions({
+            strokeColor: "#FFFFFF",
+            strokeWeight: style.inner,
+            strokeOpacity: opacity.inner,
+            strokeStyle: "solid",
+            zIndex: 35
+          });
+        }
+      }
+
       function applyRoadVisibility() {
         allRoads.forEach(function (road) {
-          const visible = LAYERS[road.layerId].visible && roadStatusFilters[road.statusKey];
+          const visible =
+            LAYERS[road.layerId].visible &&
+            roadStatusFilters[road.statusKey] &&
+            isRoadLayerVisibleAtScale(road.layerId);
+
           road.baseLine.setMap(visible ? map : null);
           road.roadLine.setMap(visible ? map : null);
           road.hitLine.setMap(visible ? map : null);
+
+          if (road.selectionInnerLine) {
+            road.selectionInnerLine.setMap(visible ? map : null);
+          }
+
+          if (visible) {
+            applyRoadNormalVisualStyle(road);
+          }
         });
 
         if (selectedKey) {
           const selected = groups.get(selectedKey);
+
           if (selected && !selected.roads.some(function (road) {
-            return LAYERS[road.layerId].visible && roadStatusFilters[road.statusKey];
-          })) resetSelection();
+            return (
+              LAYERS[road.layerId].visible &&
+              roadStatusFilters[road.statusKey] &&
+              isRoadLayerVisibleAtScale(road.layerId)
+            );
+          })) {
+            resetSelection();
+          }
+        }
+      
+        if (selectedRoadGroupKey) {
+          setRoadGroupHighlight(selectedRoadGroupKey, true);
         }
       }
 
       /*
-       * GeoJSON 불러오기
+       * 행정경계 GeoJSON 불러오기
+       * 경계는 도로보다 시각적으로 낮은 위계로 표시하며 면 채움은 사용하지 않음
+       */
+      function boundaryPolygonParts(geometry) {
+        if (!geometry) return [];
+        if (geometry.type === "Polygon") return [geometry.coordinates];
+        if (geometry.type === "MultiPolygon") return geometry.coordinates;
+        return [];
+      }
+
+      function boundaryRingToPath(ring) {
+        return (ring || []).map(function(coordinate) {
+          const normalized = normalizeCoordinate(coordinate);
+          if (!normalized) return null;
+          return new kakao.maps.LatLng(normalized[1], normalized[0]);
+        }).filter(Boolean);
+      }
+
+      function addBoundaryFeature(feature, layerId) {
+        const layer = BOUNDARY_LAYERS[layerId];
+        const polygonParts = boundaryPolygonParts(feature && feature.geometry);
+
+        // 행정경계는 면이 아니라 경계선 자체가 목적이므로 Polygon 외곽선에
+        // 의존하지 않고 모든 링을 Polyline으로 직접 그림. 이 방식이 카카오맵에서
+        // MultiPolygon/내부링을 포함한 행정경계를 가장 안정적으로 표시함.
+        polygonParts.forEach(function(polygonCoordinates) {
+          (polygonCoordinates || []).forEach(function(ring) {
+            const path = boundaryRingToPath(ring);
+            if (path.length < 2) return;
+
+            const line = new kakao.maps.Polyline({
+              path: path,
+              strokeWeight: layer.strokeWeight,
+              strokeColor: layer.strokeColor,
+              strokeOpacity: layer.strokeOpacity,
+              strokeStyle: layer.strokeStyle,
+              zIndex: layer.zIndex
+            });
+
+            layer.shapes.push(line);
+          });
+        });
+      }
+
+      function addTownshipSelectorFeature(feature) {
+        const name = townshipName(feature);
+        const polygonParts = boundaryPolygonParts(feature && feature.geometry);
+        if (!polygonParts.length) return;
+        let group = townshipSelectGroups.get(name);
+        if (!group) {
+          group = { name:name, bounds:new kakao.maps.LatLngBounds(), polygons:[], skyBackPolygons:[], hitPolygons:[], labelRings:[], label:null, labelEl:null, hoverDismissed:false };
+          townshipSelectGroups.set(name, group);
+        }
+
+        polygonParts.forEach(function(polygonCoordinates) {
+          // 읍면동 선택 영역은 각 MultiPolygon 조각의 외곽링만 사용한다.
+          // Kakao Polygon에 복잡한 내부링 배열을 넘길 때 생길 수 있는 브라우저별 표시 문제를 피함.
+          const outerRing = polygonCoordinates && polygonCoordinates[0];
+          const path = boundaryRingToPath(outerRing);
+          if (path.length < 3) return;
+          extendBoundsWithPath(group.bounds, path);
+          extendBoundsWithPath(townshipAllBounds, path);
+          // 스카이뷰에서 밝은 경계선이 위성영상에 묻히지 않도록
+          // 그 아래에 어두운 바깥선을 한 겹 더 둠.
+          const skyBackPolygon = new kakao.maps.Polygon({
+            path: path,
+            strokeWeight: 5.0,
+            strokeColor: "#111111",
+            strokeOpacity: 0.72,
+            strokeStyle: "solid",
+            fillOpacity: 0,
+            zIndex: 29
+          });
+          skyBackPolygon.setMap(isSkyViewMode ? map : null);
+          group.skyBackPolygons.push(skyBackPolygon);
+
+          // 화면에 보이는 읍면동 경계/면 표현용 폴리곤
+          const polygon = new kakao.maps.Polygon({
+            path: path,
+            strokeWeight: 1.0,
+            strokeColor: "#59636D",
+            strokeOpacity: .92,
+            strokeStyle: "shortdash",
+            fillColor: "#B8C8D3",
+            fillOpacity: .10,
+            zIndex: 30
+          });
+          polygon.setMap(map);
+          group.polygons.push(polygon);
+
+          // 클릭 전용 투명 폴리곤.
+          // 면 색상이 0이 된 뒤에도 읍면 전체 영역을 계속 클릭할 수 있도록 별도로 유지함.
+          const hitPolygon = new kakao.maps.Polygon({
+            path: path,
+            strokeWeight: 0,
+            strokeOpacity: 0,
+            fillColor: "#000000",
+            fillOpacity: 0.01,
+            zIndex: 100
+          });
+          hitPolygon.setMap(map);
+          group.hitPolygons.push(hitPolygon);
+
+          kakao.maps.event.addListener(hitPolygon, "mouseover", function() {
+            if (group.hoverDismissed) return;
+
+            // 현재 선택된 읍면은 이후 선택 불가.
+            if (selectedTownshipName === name) {
+              map.setCursor("");
+              return;
+            }
+
+            activeTownshipHoverGroup = group;
+            setTownshipGroupStyle(group, "hover");
+            map.setCursor(townshipStartMode ? "pointer" : "");
+          });
+
+          kakao.maps.event.addListener(hitPolygon, "mouseout", function() {
+            if (group.hoverDismissed) return;
+
+            if (selectedTownshipName === name) {
+              map.setCursor("");
+              return;
+            }
+
+            if (activeTownshipHoverGroup === group) {
+              activeTownshipHoverGroup = null;
+            }
+            setTownshipGroupStyle(group, "normal");
+            map.setCursor("");
+          });
+
+          kakao.maps.event.addListener(hitPolygon, "click", function() {
+            // 초기화면에서는 읍면 선택 및 확대
+            if (townshipStartMode) {
+              if (selectedTownshipName === name) return;
+              selectTownship(name);
+            }
+            // 읍면 진입 후의 클릭 처리는 지도 DOM click에서 공통 처리함.
+          });
+        });
+      }
+
+      function shouldShowTownshipLabel(name) {
+        if (!name) return false;
+
+        const isDong = /동$/.test(String(name).trim());
+
+        // 읍·면은 기존처럼 표시
+        if (!isDong) return true;
+
+        // 동 명칭은 1:61,000 이하에서만 표시
+        const scale = Number(currentScaleDenominator);
+        return Number.isFinite(scale) && scale <= 61000;
+      }
+
+      function updateTownshipLabelVisibility() {
+        townshipSelectGroups.forEach(function(group) {
+          if (!group.label) return;
+          group.label.setMap(shouldShowTownshipLabel(group.name) ? map : null);
+        });
+      }
+
+      function createTownshipSelectorLabels() {
+        townshipSelectGroups.forEach(function(group) {
+          if (group.label || group.bounds.isEmpty()) return;
+          const el = document.createElement("div");
+          el.className = "township-select-label";
+          el.textContent = group.name;
+          el.style.pointerEvents = "auto";
+          el.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (townshipStartMode) {
+              if (selectedTownshipName === group.name) return;
+              selectTownship(group.name);
+              return;
+            }
+
+            dismissTownshipHoverLayer(group);
+          });
+
+          el.addEventListener("mouseenter", function() {
+            if (group.hoverDismissed) return;
+            if (selectedTownshipName === group.name) return;
+            setTownshipGroupStyle(group, "hover");
+          });
+
+          el.addEventListener("mouseleave", function() {
+            if (group.hoverDismissed) return;
+            if (selectedTownshipName === group.name) return;
+            setTownshipGroupStyle(group, "normal");
+          });
+          const manualLabelPosition = getManualTownshipLabelPosition(group.name);
+          const representativePoint = getTownshipLabelPoint(group.labelRings || []);
+          const townshipLabelPosition = manualLabelPosition || (
+            representativePoint
+              ? new kakao.maps.LatLng(representativePoint[1], representativePoint[0])
+              : new kakao.maps.LatLng(
+                  (group.bounds.getSouthWest().getLat() + group.bounds.getNorthEast().getLat()) / 2,
+                  (group.bounds.getSouthWest().getLng() + group.bounds.getNorthEast().getLng()) / 2
+                )
+          );
+
+          const overlay = new kakao.maps.CustomOverlay({
+            position: townshipLabelPosition,
+            content: el,
+            xAnchor: .5,
+            yAnchor: .5,
+            zIndex: 110
+          });
+          overlay.setMap(shouldShowTownshipLabel(group.name) ? map : null);
+          group.label = overlay;
+          group.labelEl = el;
+          townshipSelectLabels.push(overlay);
+        });
+      }
+
+      function riName(feature) {
+        const p = (feature && feature.properties) || {};
+        return safe(p.RI_NM || p.NAME || p.RI_KOR_NM || p.name || "리");
+      }
+
+      function createRiLabel(feature) {
+        const name = riName(feature);
+        if (!name || name === "-") return;
+        const parts = boundaryPolygonParts(feature && feature.geometry);
+        const bounds = new kakao.maps.LatLngBounds();
+        parts.forEach(function(poly) {
+          const ring = poly && poly[0];
+          extendBoundsWithPath(bounds, boundaryRingToPath(ring));
+        });
+        if (bounds.isEmpty()) return;
+        const el = document.createElement("div");
+        el.className = "ri-select-label";
+        el.textContent = name;
+        const overlay = new kakao.maps.CustomOverlay({
+          position: midpointOfBounds(bounds),
+          content: el,
+          xAnchor: .5,
+          yAnchor: .5,
+          zIndex: 5
+        });
+        riSelectLabels.push(overlay);
+      }
+
+      function updateRiLabelVisibility() {
+        // 리 명칭은 표시하지 않음.
+        riSelectLabels.forEach(function(label) { label.setMap(null); });
+      }
+
+      async function fetchFirstAvailableGeoJSON(fileCandidates) {
+        let lastError = null;
+        for (const file of fileCandidates) {
+          try {
+            const response = await fetch(encodeURI(file), { cache: "no-store" });
+            if (!response.ok) throw new Error(file + " HTTP " + response.status);
+            const data = await response.json();
+            if (!data || data.type !== "FeatureCollection" || !Array.isArray(data.features)) {
+              throw new Error(file + " 형식 오류");
+            }
+            console.info("행정경계 로드:", file, data.features.length + "개");
+            return { data, file };
+          } catch (error) {
+            lastError = error;
+          }
+        }
+        throw lastError || new Error("행정경계 파일을 찾지 못했습니다.");
+      }
+
+      async function loadBoundaryGeoJSON(layerId) {
+        const layer = BOUNDARY_LAYERS[layerId];
+        const candidates = layer.files || (layer.file ? [layer.file] : []);
+        const loaded = await fetchFirstAvailableGeoJSON(candidates);
+        loaded.data.features.forEach(function(feature) {
+          addBoundaryFeature(feature, layerId);
+          if (layerId === "townshipBoundary") addTownshipSelectorFeature(feature);
+          // 리 명칭은 생성하지 않음.
+        });
+        if (layerId === "townshipBoundary") {
+          createTownshipSelectorLabels();
+          if (!townshipAllBounds.isEmpty()) showTownshipOverview();
+        }
+        updateBoundaryVisibility();
+        updateRiLabelVisibility();
+        return loaded.file;
+      }
+
+      // 한 경계 파일이 없어도 다른 경계까지 함께 실패하지 않도록 독립 로딩
+      const boundaryReadyPromise = Promise.allSettled([
+        loadBoundaryGeoJSON("cityBoundary"),
+        loadBoundaryGeoJSON("townshipBoundary"),
+        loadBoundaryGeoJSON("riBoundary")
+      ]).then(function(results) {
+        const townshipResult = results[1];
+        if (townshipResult.status === "fulfilled" && !townshipAllBounds.isEmpty()) {
+          showTownshipOverview();
+        } else {
+          console.error("읍면동 경계를 불러오지 못했습니다.", townshipResult.reason);
+        }
+      });
+
+      /*
+       * 도로 GeoJSON 불러오기
        */
       Promise.all([
         loadGeoJSON("city"),
         loadGeoJSON("rural")
       ])
       .then(function () {
+        buildGroupLabels();
         makeLists();
+        applyRoadVisibility();
 
-        if (!allBounds.isEmpty()) {
+        // 첫 실행 화면은 읍면동 선택 화면이 우선임.
+        // 행정경계가 아직 준비되지 않은 경우에만 도로 전체 영역으로 맞춤.
+        if (townshipAllBounds.isEmpty() && !allBounds.isEmpty()) {
           map.setBounds(allBounds);
         }
 
         updateLabels();
+        boundaryReadyPromise.then(function() {
+          if (townshipStartMode && !townshipAllBounds.isEmpty()) showTownshipOverview();
+        });
       })
       .catch(function (error) {
         console.error(error);
@@ -3482,26 +4822,31 @@
           throw new Error(LAYERS[layerId].file + " 형식이 올바른 GeoJSON FeatureCollection이 아닙니다.");
         }
 
+        let skipped = 0;
         data.features.forEach(function (feature) {
+          const before = allRoads.length;
           addFeature(feature, layerId);
+          if (before === allRoads.length) skipped++;
         });
+        if (skipped) console.warn(LAYERS[layerId].file + ": 표시하지 못한 Feature " + skipped + "개");
       }
 
       function addFeature(feature, layerId) {
         const properties = feature.properties || {};
         const lines = getLines(feature.geometry);
-
         if (!lines.length) return;
 
         const number = getNumber(properties, layerId);
+        if (number === "-") {
+          console.warn("노선번호가 없는 도로 Feature를 건너뜁니다.", feature);
+          return;
+        }
 
         if (layerId === "rural") {
           const length = parseRoadLength(properties["연장"]);
-          ruralTotalLengths.set(
-            number,
-            (ruralTotalLengths.get(number) || 0) + length
-          );
+          ruralTotalLengths.set(number, (ruralTotalLengths.get(number) || 0) + length);
         }
+
         const groupKey = layerId + "::" + number;
         const color = getColor(properties, layerId);
         const statusKey = getRoadStatusKey(properties, layerId);
@@ -3512,41 +4857,29 @@
             number: number,
             layerId: layerId,
             bounds: new kakao.maps.LatLngBounds(),
-            roads: []
+            roads: [],
+            paths: [],
+            propertiesList: []
           });
         }
 
         const group = groups.get(groupKey);
+        group.propertiesList.push(properties);
 
         lines.forEach(function (coordinates) {
           const path = coordinates.map(function (coordinate) {
             const normalized = normalizeCoordinate(coordinate);
-            const position = new kakao.maps.LatLng(
-              normalized[1],
-              normalized[0]
-            );
-
+            if (!normalized) return null;
+            const position = new kakao.maps.LatLng(normalized[1], normalized[0]);
             group.bounds.extend(position);
             allBounds.extend(position);
-
             return position;
-          });
+          }).filter(Boolean);
 
           if (path.length < 2) return;
-
-          group.roads.push(
-            drawRoad(
-              path,
-              properties,
-              layerId,
-              groupKey,
-              color,
-              statusKey
-            )
-          );
+          group.paths.push(path);
+          group.roads.push(drawRoad(path, properties, layerId, groupKey, color, statusKey));
         });
-
-        addLabel(lines, properties, layerId);
       }
 
       function normalizeCoordinate(coordinate) {
@@ -3554,17 +4887,23 @@
         const y = Number(coordinate && coordinate[1]);
 
         if (!Number.isFinite(x) || !Number.isFinite(y)) {
-          return [0, 0];
+          console.warn("잘못된 좌표를 건너뜁니다.", coordinate);
+          return null;
         }
 
+        let lng = x;
+        let lat = y;
         if (Math.abs(x) > 180 || Math.abs(y) > 90) {
           const radius = 6378137;
-          const lng = x / radius * 180 / Math.PI;
-          const lat = (2 * Math.atan(Math.exp(y / radius)) - Math.PI / 2) * 180 / Math.PI;
-          return [lng, lat];
+          lng = x / radius * 180 / Math.PI;
+          lat = (2 * Math.atan(Math.exp(y / radius)) - Math.PI / 2) * 180 / Math.PI;
         }
 
-        return [x, y];
+        if (!Number.isFinite(lng) || !Number.isFinite(lat) || Math.abs(lng) > 180 || Math.abs(lat) > 90) {
+          console.warn("범위를 벗어난 좌표를 건너뜁니다.", coordinate);
+          return null;
+        }
+        return [lng, lat];
       }
 
       function getLines(geometry) {
@@ -3602,20 +4941,18 @@
           strokeColor: style.baseColor,
           strokeOpacity: style.baseOpacity / 100,
           strokeStyle: "solid",
-          zIndex: 4
+          zIndex: 20
         });
 
         const roadLine = new kakao.maps.Polyline({
           map: map,
           path: path,
-          strokeWeight:
-            statusKey === "UNOPENED"
-              ? STATUS_STYLES.UNOPENED_SIZE
-              : style.top,
+          // 전체 외곽 두께(style.base)는 유지하면서 가운데 색상띠만 넓혀 3중 구조로 표현
+          strokeWeight: style.mid,
           strokeColor: style.color,
           strokeOpacity: style.topOpacity / 100,
           strokeStyle: getStatusStrokeStyle(statusKey),
-          zIndex: 5
+          zIndex: 30
         });
 
         /* 보이는 선보다 넓은 투명 클릭 영역으로 선택 감도를 높입니다. */
@@ -3626,7 +4963,7 @@
           strokeColor: "#000000",
           strokeOpacity: 0.01,
           strokeStyle: "solid",
-          zIndex: 6
+          zIndex: 50
         });
 
         LAYERS[layerId].shapes.push(
@@ -3635,15 +4972,28 @@
           hitLine
         );
 
+          const selectionInnerLine = new kakao.maps.Polyline({
+          map: map,
+          path: path,
+          // 일반 노선도 중앙에 흰색 실선을 넣어 3중선으로 표현
+          strokeWeight: style.inner,
+          strokeColor: "#FFFFFF",
+          strokeOpacity: 1,
+          strokeStyle: "solid",
+          zIndex: 35
+        });
+
           const road = {
           baseLine,
           roadLine,
           hitLine,
+          selectionInnerLine,
           color: style.color,
           styleKey,
           statusKey,
           layerId,
-          groupKey
+          groupKey,
+          properties: properties
         };
 
         allRoads.push(road);
@@ -3666,11 +5016,7 @@
 
               kakao.maps.event.preventMap();
 
-              showInfo(
-                event.latLng,
-                properties,
-                layerId
-              );
+              showInfo(event.latLng, groupKey, road);
             }
           );
 
@@ -3680,7 +5026,8 @@
             function () {
               if (
                 !roadviewMode &&
-                selectedKey !== groupKey
+                selectedKey !== groupKey &&
+                selectedRoadGroupKey !== groupKey
               ) {
                 roadLine.setOptions({
                   strokeColor: "#FFFF00",
@@ -3696,7 +5043,8 @@
             function () {
               if (
                 !roadviewMode &&
-                selectedKey !== groupKey
+                selectedKey !== groupKey &&
+                selectedRoadGroupKey !== groupKey
               ) {
                 restoreRoad(road);
               }
@@ -3708,26 +5056,37 @@
       }
 
       function restoreRoad(road) {
-        const style = ROAD_STYLES[road.styleKey];
+        if (!road) return;
 
-        road.roadLine.setOptions({
-          strokeColor: style.color,
-          strokeWeight: getRoadStrokeWeight(road),
-          strokeOpacity: style.topOpacity / 100,
-          strokeStyle: getStatusStrokeStyle(road.statusKey)
-        });
+        // 클릭 선택된 노선은 mouseout/일반 갱신으로 원래 스타일로 덮어쓰지 않음.
+        if (selectedRoadGroupKey && road.groupKey === selectedRoadGroupKey) {
+          setRoadGroupHighlight(selectedRoadGroupKey, true);
+          return;
+        }
+
+        applyRoadNormalVisualStyle(road);
+
+        if (road.selectionInnerLine) {
+          road.selectionInnerLine.setMap(
+            road.baseLine && road.baseLine.getMap() ? map : null
+          );
+        }
+
+        if (road.hitLine) {
+          road.hitLine.setOptions({
+            zIndex: 50
+          });
+        }
       }
 
       /*
-       * 도로 라벨
+       * 도로 라벨: 노선번호별 1개, 모든 구간의 누적거리 중앙에 배치
        */
-      function midpointOnRoadPath(path) {
+      function midpointOnRoadPath(path, targetDistance) {
         if (!path.length) return null;
         if (path.length === 1) return path[0];
-        const total = totalDistance(path);
-        const target = total / 2;
+        const target = targetDistance == null ? totalDistance(path) / 2 : targetDistance;
         let accumulated = 0;
-
         for (let index = 1; index < path.length; index++) {
           const start = path[index - 1];
           const end = path[index];
@@ -3744,68 +5103,55 @@
         return path[path.length - 1];
       }
 
-      function addLabel(lines, properties, layerId) {
-        const paths = lines.map(function (line) {
-          return line.map(function (coordinate) {
-            const normalized = normalizeCoordinate(coordinate);
-            return new kakao.maps.LatLng(normalized[1], normalized[0]);
-          });
-        }).filter(function (path) { return path.length; });
+      function midpointAcrossPaths(paths) {
+        const usable = paths.filter(function(path) { return path && path.length >= 1; });
+        if (!usable.length) return null;
+        const lengths = usable.map(totalDistance);
+        const total = lengths.reduce(function(sum, value) { return sum + value; }, 0);
+        if (!total) return usable[0][0];
+        let target = total / 2;
+        for (let i = 0; i < usable.length; i++) {
+          if (target <= lengths[i]) return midpointOnRoadPath(usable[i], target);
+          target -= lengths[i];
+        }
+        return usable[usable.length - 1][usable[usable.length - 1].length - 1];
+      }
 
-        if (!paths.length) return;
-        const longestPath = paths.reduce(function (longest, path) {
-          return totalDistance(path) > totalDistance(longest) ? path : longest;
-        }, paths[0]);
-        const labelPosition = midpointOnRoadPath(longestPath);
-        if (!labelPosition) return;
-
-        const text = layerId === "city"
-          ? getNumber(properties, layerId)
-          : safe(properties.NUM);
-
-        if (text === "-") return;
-
-        const className = layerId === "city"
-          ? "road-label city"
-          : "road-label";
-
-        const label = new kakao.maps.CustomOverlay({
-          position: labelPosition,
-
-          content:
-            '<div class="' +
-            className +
-            '">' +
-            escapeHTML(text) +
-            "</div>",
-
-          xAnchor: 0.5,
-          yAnchor: 0.5,
-          zIndex: 3
+      function buildGroupLabels() {
+        Object.values(LAYERS).forEach(function(layer) {
+          layer.labels.forEach(function(item) { item.overlay.setMap(null); });
+          layer.labels = [];
         });
 
-        LAYERS[layerId].labels.push({
-          overlay: label,
-          statusKey: getRoadStatusKey(properties, layerId)
+        groups.forEach(function(group) {
+          const labelPosition = midpointAcrossPaths(group.paths || []);
+          if (!labelPosition || group.number === "-") return;
+          const className = group.layerId === "city" ? "road-label city" : "road-label";
+          const overlay = new kakao.maps.CustomOverlay({
+            position: labelPosition,
+            content:'<div class="' + className + '">' + escapeHTML(group.number) + '</div>',
+            xAnchor:0.5, yAnchor:0.5, zIndex:3
+          });
+          const statusKeys = Array.from(new Set(group.roads.map(function(road) { return road.statusKey; })));
+          LAYERS[group.layerId].labels.push({ overlay, groupKey:group.key, statusKeys });
         });
       }
 
       function updateLabels() {
-        Object.entries(LAYERS).forEach(
-          function ([layerId, layer]) {
-            const scaleVisible =
-              layerId === "city" ||
-              currentScaleDenominator <= 50000;
+        Object.entries(LAYERS).forEach(function ([layerId, layer]) {
+          const scaleVisible = isRoadLayerVisibleAtScale(layerId);
 
-            layer.labels.forEach(
-              function (labelItem) {
-                labelItem.overlay.setMap(
-                  layer.visible && scaleVisible && roadStatusFilters[labelItem.statusKey] ? map : null
-                );
-              }
-            );
-          }
-        );
+          layer.labels.forEach(function (labelItem) {
+            const visible =
+              layer.visible &&
+              scaleVisible &&
+              labelItem.statusKeys.some(function (key) {
+                return roadStatusFilters[key];
+              });
+
+            labelItem.overlay.setMap(visible ? map : null);
+          });
+        });
       }
 
       /*
@@ -3895,10 +5241,16 @@
 
         if (!group.bounds.isEmpty()) {
           map.setBounds(group.bounds);
+          setTimeout(function () {
+            const level = map.getLevel();
+            if (level < 3) map.setLevel(3);
+            else if (level > 8) map.setLevel(8);
+          }, 0);
         }
       }
 
       function resetSelection() {
+        clearSelectedRoadHighlight();
         if (!selectedKey) return;
 
         const group = groups.get(selectedKey);
@@ -3917,89 +5269,591 @@
       }
 
       /*
-       * 속성 팝업
+       * 속성 팝업: 클릭한 조각이 아니라 노선번호 전체 구간을 요약
        */
-      function showInfo(position, properties, layerId) {
+      function uniqueValues(list, key) {
+        return Array.from(new Set(list.map(function(p) { return safe(p[key]); }).filter(function(v) { return v !== "-"; })));
+      }
+
+      function joinValues(values) {
+        return values.length ? values.join(" / ") : "-";
+      }
+
+      function rangeValues(list, key) {
+        const nums = list.map(function(p) {
+          return Number(String(p[key] ?? "").replace(/,/g, "").replace(/[^0-9.\-]/g, ""));
+        }).filter(Number.isFinite);
+        if (!nums.length) return joinValues(uniqueValues(list, key));
+        const min = Math.min.apply(null, nums), max = Math.max.apply(null, nums);
+        return min === max ? String(min) : min + "~" + max;
+      }
+
+      function statusLengthSummary(group) {
+        const totals = { NORMAL:0, UNEXPANDED:0, UNOPENED:0 };
+        group.propertiesList.forEach(function(p) {
+          const key = getRoadStatusKey(p, group.layerId);
+          totals[key] += parseRoadLength(p["연장"]);
+        });
+        const unit = group.layerId === "city" ? " m" : " km";
+        return [
+          totals.NORMAL ? "개설 " + formatRoadLength(totals.NORMAL) + unit : "",
+          totals.UNEXPANDED ? "미확장 " + formatRoadLength(totals.UNEXPANDED) + unit : "",
+          totals.UNOPENED ? "미개설 " + formatRoadLength(totals.UNOPENED) + unit : ""
+        ].filter(Boolean).join(" · ") || "-";
+      }
+
+
+      function enableRoadPopupDrag() {
+        if (!roadPopupOverlay) return;
+
+        const mapContainer = document.getElementById("map");
+        if (!mapContainer) return;
+
+        const popup = mapContainer.querySelector(".road-popup");
+        if (!popup) return;
+
+        // 팝업 안에서 텍스트를 선택하거나 드래그할 때
+        // 이벤트가 지도까지 전달되어 지도가 같이 움직이지 않도록 차단.
+        if (!popup.dataset.mapInteractionBlocked) {
+          const blockMapInteraction = function(event) {
+            try {
+              if (window.kakao && kakao.maps && kakao.maps.event &&
+                  typeof kakao.maps.event.preventMap === "function") {
+                kakao.maps.event.preventMap();
+              }
+            } catch (e) {}
+
+            event.stopPropagation();
+          };
+
+          popup.addEventListener("pointerdown", blockMapInteraction, true);
+          popup.addEventListener("pointermove", blockMapInteraction, true);
+          popup.addEventListener("mousedown", blockMapInteraction, true);
+          popup.addEventListener("mousemove", blockMapInteraction, true);
+          popup.addEventListener("touchstart", blockMapInteraction, { capture: true, passive: true });
+          popup.addEventListener("touchmove", blockMapInteraction, { capture: true, passive: true });
+
+          popup.dataset.mapInteractionBlocked = "1";
+        }
+
+        const handle = popup.querySelector(".popup-drag-handle");
+        if (!handle) return;
+
+        let dragging = false;
+        let startClientX = 0;
+        let startClientY = 0;
+        let startPoint = null;
+
+        function getContainerPointFromLatLng(latLng) {
+          const projection = map.getProjection();
+          if (!projection || typeof projection.containerPointFromCoords !== "function") return null;
+          return projection.containerPointFromCoords(latLng);
+        }
+
+        function getLatLngFromContainerPoint(point) {
+          const projection = map.getProjection();
+          if (!projection || typeof projection.coordsFromContainerPoint !== "function") return null;
+          return projection.coordsFromContainerPoint(point);
+        }
+
+        function onPointerDown(event) {
+          if (event.target.closest(".popup-close")) return;
+          if (!roadPopupOverlay) return;
+
+          const currentPosition = roadPopupOverlay.getPosition();
+          const cp = getContainerPointFromLatLng(currentPosition);
+          if (!cp) return;
+
+          dragging = true;
+          startClientX = event.clientX;
+          startClientY = event.clientY;
+          startPoint = cp;
+
+          handle.setPointerCapture?.(event.pointerId);
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
+        function onPointerMove(event) {
+          if (!dragging || !roadPopupOverlay || !startPoint) return;
+
+          const dx = event.clientX - startClientX;
+          const dy = event.clientY - startClientY;
+          const nextPoint = new kakao.maps.Point(startPoint.x + dx, startPoint.y + dy);
+          const nextLatLng = getLatLngFromContainerPoint(nextPoint);
+
+          if (nextLatLng) {
+            roadPopupOverlay.setPosition(nextLatLng);
+          }
+
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
+        function onPointerUp(event) {
+          if (!dragging) return;
+          dragging = false;
+          startPoint = null;
+
+          try {
+            handle.releasePointerCapture?.(event.pointerId);
+          } catch (e) {}
+
+          scheduleRoadPopupSafeViewportCheck();
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
+        handle.addEventListener("pointerdown", onPointerDown);
+        window.addEventListener("pointermove", onPointerMove, true);
+        window.addEventListener("pointerup", onPointerUp, true);
+        window.addEventListener("pointercancel", onPointerUp, true);
+      }
+
+      function closeRoadPopup() {
+        if (roadPopupOverlay) {
+          roadPopupOverlay.setMap(null);
+          roadPopupOverlay = null;
+        }
+
+        if (typeof infoWindow !== "undefined" && infoWindow) {
+          infoWindow.close();
+        }
+      }
+
+      window.closeRoadPopup = closeRoadPopup;
+
+
+      function setRoadGroupHighlight(groupKey, enabled) {
+        const group = groups.get(groupKey);
+        if (!group || !group.roads) return;
+
+        group.roads.forEach(function(road) {
+          if (!road) return;
+
+          const style = ROAD_STYLES[road.styleKey];
+          const isSelectedSegment = enabled && selectedRoadObject === road;
+
+          // 사용자가 확정한 선택 색상
+          // 실제 선택 구간 = 빨강 / 같은 노선 나머지 = 파랑
+          const highlightColor = isSelectedSegment ? "#E60012" : "#0800ec";
+
+          if (road.baseLine) {
+            road.baseLine.setOptions({
+              strokeColor: enabled ? "#FFFFFF" : style.baseColor,
+              // 같은 노선은 현재 두께 유지, 실제 선택 구간만 한 단계 더 굵게
+              strokeWeight: enabled
+                ? (isSelectedSegment ? 17 : 14)
+                : style.base,
+              strokeOpacity: enabled ? 1 : style.baseOpacity / 100,
+              strokeStyle: "solid",
+              zIndex: enabled ? 80 : 20
+            });
+          }
+
+          if (road.roadLine) {
+            road.roadLine.setOptions({
+              strokeColor: enabled ? highlightColor : style.color,
+              strokeWeight: enabled
+                ? (isSelectedSegment ? 13 : 10)
+                : style.mid,
+              strokeOpacity: enabled ? 1 : style.topOpacity / 100,
+              strokeStyle: enabled ? "solid" : getStatusStrokeStyle(road.statusKey),
+              zIndex: enabled ? 85 : 30
+            });
+          }
+
+          if (road.selectionInnerLine) {
+            road.selectionInnerLine.setOptions({
+              strokeColor: "#FFFFFF",
+              strokeWeight: enabled
+                ? (isSelectedSegment ? 4.2 : 3.2)
+                : 1.6,
+              strokeOpacity: 1,
+              strokeStyle: "solid",
+              zIndex: enabled ? 90 : 35
+            });
+
+            road.selectionInnerLine.setMap(
+              road.roadLine && road.roadLine.getMap() ? map : null
+            );
+          }
+
+          if (road.hitLine) {
+            road.hitLine.setOptions({
+              zIndex: enabled ? 100 : 50
+            });
+          }
+        });
+      }
+
+      function clearSelectedRoadHighlight() {
+        if (selectedRoadGroupKey) {
+          const previousGroupKey = selectedRoadGroupKey;
+
+          // 선택 해제 전에 선택 객체를 비워야 전체 노선이 원래 스타일로 복원됨.
+          selectedRoadObject = null;
+          setRoadGroupHighlight(previousGroupKey, false);
+          selectedRoadGroupKey = null;
+
+          const previousGroup = groups.get(previousGroupKey);
+          if (previousGroup && previousGroup.roads) {
+            previousGroup.roads.forEach(function(road) {
+              restoreRoad(road);
+            });
+          }
+        } else {
+          selectedRoadObject = null;
+        }
+
+        selectedRoadPopupState = null;
+      }
+
+      function selectRoadGroupHighlight(groupKey) {
+        if (!groupKey) return;
+
+        if (selectedRoadGroupKey && selectedRoadGroupKey !== groupKey) {
+          setRoadGroupHighlight(selectedRoadGroupKey, false);
+        }
+
+        selectedRoadGroupKey = groupKey;
+        setRoadGroupHighlight(groupKey, true);
+      }
+
+      function offsetPopupPosition(position, dx, dy) {
+        try {
+          const projection = map.getProjection();
+          if (!projection || typeof projection.containerPointFromCoords !== "function") {
+            return position;
+          }
+
+          const point = projection.containerPointFromCoords(position);
+          if (!point) return position;
+
+          const shifted = new kakao.maps.Point(
+            point.x + (dx || 0),
+            point.y + (dy || 0)
+          );
+
+          const shiftedPosition = projection.coordsFromContainerPoint(shifted);
+          return shiftedPosition || position;
+        } catch (e) {
+          return position;
+        }
+      }
+
+
+      function watchPopupSafeAreaChanges() {
+        const listPanel = document.getElementById("listPanel");
+        const listOpen = document.getElementById("listOpen");
+        const listClose = document.getElementById("listClose");
+        const resizeHandle = document.getElementById("listResizeHandle");
+
+        [listOpen, listClose, resizeHandle].forEach(function(el) {
+          if (!el) return;
+          el.addEventListener("click", function() {
+            setTimeout(scheduleRoadPopupSafeViewportCheck, 0);
+            setTimeout(scheduleRoadPopupSafeViewportCheck, 180);
+          });
+        });
+
+        if (window.ResizeObserver && listPanel) {
+          const ro = new ResizeObserver(function() {
+            scheduleRoadPopupSafeViewportCheck();
+          });
+          ro.observe(listPanel);
+        }
+
+        window.addEventListener("resize", scheduleRoadPopupSafeViewportCheck);
+      }
+
+      function placeRoadPopupTopRight() {
+        if (!roadPopupOverlay) return;
+
+        const mapContainer = document.getElementById("map");
+        if (!mapContainer) return;
+
+        const popup = mapContainer.querySelector(".road-popup");
+        if (!popup) return;
+
+        const mapRect = mapContainer.getBoundingClientRect();
+        const popupRect = popup.getBoundingClientRect();
+        const toolbar = document.querySelector(".top-toolbar");
+        const toolbarRect = toolbar ? toolbar.getBoundingClientRect() : null;
+
+        const rightMargin = 15;
+        const gapBelowToolbar = 10;
+
+        const targetLeft = mapRect.right - rightMargin - popupRect.width;
+        const targetTop = toolbarRect
+          ? Math.max(mapRect.top + 14, toolbarRect.bottom + gapBelowToolbar)
+          : mapRect.top + 70;
+
+        const dx = targetLeft - popupRect.left;
+        const dy = targetTop - popupRect.top;
+
+        try {
+          const projection = map.getProjection();
+          if (!projection) return;
+
+          const currentPosition = roadPopupOverlay.getPosition();
+          const currentPoint = projection.containerPointFromCoords(currentPosition);
+          if (!currentPoint) return;
+
+          const nextPoint = new kakao.maps.Point(
+            currentPoint.x + dx,
+            currentPoint.y + dy
+          );
+
+          const nextPosition = projection.coordsFromContainerPoint(nextPoint);
+          if (nextPosition) {
+            roadPopupOverlay.setPosition(nextPosition);
+          }
+        } catch (e) {
+          console.warn("팝업 우상단 배치 실패:", e);
+        }
+      }
+
+      function keepRoadPopupInSafeViewport() {
+        if (!roadPopupOverlay) return;
+
+        const mapContainer = document.getElementById("map");
+        if (!mapContainer) return;
+
+        const popup = mapContainer.querySelector(".road-popup");
+        if (!popup) return;
+
+        const mapRect = mapContainer.getBoundingClientRect();
+        const popupRect = popup.getBoundingClientRect();
+        const margin = 14;
+
+        // 기본 안전영역은 지도 내부.
+        let safeLeft = mapRect.left + margin;
+        let safeRight = mapRect.right - margin;
+        let safeTop = mapRect.top + margin;
+        let safeBottom = mapRect.bottom - margin;
+
+        // 왼쪽 노선목록 패널이 실제로 열려 있으면 그 오른쪽부터 팝업 허용.
+        const listPanel = document.getElementById("listPanel");
+        if (listPanel) {
+          const panelStyle = window.getComputedStyle(listPanel);
+          const panelRect = listPanel.getBoundingClientRect();
+
+          const panelVisible =
+            panelStyle.display !== "none" &&
+            panelStyle.visibility !== "hidden" &&
+            panelRect.width > 10 &&
+            panelRect.height > 10 &&
+            panelRect.right > mapRect.left &&
+            panelRect.left < mapRect.right;
+
+          // 데스크톱/가로형에서 좌측 패널이 지도와 중첩되는 경우.
+          if (panelVisible && panelRect.left <= mapRect.left + 40) {
+            safeLeft = Math.max(safeLeft, panelRect.right + margin);
+          }
+        }
+
+        // 패널 때문에 usable width가 너무 좁으면 최소한 지도 우측 내부를 사용.
+        if (safeRight - safeLeft < 220) {
+          safeLeft = mapRect.left + margin;
+        }
+
+        let dx = 0;
+        let dy = 0;
+
+        if (popupRect.left < safeLeft) {
+          dx += safeLeft - popupRect.left;
+        } else if (popupRect.right > safeRight) {
+          dx -= popupRect.right - safeRight;
+        }
+
+        if (popupRect.top < safeTop) {
+          dy += safeTop - popupRect.top;
+        } else if (popupRect.bottom > safeBottom) {
+          dy -= popupRect.bottom - safeBottom;
+        }
+
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+
+        try {
+          const projection = map.getProjection();
+          if (!projection) return;
+
+          const currentPosition = roadPopupOverlay.getPosition();
+          const currentPoint = projection.containerPointFromCoords(currentPosition);
+          if (!currentPoint) return;
+
+          const nextPoint = new kakao.maps.Point(
+            currentPoint.x + dx,
+            currentPoint.y + dy
+          );
+
+          const nextPosition = projection.coordsFromContainerPoint(nextPoint);
+          if (nextPosition) {
+            roadPopupOverlay.setPosition(nextPosition);
+          }
+        } catch (e) {
+          console.warn("팝업 화면 위치 보정 실패:", e);
+        }
+      }
+
+      function scheduleRoadPopupSafeViewportCheck() {
+        requestAnimationFrame(function() {
+          // 지도 이동/확대축소/창 크기 변경 후에도 항상 우상단 위치로 복귀
+          placeRoadPopupTopRight();
+          keepRoadPopupInSafeViewport();
+
+          requestAnimationFrame(function() {
+            placeRoadPopupTopRight();
+            keepRoadPopupInSafeViewport();
+          });
+        });
+      }
+
+      function restoreSelectedRoadPopup() {
+        if (!selectedRoadPopupState || !selectedRoadGroupKey) return;
+
+        const group = groups.get(selectedRoadPopupState.groupKey);
+        if (!group) return;
+
+        // 확대·축소 중 CustomOverlay 객체는 남아 있어도
+        // 실제 팝업 DOM이 사라지는 경우가 있으므로 DOM 존재 여부까지 확인.
+        if (roadPopupOverlay) {
+          const mapContainer = document.getElementById("map");
+          const popupElement = mapContainer
+            ? mapContainer.querySelector(".road-popup")
+            : null;
+
+          if (popupElement) {
+            scheduleRoadPopupSafeViewportCheck();
+            return;
+          }
+
+          // 객체만 남고 화면 요소가 사라졌다면 완전히 정리 후 재생성.
+          try {
+            roadPopupOverlay.setMap(null);
+          } catch (e) {}
+          roadPopupOverlay = null;
+        }
+
+        const html = groupPopup(group, selectedRoadPopupState.road);
+        const popupPosition = offsetPopupPosition(
+          selectedRoadPopupState.anchorPosition,
+          185,
+          -24
+        );
+
+        roadPopupOverlay = new kakao.maps.CustomOverlay({
+          position: popupPosition,
+          content: html,
+          xAnchor: 0.5,
+          yAnchor: 1.0,
+          zIndex: 200
+        });
+
+        roadPopupOverlay.setMap(map);
+
+        setTimeout(function() {
+          placeRoadPopupTopRight();
+          requestAnimationFrame(function() {
+            enableRoadPopupDrag();
+            scheduleRoadPopupSafeViewportCheck();
+          });
+        }, 0);
+      }
+
+      function showInfo(position, groupKey, road) {
+        const group = groups.get(groupKey);
+        if (!group) return;
+
+        selectedRoadObject = road || null;
+        selectRoadGroupHighlight(groupKey);
+        selectedRoadPopupState = {
+          groupKey: groupKey,
+          road: road,
+          anchorPosition: position
+        };
+
         addressInfo.close();
         addressMarker.setMap(null);
 
-        infoWindow.setContent(
-          layerId === "city"
-            ? cityPopup(properties)
-            : ruralPopup(properties)
-        );
+        closeRoadPopup();
 
-        infoWindow.setPosition(position);
-        infoWindow.open(map);
+        const html = groupPopup(group, road);
+
+        // 최초 생성 후 화면 우상단의 상단 메뉴 바로 아래로 배치함.
+        const popupPosition = offsetPopupPosition(position, 185, -24);
+
+        roadPopupOverlay = new kakao.maps.CustomOverlay({
+          position: popupPosition,
+          content: html,
+          xAnchor: 0.5,
+          yAnchor: 1.0,
+          zIndex: 200
+        });
+
+        roadPopupOverlay.setMap(map);
+
+        setTimeout(function() {
+          placeRoadPopupTopRight();
+          requestAnimationFrame(function() {
+            enableRoadPopupDrag();
+            scheduleRoadPopupSafeViewportCheck();
+          });
+        }, 0);
       }
 
-      function row(title, value, unit = "") {
-        return (
-          '<div class="popup-row">' +
-          '<div class="popup-label">' + escapeHTML(title) + '</div>' +
-          '<div class="popup-value">' + escapeHTML(safe(value)) + unit + '</div>' +
-          '</div>'
-        );
+      function row(title, value, unit = "", extraClass = "") {
+        const cls = extraClass ? " " + extraClass : "";
+        return '<div class="popup-row"><div class="popup-label">' + escapeHTML(title) + '</div><div class="popup-value' + cls + '">' + escapeHTML(safe(value)) + unit + '</div></div>';
       }
 
-      function cityPopup(properties) {
-        return `
-          <div class="road-popup">
-            <button
-              class="popup-close"
-              onclick="closeRoadPopup()"
-            >×</button>
+      function groupPopup(group, road) {
+        const list = group.propertiesList || [];
+        if (group.layerId === "city") {
+          const total = list.reduce(function(sum,p) { return sum + parseRoadLength(p["연장"]); }, 0);
+          return '<div class="road-popup">' +
+            '<div class="popup-drag-handle popup-header">' +
+              '<button class="popup-close" onclick="closeRoadPopup()">×</button>' +
+              '<div class="popup-eyebrow">노선 정보</div>' +
+              '<div class="popup-title">시도 ' + escapeHTML(group.number) + '</div>' +
+            '</div>' +
+            '<div class="road-attributes">' +
+              row("도로구분", "시도") + row("노선번호", group.number) +
+              row("구간상태", statusLengthSummary(group), "", "wrap-status") +
+              row("총연장", formatRoadLength(total), " m") +
+              row("검토", joinValues(uniqueValues(list, "검토"))) +
+              row("시점", joinValues(uniqueValues(list, "시점"))) +
+              row("종점", joinValues(uniqueValues(list, "종점"))) +
+            '</div></div>';
+        }
+        const current = road && road.properties ? road.properties : (list[0] || {});
+        const currentStatus = road && road.statusKey
+          ? road.statusKey
+          : getRoadStatusKey(current, group.layerId);
 
-            <div class="popup-title">
-              시도 ${escapeHTML(
-                getNumber(properties, "city")
-              )}
-            </div>
-
-            <div class="road-attributes">
-              ${row("도로구분", "시도")}
-              ${row("노선번호", properties.number)}
-              ${row("개설상태", properties["개설여부"])}
-              ${row("검토", properties["검토"])}
-              ${row("연장", properties["연장"], " m")}
-              ${row("시점", properties["시점"])}
-              ${row("종점", properties["종점"])}
-            </div>
-          </div>
-        `;
+        return '<div class="road-popup">' +
+          '<div class="popup-drag-handle popup-header">' +
+            '<button class="popup-close" onclick="closeRoadPopup()">×</button>' +
+            '<div class="popup-eyebrow">농어촌도로</div>' +
+            '<div class="popup-title">' + escapeHTML(group.number) + '</div>' +
+          '</div>' +
+          '<div class="road-attributes">' +
+            row("노선번호", group.number) +
+            row("구분", joinValues(uniqueValues(list, "GUBUN"))) +
+            row("구간상태", statusLengthSummary(group), "", "wrap-status") +
+            row("차선상태", rangeValues(list, "차선")) +
+            row("도로폭(노선)", rangeValues(list, "도로폭"), " m") +
+            row("도로폭(선택)", current["도로폭"] !== undefined && current["도로폭"] !== null && String(current["도로폭"]).trim() !== "" ? current["도로폭"] : "-", current["도로폭"] !== undefined && current["도로폭"] !== null && String(current["도로폭"]).trim() !== "" ? " m" : "") +
+            row("총연장", formatRoadLength(ruralTotalLengths.get(group.number) || 0), " km") +
+            row("연장(선택)", current["연장"] !== undefined && current["연장"] !== null && String(current["연장"]).trim() !== "" ? formatRoadLength(parseRoadLength(current["연장"])) : "-", current["연장"] !== undefined && current["연장"] !== null && String(current["연장"]).trim() !== "" ? " km" : "") +
+            row("기점", joinValues(uniqueValues(list, "기점"))) +
+            row("종점", joinValues(uniqueValues(list, "종점"))) +
+            row("노선상태", roadStatusLabel(currentStatus)) +
+          '</div></div>';
       }
 
-      function ruralPopup(properties) {
-        return `
-          <div class="road-popup">
-            <button
-              class="popup-close"
-              onclick="closeRoadPopup()"
-            >×</button>
-
-            <div class="popup-title">
-              ${escapeHTML(safe(properties.number))}
-            </div>
-
-            <div class="road-attributes">
-              ${row("노선번호", properties.number)}
-              ${row("구분", properties.GUBUN)}
-              ${row("개설상태", properties.Opened)}
-              ${row("차선", properties["차선"])}
-              ${row("도로폭", properties["도로폭"], " m")}
-              ${row("총연장", formatRoadLength(ruralTotalLengths.get(getNumber(properties, "rural")) || 0), " km")}
-              ${row("연장", properties["연장"], " km")}
-              ${row("기점", properties["기점"])}
-              ${row("종점", properties["종점"])}
-              ${row("비고", properties["비고"])}
-            </div>
-          </div>
-        `;
-      }
-
-      window.closeRoadPopup = function () {
-        infoWindow.close();
-      };
+      window.closeRoadPopup = closeRoadPopup;
 
       window.closeAddressPopup = function () {
         addressInfo.close();
@@ -4018,6 +5872,7 @@
             return;
           }
 
+          closeRoadPopup();
           infoWindow.close();
           addressInfo.close();
           addressMarker.setMap(null);
@@ -4318,6 +6173,12 @@
         return "NORMAL";
       }
 
+      function roadStatusLabel(statusKey) {
+        if (statusKey === "UNOPENED") return "미개설";
+        if (statusKey === "UNEXPANDED") return "미확장";
+        return "개설";
+      }
+
       function getStatusStrokeStyle(statusKey) {
         if (statusKey === "UNOPENED") {
           return STATUS_STYLES.UNOPENED_GAP;
@@ -4368,5 +6229,6 @@
       }
     });
   </script>
+  <div id="coordCopyToast" class="coord-copy-toast"></div>
 </body>
 </html>
