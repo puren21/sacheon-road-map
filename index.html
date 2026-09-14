@@ -1493,7 +1493,7 @@
       #mapTools { right: 8px; top: auto; bottom: 74px; }
       #scaleControl { right: 8px; bottom: 8px; }
       .road-popup {
-        width: min(275px, calc(100vw - 24px));
+        width: min(230px, calc(100vw - 24px));
         max-width: calc(100vw - 24px);
       }
       #measureHint { top: auto; right: 8px; bottom: 66px; max-width: calc(100vw - 16px); }
@@ -2487,6 +2487,800 @@
     }
 
   </style>
+
+<style id="layoutRefinementStyles">
+  :root { --ui-blue:#258fff; --ui-text:#27313a; --ui-border:#dfe4ea; --ui-shadow:0 8px 24px rgba(0,0,0,.16); }
+  .top-toolbar { top:14px; right:14px; gap:6px; align-items:center; flex-wrap:nowrap; }
+  .top-menu-wrap { position:relative; }
+  .top-main-button {
+    height:42px; min-width:88px; padding:0 12px; border:1px solid rgba(210,216,224,.96); border-radius:10px;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px; background:rgba(255,255,255,.97);
+    color:var(--ui-text); box-shadow:0 2px 9px rgba(0,0,0,.14); font-size:13px; font-weight:800; white-space:nowrap;
+  }
+  .top-main-button:hover, .top-main-button.active { background:#eef6ff; border-color:#9bc8f5; color:#176ec2; }
+  .top-main-icon { font-size:16px; line-height:1; font-weight:800; }
+  .top-main-caret { margin-left:1px; color:#7b8490; font-size:12px; }
+  .top-dropdown {
+    position:absolute; top:48px; right:0; z-index:80; width:168px; display:none; padding:6px; background:#fff;
+    border:1px solid var(--ui-border); border-radius:10px; box-shadow:var(--ui-shadow);
+  }
+  .top-dropdown.open { display:grid; gap:3px; }
+  .top-dropdown-action { width:100%; padding:9px 10px; border:0; border-radius:7px; background:#fff; color:#303943; text-align:left; font-size:13px; font-weight:700; }
+  .top-dropdown-action:hover, .top-dropdown-action.active { background:#edf6ff; color:#176ec2; }
+  .legacy-layer-wrap, #layerBtn, #layerPanel, #legacyStyleWrap { display:none !important; }
+  #roadLayerEditorBtn { width:auto !important; font-size:13px !important; }
+
+  #listPanel { width:206px; border-right:1px solid rgba(0,0,0,.08); box-shadow:3px 0 16px rgba(0,0,0,.18); }
+  .list-header { min-height:50px; align-items:center; padding:0 14px; background:#fff; color:#20262d; border-bottom:1px solid #e7ebef; font-size:16px; }
+  .list-header span::before { content:'⌕'; margin-right:7px; color:var(--ui-blue); font-size:18px; }
+  #listClose { color:#5c6670; background:#fff; box-shadow:none; border:1px solid #e3e8ee; }
+  #listClose:hover { background:#f3f7fb; }
+  .road-search-wrap { padding:10px; background:#fff; border-bottom:1px solid #e8edf2; }
+  #roadSearch { height:36px; border-color:#d5dce4; background:#f8fafc; }
+  #addressSearchBtn { min-width:48px; background:var(--ui-blue); }
+  .sidebar-filter-details { border-bottom:1px solid #e8edf2; background:#fff; }
+  .sidebar-filter-details > summary { padding:9px 11px; list-style:none; color:#4d5864; font-size:12px; font-weight:800; cursor:pointer; user-select:none; }
+  .sidebar-filter-details > summary::-webkit-details-marker { display:none; }
+  .sidebar-filter-details > summary::after { content:'⌄'; float:right; color:#8a939d; transition:transform .15s ease; }
+  .sidebar-filter-details[open] > summary::after { transform:rotate(180deg); }
+  .sidebar-tools { border-bottom:0; padding:4px 10px 10px; background:#fbfcfd; }
+  .sidebar-tool-title { color:#697480; font-size:11px; }
+  .road-legend { padding-top:7px; border-top:1px solid #edf0f3; }
+  #listContent { height:calc(100vh - 151px); padding:7px; background:#fff; }
+  .sidebar-filter-details[open] ~ #listContent { height:calc(100vh - 258px); }
+  .list-title { margin:8px 4px 4px; padding:6px 3px; border-bottom:1px solid #dfe4ea; font-size:12px; letter-spacing:-.1px; }
+  .list-item { position:relative; padding:9px 9px 9px 12px; border-radius:7px; border-bottom:0; margin-bottom:2px; color:#303841; }
+  .list-item:hover { background:#f2f7fc; }
+  .list-item.selected { background:#e7f2ff; color:#1267b2; font-weight:800; }
+  .list-item.selected::before { content:''; position:absolute; left:0; top:5px; bottom:5px; width:3px; border-radius:3px; background:var(--ui-blue); }
+
+  #roadLayerEditorPanel { width:360px; top:68px; right:14px; border-radius:12px; box-shadow:var(--ui-shadow); }
+  .road-layer-editor-header { min-height:58px; }
+  .road-layer-editor-title { font-size:17px; }
+  .road-layer-editor-subtitle { font-size:11px; color:#7b858f; }
+
+  #mapTools { right:14px; bottom:76px; border:1px solid #dfe4ea; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.15); }
+  #mapTools button { width:42px; height:42px; font-size:22px; color:#4e5964; }
+  #scaleControl { right:14px; bottom:11px; color:#4d5660; font-size:11px; }
+  #scaleRatio { opacity:.82; }
+
+  .road-popup {
+    width: 215px;
+    border-radius: 14px;
+    box-shadow: 0 12px 36px rgba(0,0,0,.20);
+  }
+  .road-popup .popup-row {
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 7px;
+  }
+  .road-popup .popup-label {
+    font-size: 12px;
+  }
+  .road-popup .popup-value {
+    font-size: 12.5px;
+  }
+  .road-popup .popup-title {
+    font-size: 20px;
+  }
+  .popup-header { border-top-left-radius:14px; border-top-right-radius:14px; background:#f8fafc; }
+  .popup-title { font-size:19px; }
+  .popup-row { grid-template-columns:86px minmax(0,1fr); padding:7px 0; }
+
+  body:not(.township-selected) .top-toolbar { opacity:.88; }
+  body:not(.township-selected) #townshipStartGuide { box-shadow:0 4px 16px rgba(0,0,0,.20); }
+
+  @media (max-width:700px) {
+    .top-toolbar { top:8px; right:8px; gap:4px; max-width:calc(100vw - 16px); }
+    .top-main-button { min-width:0; height:40px; padding:0 9px; gap:5px; font-size:12px; }
+    .top-main-icon { display:none; }
+    .top-dropdown { top:44px; width:156px; }
+    #roadLayerEditorPanel { top:58px; right:8px; width:min(360px, calc(100vw - 16px)); }
+    .list-header { background:#fff; color:#20262d; }
+    #listContent, .sidebar-filter-details[open] ~ #listContent { height:auto; }
+  }
+  /* ===== 2026-09-14: 지도형 상단 메뉴 + 선택 노선 말풍선 ===== */
+  .top-toolbar {
+    top: 12px;
+    right: 14px;
+    gap: 10px;
+    align-items: stretch;
+    opacity: 1 !important;
+  }
+
+  .top-map-switch {
+    display: flex;
+    overflow: hidden;
+    height: 48px;
+    background: rgba(255,255,255,.98);
+    border: 1px solid #d9dde3;
+    border-radius: 7px;
+    box-shadow: 0 2px 7px rgba(0,0,0,.25);
+  }
+
+  .top-map-switch button {
+    min-width: 82px;
+    height: 48px;
+    padding: 0 15px;
+    border: 0;
+    border-right: 1px solid #e1e4e8;
+    background: rgba(255,255,255,.98);
+    color: #111;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -.35px;
+  }
+
+  .top-map-switch button:last-child { border-right: 0; }
+
+  .top-map-switch button.active {
+    color: #fff;
+    background: #2f91f2;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.04);
+  }
+
+  .top-square-button,
+  #roadLayerEditorBtn.top-square-button {
+    width: 62px !important;
+    min-width: 62px !important;
+    height: 48px;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d9dde3;
+    border-radius: 7px;
+    background: rgba(255,255,255,.98);
+    color: #444;
+    box-shadow: 0 2px 7px rgba(0,0,0,.25);
+  }
+
+  .top-square-button:hover,
+  #roadLayerEditorBtn.top-square-button:hover {
+    background: #f6f7f8;
+    color: #222;
+  }
+
+  .top-square-button svg,
+  #roadLayerEditorBtn.top-square-button svg {
+    width: 29px;
+    height: 29px;
+    display: block;
+  }
+
+  .top-load-button {
+    height: 48px;
+    min-width: 112px;
+    padding: 0 20px;
+    border: 1px solid #d9dde3;
+    border-radius: 7px;
+    background: rgba(255,255,255,.98);
+    color: #111;
+    box-shadow: 0 2px 7px rgba(0,0,0,.25);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -.25px;
+  }
+
+  .top-load-button:hover { background:#f6f7f8; }
+
+  /* 현위치는 우측 지도도구 하단에 배치 */
+  #mapTools #locationBtn {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 0;
+  }
+  #mapTools #locationBtn svg { width:24px; height:24px; margin:auto; display:block; }
+
+  /* 선택 노선 말풍선 */
+  .selected-route-balloon {
+    position: relative;
+    min-width: 104px;
+    padding: 10px 14px 9px;
+    border-radius: 12px;
+    color: #fff;
+    background: #2489eb;
+    box-shadow: 0 4px 12px rgba(0,0,0,.28);
+    text-align: left;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateZ(0);
+  }
+
+  .selected-route-balloon::after {
+    content: "";
+    position: absolute;
+    left: 24px;
+    bottom: -10px;
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-top: 11px solid #2489eb;
+    filter: drop-shadow(0 2px 1px rgba(0,0,0,.10));
+  }
+
+  .selected-route-balloon-number {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -.4px;
+  }
+
+  .selected-route-balloon-type {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255,255,255,.28);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.1;
+    opacity: .96;
+  }
+
+  @media (max-width:700px) {
+    .top-toolbar { top:8px; right:8px; gap:6px; }
+    .top-map-switch { height:42px; }
+    .top-map-switch button { min-width:64px; height:42px; padding:0 10px; font-size:14px; }
+    .top-square-button,
+    #roadLayerEditorBtn.top-square-button { width:46px !important; min-width:46px !important; height:42px; }
+    .top-square-button svg,
+    #roadLayerEditorBtn.top-square-button svg { width:25px; height:25px; }
+    .top-load-button { min-width:78px; height:42px; padding:0 12px; font-size:14px; }
+    .selected-route-balloon { min-width:92px; padding:8px 11px 7px; border-radius:10px; }
+    .selected-route-balloon-number { font-size:16px; }
+    .selected-route-balloon-type { font-size:12px; }
+  }
+
+
+  /* ===== 상단 메인 헤더 + 좌측 검색 개선 ===== */
+  :root {
+    --main-header-h: 58px;
+    --main-blue: #2f91f2;
+    --main-blue-dark: #1f7fdc;
+  }
+
+  #appMainHeader {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 12000;
+    height: var(--main-header-h);
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    color: #fff;
+    background: var(--main-blue);
+    box-shadow: 0 2px 8px rgba(0,0,0,.16);
+  }
+
+  #appMainHeader .main-menu-button {
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: transparent;
+  }
+
+  #appMainHeader .main-menu-button:hover {
+    background: rgba(255,255,255,.13);
+  }
+
+  #appMainHeader .main-menu-button span,
+  #appMainHeader .main-menu-button::before,
+  #appMainHeader .main-menu-button::after {
+    content: "";
+    display: block;
+    width: 25px;
+    height: 3px;
+    border-radius: 2px;
+    background: currentColor;
+  }
+
+  #appMainHeader .main-menu-button {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  #appMainHeader .main-title {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -.55px;
+    white-space: nowrap;
+  }
+
+  /* 상단 헤더 때문에 기존 UI를 아래로 이동 */
+  .top-toolbar {
+    top: calc(var(--main-header-h) + 12px) !important;
+  }
+
+  #listPanel {
+    top: var(--main-header-h) !important;
+  }
+
+  #listOpen {
+    z-index: 12001;
+  }
+
+  #roadLayerEditorPanel,
+  #spatialPanel {
+    top: calc(var(--main-header-h) + 70px) !important;
+    max-height: calc(100vh - var(--main-header-h) - 82px) !important;
+  }
+
+  #townshipStartGuide {
+    top: calc(var(--main-header-h) + 15px) !important;
+  }
+
+  #cityOverviewBtn {
+    top: calc(var(--main-header-h) + 15px) !important;
+  }
+
+  /* 검색 패널 상단 */
+  #listPanel {
+    width: 230px;
+  }
+
+  .list-header {
+    min-height: 48px !important;
+    padding: 0 13px !important;
+    background: #fff !important;
+    color: #20262d !important;
+    border-bottom: 1px solid #e5e9ee !important;
+  }
+
+  .list-header span::before {
+    content: none !important;
+  }
+
+  .list-header span {
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .road-search-wrap {
+    position: relative;
+    display: block !important;
+    padding: 10px 10px 7px !important;
+    background: #fff !important;
+    border-bottom: 0 !important;
+  }
+
+  #roadSearch {
+    width: 100%;
+    height: 40px !important;
+    padding: 0 40px 0 12px !important;
+    border: 1px solid #cfd7df !important;
+    border-radius: 9px !important;
+    background: #f8fafc !important;
+    font-size: 13px !important;
+    outline: none;
+  }
+
+  #roadSearch:focus {
+    border-color: var(--main-blue) !important;
+    box-shadow: 0 0 0 3px rgba(47,145,242,.12) !important;
+    background: #fff !important;
+  }
+
+  #addressSearchBtn {
+    position: absolute;
+    top: 13px;
+    right: 13px;
+    width: 34px;
+    height: 34px;
+    padding: 0 !important;
+    border: 0;
+    border-radius: 7px;
+    background: transparent !important;
+    color: #5b6670 !important;
+    font-size: 0 !important;
+  }
+
+  #addressSearchBtn::before {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    left: 8px;
+    top: 7px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+  }
+
+  #addressSearchBtn::after {
+    content: "";
+    position: absolute;
+    width: 8px;
+    height: 2px;
+    left: 19px;
+    top: 21px;
+    border-radius: 2px;
+    background: currentColor;
+    transform: rotate(45deg);
+  }
+
+  #addressSearchBtn:hover {
+    color: var(--main-blue) !important;
+    background: #edf6ff !important;
+  }
+
+  .road-type-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    padding: 4px 10px 9px;
+    background: #fff;
+  }
+
+  .road-type-tab {
+    height: 31px;
+    padding: 0 4px;
+    border: 1px solid #d6dde5;
+    border-radius: 7px;
+    background: #fff;
+    color: #59636e;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .road-type-tab.active {
+    color: #fff;
+    border-color: var(--main-blue);
+    background: var(--main-blue);
+  }
+
+  .sidebar-tools {
+    padding: 9px 10px 8px !important;
+    background: #fff !important;
+  }
+
+  .sidebar-tool-title {
+    margin: 0 0 7px !important;
+    color: #707983;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .status-filter-row {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px !important;
+  }
+
+  .status-filter-row label {
+    position: relative;
+    height: 30px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0 !important;
+    border: 1px solid #d7dee6;
+    border-radius: 7px;
+    color: #58626c;
+    background: #fff;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .status-filter-row label:has(input:checked) {
+    color: #176fc1;
+    border-color: #94c6f5;
+    background: #eaf5ff;
+  }
+
+  .status-filter-row input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .search-result-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 11px 6px;
+    border-top: 1px solid #eef1f4;
+    background: #fff;
+    color: #7b838b;
+    font-size: 11px;
+  }
+
+  #searchResultCount {
+    color: #2f3942;
+    font-weight: 800;
+  }
+
+  .sidebar-filter-details {
+    border-top: 1px solid #eef1f4;
+    border-bottom: 1px solid #eef1f4;
+    background: #fff;
+  }
+
+  .sidebar-filter-details > summary {
+    padding: 8px 10px !important;
+    color: #626c76;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .sidebar-filter-details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .sidebar-filter-details > summary::after {
+    content: "⌄";
+    float: right;
+    color: #8b949c;
+    font-size: 13px;
+  }
+
+  .sidebar-filter-details[open] > summary::after {
+    content: "⌃";
+  }
+
+  .road-legend {
+    margin-top: 8px !important;
+    padding-top: 8px !important;
+  }
+
+  #listContent {
+    height: calc(100vh - var(--main-header-h) - 252px) !important;
+    padding: 6px 7px 10px !important;
+  }
+
+  .list-title {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 5px 2px 4px !important;
+    padding: 6px 5px 5px !important;
+    border-bottom: 1px solid #dfe5eb !important;
+    background: rgba(255,255,255,.96);
+    font-size: 12px !important;
+  }
+
+  .list-item {
+    position: relative;
+    min-height: 48px;
+    padding: 7px 9px 7px 12px !important;
+    border-bottom: 1px solid #eef1f4 !important;
+    border-radius: 6px;
+    text-align: left;
+  }
+
+  .list-item .road-list-main {
+    display: block;
+    color: #273039;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  .list-item .road-list-sub {
+    display: block;
+    margin-top: 3px;
+    color: #818991;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .list-item.selected {
+    color: inherit !important;
+    background: #edf6ff !important;
+  }
+
+  .list-item.selected::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 2px;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--main-blue);
+  }
+
+  .list-item.selected .road-list-main {
+    color: #156dbd;
+  }
+
+  @media (max-width:700px) {
+    :root { --main-header-h: 52px; }
+
+    #appMainHeader {
+      height: var(--main-header-h);
+      padding: 0 10px;
+    }
+
+    #appMainHeader .main-menu-button {
+      width: 36px;
+      height: 36px;
+      margin-right: 8px;
+    }
+
+    #appMainHeader .main-title {
+      font-size: 19px;
+    }
+
+    #listPanel {
+      top: auto !important;
+      bottom: 0 !important;
+    }
+
+    .top-toolbar {
+      top: calc(var(--main-header-h) + 7px) !important;
+    }
+
+    #townshipStartGuide {
+      top: calc(var(--main-header-h) + 55px) !important;
+    }
+
+    #cityOverviewBtn {
+      top: calc(var(--main-header-h) + 55px) !important;
+    }
+
+    #listContent {
+      height: auto !important;
+    }
+  }
+
+
+  /* ===== 좌측 도로찾기 전용 제목 + 검색 단순화 ===== */
+  #appMainHeader { display:none !important; }
+
+  :root {
+    --main-header-h: 0px;
+    --main-blue: #2f91f2;
+  }
+
+  .top-toolbar {
+    top: 12px !important;
+  }
+
+  #listPanel {
+    top: 0 !important;
+    width: 230px;
+  }
+
+  #roadLayerEditorPanel,
+  #spatialPanel {
+    top: 70px !important;
+    max-height: calc(100vh - 82px) !important;
+  }
+
+  #townshipStartGuide { top: 15px !important; }
+  #cityOverviewBtn { top: 15px !important; }
+
+  .list-header {
+    min-height: 72px !important;
+    padding: 12px 12px 11px !important;
+    align-items: center !important;
+    background: var(--main-blue) !important;
+    color: #fff !important;
+    border-bottom: 0 !important;
+  }
+
+  .list-header-title-wrap {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .list-header-main-title {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -.45px;
+  }
+
+  .list-header-subtitle {
+    margin-top: 4px;
+    color: rgba(255,255,255,.78);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  #listClose {
+    color: #fff !important;
+    background: rgba(255,255,255,.12) !important;
+  }
+
+  .road-type-tabs,
+  .sidebar-tools,
+  .sidebar-filter-details {
+    display: none !important;
+  }
+
+  .search-result-summary {
+    padding: 8px 11px 7px;
+    border-top: 1px solid #eef1f4;
+    border-bottom: 1px solid #eef1f4;
+  }
+
+  #listContent {
+    height: calc(100vh - 169px) !important;
+  }
+
+  .list-item {
+    min-height: 38px !important;
+    padding: 8px 9px 8px 12px !important;
+  }
+
+  .list-item .road-list-main {
+    font-size: 13px;
+  }
+
+  .road-list-sub {
+    display: none !important;
+  }
+
+  #addressResults {
+    margin-bottom: 4px;
+  }
+
+  .address-result-title {
+    margin: 5px 2px 6px !important;
+    padding: 6px 6px 5px;
+    border-bottom: 1px solid #dfe5eb;
+    color: #2f91f2 !important;
+    background: #fff;
+    font-size: 12px !important;
+    font-weight: 800;
+  }
+
+  .address-result-item {
+    padding: 9px 10px !important;
+    background: #fff !important;
+    border-bottom: 1px solid #edf0f3 !important;
+    font-size: 12px !important;
+  }
+
+  .address-result-item:hover {
+    background: #f0f7ff !important;
+  }
+
+  @media (max-width:700px) {
+    #listPanel { top:auto !important; }
+    .top-toolbar { top:8px !important; }
+    #townshipStartGuide { top:58px !important; }
+    #cityOverviewBtn { top:58px !important; }
+    #listContent { height:auto !important; }
+  }
+
+
+  /* ===== 좌측 노선목록: 글자 가늘게 + 상하 간격 70% ===== */
+  #listContent .list-item {
+    min-height: 28px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+
+  #listContent .list-item .road-list-main {
+    font-weight: 500 !important;
+    line-height: 1.15 !important;
+  }
+
+  #listContent .list-title {
+    margin-top: 3px !important;
+    margin-bottom: 3px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+
+</style>
 </head>
 
 <body>
@@ -2513,13 +3307,6 @@
   </div>
 
   <div id="mapTools" aria-label="지도 도구">
-    <button id="locationBtn" type="button" title="현위치" aria-label="현위치">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/>
-        <circle cx="12" cy="12" r="2.3" fill="currentColor"/>
-        <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>
     <button id="zoomInBtn" type="button" title="확대" aria-label="확대">+</button>
     <button id="zoomOutBtn" type="button" title="축소" aria-label="축소">−</button>
     <button id="distanceBtn" class="measure-icon" type="button" title="거리재기" aria-label="거리재기">
@@ -2540,6 +3327,14 @@
         <circle cx="14" cy="19" r="1.7" fill="currentColor"/>
       </svg>
     </button>
+
+    <button id="locationBtn" type="button" title="현위치" aria-label="현위치">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2.8a7.1 7.1 0 0 0-7.1 7.1c0 5.2 7.1 11.3 7.1 11.3s7.1-6.1 7.1-11.3A7.1 7.1 0 0 0 12 2.8Z"
+              fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+        <circle cx="12" cy="9.9" r="2.4" fill="none" stroke="currentColor" stroke-width="1.9"/>
+      </svg>
+    </button>
   </div>
   <div id="measureHint">
     <span class="measure-guide">지점을 클릭하고 마우스 오른쪽 버튼으로 완료하세요.</span>
@@ -2552,7 +3347,10 @@
 
   <div id="listPanel">
     <div class="list-header">
-      <span>도로 노선목록</span>
+      <div class="list-header-title-wrap">
+        <div class="list-header-main-title">사천시 도로현황</div>
+        <div class="list-header-subtitle">도로 찾기</div>
+      </div>
       <button id="listClose" title="노선목록 접기" aria-label="노선목록 접기">◀</button>
     </div>
     <div id="listResizeHandle" title="드래그하여 메뉴 폭 조절" aria-label="메뉴 폭 조절"></div>
@@ -2561,27 +3359,15 @@
       <input
         id="roadSearch"
         type="search"
-        placeholder="노선·주소·장소·건물·행정구역 검색"
+        placeholder="노선번호·주소·장소 검색"
         autocomplete="off"
       >
-      <button id="addressSearchBtn" type="button">검색</button>
+      <button id="addressSearchBtn" type="button" title="검색" aria-label="검색">검색</button>
     </div>
 
-    <div class="sidebar-tools">
-      <div class="sidebar-tool-title">개설여부</div>
-      <div class="status-filter-row">
-        <label><input class="road-status-filter" type="checkbox" value="NORMAL" checked>개설</label>
-        <label><input class="road-status-filter" type="checkbox" value="UNEXPANDED" checked>미확장</label>
-        <label><input class="road-status-filter" type="checkbox" value="UNOPENED" checked>미개설</label>
-      </div>
-      <div class="road-legend" aria-label="도로 범례">
-        <div class="legend-item"><span id="legendCity" class="legend-line"></span>시도</div>
-        <div class="legend-item"><span id="legendMyeon" class="legend-line"></span>면도</div>
-        <div class="legend-item"><span id="legendRi" class="legend-line"></span>리도</div>
-        <div class="legend-item"><span id="legendFarm" class="legend-line"></span>농도</div>
-        <div class="legend-item"><span class="legend-line unexpanded"></span>미확장</div>
-        <div class="legend-item"><span class="legend-line unopened"></span>미개설</div>
-      </div>
+    <div class="search-result-summary">
+      <span>검색결과</span>
+      <span id="searchResultCount">0건</span>
     </div>
 
     <div id="listContent">
@@ -2611,111 +3397,68 @@
     </div>
   </div>
 
-  <!-- 오른쪽 상단 메뉴 -->
+  <!-- 오른쪽 상단 주 메뉴: 지도 / 스카이뷰 / 로드뷰 / 레이어 / 불러오기 -->
   <div class="top-toolbar">
-    <div class="base-map-menu">
-      <button id="normalBtn" class="active">지도</button>
-      <button id="skyBtn">스카이뷰</button>
+    <div class="top-map-switch" aria-label="지도 유형">
+      <button id="normalBtn" class="active" type="button">지도</button>
+      <button id="skyBtn" type="button">스카이뷰</button>
     </div>
 
+    <button id="roadviewBtn" class="top-square-button" type="button" title="로드뷰" aria-label="로드뷰">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 3.5c-5.7 0-10.3 4.6-10.3 10.3 0 7.3 10.3 15 10.3 15s10.3-7.7 10.3-15C26.3 8.1 21.7 3.5 16 3.5Z" fill="currentColor"/>
+        <circle cx="16" cy="13.6" r="4.3" fill="#fff"/>
+      </svg>
+    </button>
 
-    <!-- 공간파일 불러오기 -->
-    <div class="tool-wrap">
-      <button id="spatialBtn" class="tool-button" title="공간파일 불러오기" aria-label="공간파일 불러오기">
-        <svg viewBox="0 0 24 24" aria-hidden="true" style="width:25px;height:25px;display:block;margin:auto">
-          <path d="M3.5 6.5h6l2 2h9v9.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-          <path d="M3.5 8.5V6a2 2 0 0 1 2-2h4l2 2h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          <path d="M12 11v5m0-5-2 2m2-2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div id="spatialPanel" role="dialog" aria-label="공간파일 관리">
-        <div class="spatial-header">
-          <div class="spatial-title">공간파일 관리</div>
-          <button id="spatialMinBtn" class="spatial-window-btn" type="button" title="최소화" aria-label="최소화">−</button>
-          <button id="spatialCloseBtn" class="spatial-window-btn" type="button" title="닫기" aria-label="닫기">×</button>
-        </div>
-        <div class="spatial-body">
-          <div class="spatial-note">GeoJSON(.geojson/.json), SHP ZIP 또는 SHP 세트(.shp+.shx+.dbf+.prj)를 선택할 수 있습니다. SHP 세트는 관련 파일을 한 번에 선택하세요.</div>
-          <div id="spatialActions">
-            <button id="spatialOpenBtn" type="button">GeoJSON / SHP 파일 선택</button>
-            <button id="spatialResetBtn" type="button" title="불러온 공간파일 전체 삭제">초기화</button>
-          </div>
-          <input id="spatialFileInput" type="file" multiple accept=".geojson,.json,.zip,.shp,.shx,.dbf,.prj,.cpg">
-          <div id="spatialLayerList"></div>
-        </div>
+    <button id="roadLayerEditorBtn" class="top-square-button" type="button" title="레이어" aria-label="레이어">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 3.2 28.2 10 16 16.8 3.8 10 16 3.2Z" fill="currentColor"/>
+        <path d="m5.1 15.1 10.9 6.1 10.9-6.1 2.1 1.2L16 23.6 3 16.3l2.1-1.2Z" fill="currentColor" opacity=".78"/>
+        <path d="m5.1 20.9 10.9 6.1 10.9-6.1 2.1 1.2L16 29.4 3 22.1l2.1-1.2Z" fill="currentColor" opacity=".52"/>
+      </svg>
+    </button>
+
+    <button id="spatialBtn" class="top-load-button" type="button" title="공간파일 불러오기">불러오기</button>
+  </div>
+
+  <!-- 공간파일 관리 패널 -->
+  <div id="spatialPanel" role="dialog" aria-label="공간파일 관리">
+    <div class="spatial-header">
+      <div class="spatial-title">공간파일 관리</div>
+      <button id="spatialMinBtn" class="spatial-window-btn" type="button" title="최소화" aria-label="최소화">−</button>
+      <button id="spatialCloseBtn" class="spatial-window-btn" type="button" title="닫기" aria-label="닫기">×</button>
+    </div>
+    <div class="spatial-body">
+      <div class="spatial-note">GeoJSON(.geojson/.json), SHP ZIP 또는 SHP 세트(.shp+.shx+.dbf+.prj)를 선택할 수 있습니다. SHP 세트는 관련 파일을 한 번에 선택하세요.</div>
+      <div id="spatialActions">
+        <button id="spatialOpenBtn" type="button">GeoJSON / SHP 파일 선택</button>
+        <button id="spatialResetBtn" type="button" title="불러온 공간파일 전체 삭제">초기화</button>
+      </div>
+      <input id="spatialFileInput" type="file" multiple accept=".geojson,.json,.zip,.shp,.shx,.dbf,.prj,.cpg">
+      <div id="spatialLayerList"></div>
+    </div>
+  </div>
+
+  <!-- 레거시 지도설정 DOM: 기능 호환용, 화면에서는 숨김 -->
+  <div class="tool-wrap legacy-layer-wrap" aria-hidden="true">
+    <button id="layerBtn" class="tool-button" title="지도설정" type="button">지도설정</button>
+    <div id="layerPanel">
+      <div class="layer-panel-title">지도설정</div>
+      <div class="layer-grid">
+        <div class="layer-section-label" style="margin-top:0;padding-top:0;border-top:0;">배경지도</div>
+        <div class="layer-item"><input id="hybridCheck" type="checkbox" checked><label for="hybridCheck">하이브리드</label></div>
+        <div class="layer-item"><input id="districtCheck" type="checkbox"><label for="districtCheck">지적편집도</label></div>
+        <div class="layer-section-label">도로</div>
+        <div class="layer-item"><input id="cityCheck" type="checkbox" checked><label for="cityCheck">시도</label></div>
+        <div class="layer-item"><input id="ruralCheck" type="checkbox" checked><label for="ruralCheck">농어촌도로</label></div>
+        <div class="layer-section-label">행정경계</div>
+        <div class="layer-item"><input id="townshipBoundaryCheck" type="checkbox"><label for="townshipBoundaryCheck">읍면동</label></div>
+        <div class="layer-item"><input id="riBoundaryCheck" type="checkbox"><label for="riBoundaryCheck">리 경계</label></div>
+        <div class="boundary-auto-note">리 경계는 지도 축척 1:75,000 이하에서 자동 표시됩니다.</div>
       </div>
     </div>
-
-    <!-- 로드뷰 -->
-    <button
-      id="roadviewBtn"
-      class="tool-button"
-      title="로드뷰"
-    >◉</button>
-
-    <!-- 레이어 -->
-    <div class="tool-wrap">
-      <button
-        id="layerBtn"
-        class="tool-button"
-        title="지도설정"
-      >
-        <span class="layer-symbol">
-          <span></span>
-          <span></span>
-          <span></span>
-        </span>
-      </button>
-
-      <div id="layerPanel">
-        <div class="layer-panel-title">지도설정</div>
-
-        <div class="layer-grid">
-          <div class="layer-section-label" style="margin-top:0;padding-top:0;border-top:0;">배경지도</div>
-
-          <div class="layer-item">
-            <input id="hybridCheck" type="checkbox" checked>
-            <label for="hybridCheck">하이브리드</label>
-          </div>
-
-          <div class="layer-item">
-            <input id="districtCheck" type="checkbox">
-            <label for="districtCheck">지적편집도</label>
-          </div>
-
-          <div class="layer-section-label">도로</div>
-
-          <div class="layer-item">
-            <input id="cityCheck" type="checkbox" checked>
-            <label for="cityCheck">시도</label>
-          </div>
-
-          <div class="layer-item">
-            <input id="ruralCheck" type="checkbox" checked>
-            <label for="ruralCheck">농어촌도로</label>
-          </div>
-
-          <div class="layer-section-label">행정경계</div>
-
-          
-
-          <div class="layer-item">
-            <input id="townshipBoundaryCheck" type="checkbox">
-            <label for="townshipBoundaryCheck">읍면동</label>
-          </div>
-
-          <div class="layer-item">
-            <input id="riBoundaryCheck" type="checkbox">
-            <label for="riBoundaryCheck">리 경계</label>
-          </div>
-
-          <div class="boundary-auto-note">리 경계는 지도 축척 1:75,000 이하에서 자동 표시됩니다.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 통합 레이어 설정 -->
-    <button id="roadLayerEditorBtn" class="tool-button" title="레이어" aria-label="레이어">레이어</button>
+  </div>
 
     <!-- 기존 사용자화 설정(통합 레이어 메뉴로 이동) -->
     <div class="tool-wrap" id="legacyStyleWrap">
@@ -3146,6 +3889,7 @@
       const riSelectLabels = [];
       const townshipAllBounds = new kakao.maps.LatLngBounds();
       let roadPopupOverlay = null;
+      let selectedRouteBalloonOverlay = null;
       let selectedRoadGroupKey = null;
       let selectedRoadPopupState = null;
       let selectedRoadObject = null;
@@ -4458,6 +5202,7 @@
           }
         }
 
+        updateSelectedRouteBalloon();
         restoreSelectedRoadPopup();
 
         // 도로노선 정보 팝업은 viewport-fixed이므로 지도 이동 후 재배치하지 않음.
@@ -7286,8 +8031,13 @@
       const roadSearch = document.getElementById("roadSearch");
 
       roadSearch.addEventListener("input", function () {
+        const query = this.value.trim();
         clearAddressResults();
-        filterRoadList(this.value);
+
+        if (!query) {
+          showAllRoadList();
+          updateRoadSearchCount();
+        }
       });
 
       roadSearch.addEventListener("keydown", function (event) {
@@ -7300,47 +8050,61 @@
       document.getElementById("addressSearchBtn").onclick =
         runIntegratedSearch;
 
-      document.querySelectorAll(".road-status-filter").forEach(function (input) {
-        input.addEventListener("change", function () {
-          roadStatusFilters[this.value] = this.checked;
-          applyRoadVisibility();
-          updateLabels();
-          filterRoadList(roadSearch.value);
+      function normalizeRoadSearchText(value) {
+        return String(value || "")
+          .toLowerCase()
+          .replace(/\s+/g, "")
+          .replace(/-/g, "");
+      }
+
+      function roadNumberMatches(group, query) {
+        if (!group) return false;
+        const q = normalizeRoadSearchText(query);
+        if (!q) return true;
+
+        const number = normalizeRoadSearchText(group.number);
+        const display = normalizeRoadSearchText(
+          group.layerId === "city" ? "시도" + group.number : group.number
+        );
+
+        return number.includes(q) || display.includes(q);
+      }
+
+      function showAllRoadList() {
+        document.querySelectorAll(".list-item").forEach(function(item) {
+          item.style.display = "block";
         });
-      });
+        document.getElementById("cityListTitle").style.display = "block";
+        document.getElementById("ruralListTitle").style.display = "block";
+        document.getElementById("searchEmpty").style.display = "none";
+      }
+
+      function updateRoadSearchCount(count) {
+        if (count == null) {
+          count = document.querySelectorAll(".list-item").length;
+        }
+        const resultCount = document.getElementById("searchResultCount");
+        if (resultCount) resultCount.textContent = count + "건";
+      }
 
       function filterRoadList(value) {
-        const query = String(value)
-          .toLowerCase()
-          .replace(/\s+/g, "");
-
+        const query = String(value || "").trim();
         let cityCount = 0;
         let ruralCount = 0;
 
-        document.querySelectorAll(".list-item").forEach(function (item) {
-          const text = item.textContent
-            .toLowerCase()
-            .replace(/\s+/g, "");
-
+        document.querySelectorAll(".list-item").forEach(function(item) {
           const group = groups.get(item.dataset.key);
-          const statusVisible = !group || group.roads.some(function (road) {
-            return roadStatusFilters[road.statusKey];
-          });
-          const visible = text.includes(query) && statusVisible;
+          const visible = roadNumberMatches(group, query);
           item.style.display = visible ? "block" : "none";
 
-          if (visible) {
-            if (item.parentElement.id === "cityList") {
-              cityCount++;
-            } else {
-              ruralCount++;
-            }
+          if (visible && group) {
+            if (group.layerId === "city") cityCount++;
+            else ruralCount++;
           }
         });
 
         document.getElementById("cityListTitle").style.display =
           cityCount ? "block" : "none";
-
         document.getElementById("ruralListTitle").style.display =
           ruralCount ? "block" : "none";
 
@@ -7348,6 +8112,7 @@
         document.getElementById("searchEmpty").style.display =
           count ? "none" : "block";
 
+        updateRoadSearchCount(count);
         return count;
       }
 
@@ -7361,14 +8126,30 @@
 
         if (!query) {
           clearAddressResults();
-          filterRoadList("");
+          showAllRoadList();
+          updateRoadSearchCount();
           return;
         }
 
-        if (filterRoadList(query)) {
+        // 노선번호와 일치하는 경우에는 도로노선 검색결과를 최우선으로 표시함.
+        const roadMatchCount = filterRoadList(query);
+        if (roadMatchCount > 0) {
           clearAddressResults();
+          const resultCount = document.getElementById("searchResultCount");
+          if (resultCount) resultCount.textContent = "도로노선 " + roadMatchCount + "건";
           return;
         }
+
+        // 노선번호 검색이 아니면 도로목록은 숨기고 카카오 지도 일반검색 결과를 표시함.
+        document.getElementById("cityListTitle").style.display = "none";
+        document.getElementById("ruralListTitle").style.display = "none";
+        document.querySelectorAll(".list-item").forEach(function(item) {
+          item.style.display = "none";
+        });
+        document.getElementById("searchEmpty").style.display = "none";
+
+        const resultCount = document.getElementById("searchResultCount");
+        if (resultCount) resultCount.textContent = "카카오 검색";
 
         const cacheKey = query.toLowerCase().replace(/\s+/g, " ");
         if (integratedSearchCache.has(cacheKey)) {
@@ -7387,18 +8168,19 @@
         const requestSequence = ++integratedSearchSequence;
         const searchButton = document.getElementById("addressSearchBtn");
         searchButton.disabled = true;
-        searchButton.textContent = "검색 중";
+        searchButton.setAttribute("aria-label", "검색 중");
 
         Promise.all([
           searchAddress(query),
           searchPlace(query)
-        ]).then(function (resultSets) {
+        ]).then(function(resultSets) {
           if (requestSequence !== integratedSearchSequence) return;
+
           const combined = [];
           const used = new Set();
 
-          resultSets.flat().forEach(function (result) {
-            const key = [result.x, result.y, result.place_name || ""].join("|");
+          resultSets.flat().forEach(function(result) {
+            const key = [result.x, result.y, result.place_name || "", result.address_name || ""].join("|");
             if (!used.has(key)) {
               used.add(key);
               combined.push(result);
@@ -7408,23 +8190,27 @@
           if (!combined.length) {
             clearAddressResults();
             document.getElementById("searchEmpty").textContent =
-              "검색 결과가 없습니다.";
-            document.getElementById("searchEmpty").style.display =
-              "block";
+              "카카오 지도 검색 결과가 없습니다.";
+            document.getElementById("searchEmpty").style.display = "block";
+            if (resultCount) resultCount.textContent = "0건";
             return;
           }
 
-          const results = combined.slice(0, 12);
+          const results = combined.slice(0, 15);
           integratedSearchCache.set(cacheKey, results);
           renderAddressResults(results);
-        }).catch(function () {
+          if (resultCount) resultCount.textContent = "카카오 검색 " + results.length + "건";
+        }).catch(function() {
           if (requestSequence === integratedSearchSequence) {
-            showAppError("검색 서비스를 사용할 수 없습니다", "잠시 후 다시 검색해 주세요. 같은 검색어는 반복 호출하지 않는 것이 좋습니다.");
+            showAppError(
+              "검색 서비스를 사용할 수 없습니다",
+              "잠시 후 다시 검색해 주세요."
+            );
           }
-        }).finally(function () {
+        }).finally(function() {
           if (requestSequence === integratedSearchSequence) {
             searchButton.disabled = false;
-            searchButton.textContent = "검색";
+            searchButton.setAttribute("aria-label", "검색");
           }
         });
       }
@@ -7460,7 +8246,7 @@
       function renderAddressResults(results) {
         const container = document.getElementById("addressResults");
         container.innerHTML =
-          '<div class="address-result-title">장소·주소 검색결과</div>';
+          '<div class="address-result-title">카카오 지도 검색결과</div>';
 
         results.forEach(function (result) {
           const button = document.createElement("button");
@@ -8728,10 +9514,13 @@
             button.className = "list-item";
             button.dataset.key = group.key;
 
-            button.textContent =
+            const mainText =
               layerId === "city"
                 ? "시도 " + group.number
                 : group.number;
+
+            button.innerHTML =
+              '<span class="road-list-main">' + escapeHTML(mainText) + '</span>';
 
             button.onclick = function () {
               selectGroup(group.key);
@@ -8788,6 +9577,7 @@
             // 선택 노선 전체에 강조 스타일을 한 번 더 확실히 적용한다.
             if (selectedKey === groupKey && selectedRoadGroupKey === groupKey) {
               setRoadGroupHighlight(groupKey, true);
+              updateSelectedRouteBalloon();
             }
           };
           kakao.maps.event.addListener(map, "idle", selectionIdleHandler);
@@ -8801,6 +9591,7 @@
             // setLevel이 추가로 발생하는 경우에도 첫 선택 강조가 유실되지 않게 즉시 재적용
             if (selectedKey === groupKey && selectedRoadGroupKey === groupKey) {
               setRoadGroupHighlight(groupKey, true);
+              updateSelectedRouteBalloon();
             }
           }, 0);
         } else {
@@ -8949,6 +9740,101 @@
       window.closeRoadPopup = closeRoadPopup;
 
 
+
+      function getRoadGroupTypeLabel(group) {
+        if (!group) return "";
+        if (group.layerId === "city") return "시도";
+
+        const values = [];
+        (group.propertiesList || []).forEach(function(p) {
+          const value = safe(
+            p && (
+              p.GUBUN !== undefined ? p.GUBUN :
+              p["구분"] !== undefined ? p["구분"] : ""
+            )
+          );
+          if (value && value !== "-" && values.indexOf(value) === -1) values.push(value);
+        });
+
+        return values[0] || "농어촌도로";
+      }
+
+      function removeSelectedRouteBalloon() {
+        if (selectedRouteBalloonOverlay) {
+          try { selectedRouteBalloonOverlay.setMap(null); } catch (e) {}
+          selectedRouteBalloonOverlay = null;
+        }
+      }
+
+      function getSelectedRouteBalloonPosition(group) {
+        if (!group) return null;
+
+        const basePosition = midpointAcrossPaths(group.paths || []);
+        if (!basePosition) return null;
+
+        try {
+          const bounds = map.getBounds();
+          if (bounds && bounds.contain(basePosition)) return basePosition;
+
+          const pseudoLabel = {
+            groupKey: group.key,
+            basePosition: basePosition,
+            position: basePosition
+          };
+          return getVisibleLabelPosition(pseudoLabel, bounds) || basePosition;
+        } catch (e) {
+          return basePosition;
+        }
+      }
+
+      function updateSelectedRouteBalloon() {
+        if (!selectedRoadGroupKey) {
+          removeSelectedRouteBalloon();
+          return;
+        }
+
+        const group = groups.get(selectedRoadGroupKey);
+        if (!group) {
+          removeSelectedRouteBalloon();
+          return;
+        }
+
+        const position = getSelectedRouteBalloonPosition(group);
+        if (!position) return;
+
+        const numberText = escapeHTML(String(group.number || "-"));
+        const typeText = escapeHTML(getRoadGroupTypeLabel(group));
+
+        if (!selectedRouteBalloonOverlay) {
+          const content = document.createElement("div");
+          content.className = "selected-route-balloon";
+          content.innerHTML =
+            '<div class="selected-route-balloon-number">' + numberText + '</div>' +
+            '<div class="selected-route-balloon-type">' + typeText + '</div>';
+
+          selectedRouteBalloonOverlay = new kakao.maps.CustomOverlay({
+            position: position,
+            content: content,
+            xAnchor: 0.24,
+            // 말풍선 꼬리 아래에 여유 공간을 확보해 도로선과 겹치지 않도록 함.
+            // yAnchor가 1보다 클수록 말풍선 전체가 노선 기준점 위쪽으로 이동함.
+            yAnchor: 1.52,
+            zIndex: 125
+          });
+          selectedRouteBalloonOverlay.setMap(map);
+        } else {
+          const node = selectedRouteBalloonOverlay.getContent && selectedRouteBalloonOverlay.getContent();
+          if (node) {
+            const numberEl = node.querySelector(".selected-route-balloon-number");
+            const typeEl = node.querySelector(".selected-route-balloon-type");
+            if (numberEl) numberEl.textContent = String(group.number || "-");
+            if (typeEl) typeEl.textContent = getRoadGroupTypeLabel(group);
+          }
+          selectedRouteBalloonOverlay.setPosition(position);
+          if (!selectedRouteBalloonOverlay.getMap()) selectedRouteBalloonOverlay.setMap(map);
+        }
+      }
+
       function setRoadGroupHighlight(groupKey, enabled) {
         const group = groups.get(groupKey);
         if (!group || !group.roads) return;
@@ -9076,6 +9962,7 @@
         }
 
         selectedRoadPopupState = null;
+        removeSelectedRouteBalloon();
       }
 
       function selectRoadGroupHighlight(groupKey) {
@@ -9087,6 +9974,7 @@
 
         selectedRoadGroupKey = groupKey;
         setRoadGroupHighlight(groupKey, true);
+        updateSelectedRouteBalloon();
       }
 
       function offsetPopupPosition(position, dx, dy) {
@@ -9223,6 +10111,7 @@
 
         selectedRoadObject = road || null;
         selectRoadGroupHighlight(groupKey);
+        updateSelectedRouteBalloon();
         selectedRoadPopupState = {
           groupKey: groupKey,
           road: road,
@@ -9694,5 +10583,16 @@
     });
   </script>
   <div id="coordCopyToast" class="coord-copy-toast"></div>
+
+<script id="layoutRefinementScript">
+(function(){
+  // 상단은 직접 실행형 메뉴이므로 별도 드롭다운은 사용하지 않음.
+  // 공간파일 "불러오기" 버튼은 기존 spatialBtn 핸들러를 그대로 사용함.
+  const loadBtn = document.getElementById('spatialBtn');
+  if (loadBtn) {
+    loadBtn.setAttribute('aria-label', '공간파일 불러오기');
+  }
+})();
+</script>
 </body>
 </html>
