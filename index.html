@@ -8711,12 +8711,11 @@
         resetSelection();
         selectedKey = groupKey;
 
-        group.roads.forEach(function (road) {
-          road.roadLine.setOptions({
-            strokeColor: COLORS.SELECTED,
-            strokeWeight: getRoadStrokeWeight(road, true)
-          });
-        });
+        // 목록에서 한 번 클릭했을 때 즉시 전체 노선을 강조 상태로 등록한다.
+        // setBounds/확대축소 과정에서 도로 스타일이 다시 그려져도
+        // selectedRoadGroupKey를 기준으로 강조가 자동 복원되도록 한다.
+        selectedRoadObject = null;
+        selectRoadGroupHighlight(groupKey);
 
         document
           .querySelectorAll(".list-item")
@@ -8727,12 +8726,31 @@
           });
 
         if (!group.bounds.isEmpty()) {
+          let selectionIdleHandler = null;
+          selectionIdleHandler = function () {
+            kakao.maps.event.removeListener(map, "idle", selectionIdleHandler);
+
+            // 화면 맞춤 이후 실제 표시 대상 도로가 다시 계산된 다음
+            // 선택 노선 전체에 강조 스타일을 한 번 더 확실히 적용한다.
+            if (selectedKey === groupKey && selectedRoadGroupKey === groupKey) {
+              setRoadGroupHighlight(groupKey, true);
+            }
+          };
+          kakao.maps.event.addListener(map, "idle", selectionIdleHandler);
+
           map.setBounds(group.bounds);
           setTimeout(function () {
             const level = map.getLevel();
             if (level < 3) map.setLevel(3);
             else if (level > 8) map.setLevel(8);
+
+            // setLevel이 추가로 발생하는 경우에도 첫 선택 강조가 유실되지 않게 즉시 재적용
+            if (selectedKey === groupKey && selectedRoadGroupKey === groupKey) {
+              setRoadGroupHighlight(groupKey, true);
+            }
           }, 0);
+        } else {
+          setRoadGroupHighlight(groupKey, true);
         }
       }
 
