@@ -3884,6 +3884,95 @@
   }
 
 </style>
+
+<style id="mobileViewportContainmentFix">
+  @media (max-width:700px) {
+    html,
+    body {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+    }
+
+    #map {
+      width: 100dvw !important;
+      max-width: 100dvw !important;
+      overflow: hidden !important;
+    }
+
+    #listPanel {
+      right: 0 !important;
+      left: 0 !important;
+      width: 100dvw !important;
+      max-width: 100dvw !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      overflow-x: hidden !important;
+    }
+
+    #listPanel > *,
+    .road-search-wrap,
+    .road-kind-filters,
+    .search-result-summary,
+    #listContent {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    .road-kind-filters {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      overflow: hidden !important;
+    }
+
+    .road-kind-filter {
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+
+    /* 모바일 노선 속성창을 실제 viewport 안에 강제로 고정 */
+    body > .road-popup {
+      position: fixed !important;
+      top: auto !important;
+      right: max(8px, env(safe-area-inset-right)) !important;
+      left: max(8px, env(safe-area-inset-left)) !important;
+      width: auto !important;
+      max-width: calc(100dvw - 16px) !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      overflow-x: hidden !important;
+      transform: none !important;
+    }
+
+    body > .road-popup .popup-row,
+    body > .road-popup .popup-value,
+    body > .road-popup .popup-title,
+    body > .road-popup .road-attributes {
+      min-width: 0 !important;
+      max-width: 100% !important;
+      overflow-wrap: anywhere !important;
+      word-break: break-word !important;
+    }
+
+    .road-edit-panel {
+      right: max(8px, env(safe-area-inset-right)) !important;
+      left: max(8px, env(safe-area-inset-left)) !important;
+      width: auto !important;
+      max-width: calc(100dvw - 16px) !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      overflow-x: hidden !important;
+    }
+
+    .top-toolbar {
+      right: max(8px, env(safe-area-inset-right)) !important;
+      max-width: calc(100dvw - 16px) !important;
+    }
+  }
+</style>
+
 </head>
 
 <body>
@@ -6229,10 +6318,28 @@
 
         if (measureMode || roadviewMode) return;
         if (Date.now() < suppressBasePlaceClickUntil) return;
+
+        // 선형 편집 중에는 편집 상태를 유지함.
+        if (roadGeometryEditState) return;
+
+        // 노선을 선택한 뒤 지도 바탕을 클릭하면 속성창만 닫음.
+        // 노선 클릭 이벤트는 preventMap()으로 이 이벤트까지 전달되지 않음.
+        if (selectedRoadPopupState || roadPopupOverlay) {
+          closeRoadPopup();
+        }
       });
 
       // 지번정보 팝업 보정은 조작 완료 후 수행하여 지도 드래그 성능을 우선함.
       window.addEventListener("resize", function() {
+        // 모바일 Safari에서 viewport 폭 변경 뒤 가로 스크롤 위치가 남는 현상 방지
+        if (isMobileMapUI()) {
+          try {
+            document.documentElement.scrollLeft = 0;
+            document.body.scrollLeft = 0;
+          } catch (e) {}
+          scheduleRoadPopupSafeViewportCheck();
+        }
+
         if (!basePlaceOverlay || !parcelInfoPopupActive) return;
         scheduleBasePlacePopupViewportCheck();
       });
@@ -6799,6 +6906,34 @@
         document.body.classList.remove("sky-extra-zoom");
       }
 
+
+      function switchBaseMapTypePreserveView(typeId) {
+        if (!map) return;
+
+        const center = map.getCenter();
+        const level = map.getLevel();
+
+        map.setMapTypeId(typeId);
+
+        // 지도 유형 변경 직후 같은 중심/레벨을 즉시 복원
+        map.setLevel(level, { animate: false });
+        map.setCenter(center);
+
+        // 타일 재배치 과정에서 중심이 미세하게 밀리는 경우를 방지하기 위해
+        // 두 번 더 같은 뷰를 고정함.
+        requestAnimationFrame(function() {
+          if (!map) return;
+          map.setLevel(level, { animate: false });
+          map.setCenter(center);
+        });
+
+        setTimeout(function() {
+          if (!map) return;
+          map.setLevel(level, { animate: false });
+          map.setCenter(center);
+        }, 120);
+      }
+
       function forceBaseMapMaximumZoom() {
         // Kakao Maps의 일반 지도/스카이뷰에서 사용 가능한 최대 확대는 level 1임.
         // 지도 유형 전환 직후 타일이 다시 그려지는 동안에도 level 1을 재적용함.
@@ -6829,7 +6964,8 @@
       normalBtn.onclick = function () {
         setSkyExtraZoom(false);
         isSkyViewMode = false;
-        map.setMapTypeId(kakao.maps.MapTypeId.ROADMAP);
+
+        switchBaseMapTypePreserveView(kakao.maps.MapTypeId.ROADMAP);
 
         normalBtn.classList.add("active");
         skyBtn.classList.remove("active");
@@ -6837,13 +6973,18 @@
         refreshRoadColorsForMapType();
         updateBoundaryVisibility();
         resetTownshipStyles();
-        forceBaseMapMaximumZoom();
       };
 
       skyBtn.onclick = function () {
         setSkyExtraZoom(true);
         isSkyViewMode = true;
-        setSkyMap();
+
+        const hybridOn = !hybridCheck || hybridCheck.checked;
+        switchBaseMapTypePreserveView(
+          hybridOn
+            ? kakao.maps.MapTypeId.HYBRID
+            : kakao.maps.MapTypeId.SKYVIEW
+        );
 
         skyBtn.classList.add("active");
         normalBtn.classList.remove("active");
@@ -6851,7 +6992,6 @@
         refreshRoadColorsForMapType();
         updateBoundaryVisibility();
         resetTownshipStyles();
-        forceBaseMapMaximumZoom();
       };
 
       // 하이브리드는 기본 ON. 스카이뷰에서 끄면 순수 위성영상(SKYVIEW)으로 전환함.
@@ -6859,18 +6999,25 @@
 
       hybridCheck.onchange = function () {
         setSkyExtraZoom(isSkyViewMode);
+
         if (skyBtn.classList.contains("active")) {
-          setSkyMap();
+          const hybridOn = !hybridCheck || hybridCheck.checked;
+
+          switchBaseMapTypePreserveView(
+            hybridOn
+              ? kakao.maps.MapTypeId.HYBRID
+              : kakao.maps.MapTypeId.SKYVIEW
+          );
+
           refreshRoadColorsForMapType();
           updateBoundaryVisibility();
           resetTownshipStyles();
         }
-        forceBaseMapMaximumZoom();
       };
 
       function setSkyMap() {
         const hybridOn = !hybridCheck || hybridCheck.checked;
-        map.setMapTypeId(
+        switchBaseMapTypePreserveView(
           hybridOn
             ? kakao.maps.MapTypeId.HYBRID
             : kakao.maps.MapTypeId.SKYVIEW
@@ -10868,6 +11015,9 @@
           popup.style.top = "auto";
           popup.style.right = "8px";
           popup.style.left = "8px";
+          popup.style.width = "auto";
+          popup.style.maxWidth = "calc(100dvw - 16px)";
+          popup.style.boxSizing = "border-box";
           popup.style.bottom = "10px";
           popup.style.transform = "none";
           return;
