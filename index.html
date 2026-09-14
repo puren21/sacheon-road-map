@@ -2865,6 +2865,36 @@
       const BASE_WIDTH = 6;
       const SELECTED_WIDTH = ROAD_WIDTH + 3;
 
+      /*
+       * 지도 표현 해상도 보정
+       * 현재 4K 화면에서 보이는 선/텍스트 크기를 기준(3840x2160)으로 유지함.
+       * screen CSS 크기 × devicePixelRatio로 실제 출력 해상도를 추정하여
+       * FHD/QHD 등에서는 선 두께와 라벨 크기를 같은 비율로 줄임.
+       * 모바일은 기존 모바일 UI 크기를 유지함.
+       */
+      const MAP_REFERENCE_WIDTH = 3840;
+      const MAP_REFERENCE_HEIGHT = 2160;
+
+      function getMapResolutionScale() {
+        try {
+          if (window.matchMedia && window.matchMedia("(max-width: 900px)").matches) return 1;
+          const dpr = Math.max(0.5, Number(window.devicePixelRatio) || 1);
+          const physicalWidth = Math.max(1, Number(window.screen && window.screen.width) || window.innerWidth || 1920) * dpr;
+          const physicalHeight = Math.max(1, Number(window.screen && window.screen.height) || window.innerHeight || 1080) * dpr;
+          const widthScale = physicalWidth / MAP_REFERENCE_WIDTH;
+          const heightScale = physicalHeight / MAP_REFERENCE_HEIGHT;
+          return Math.max(0.5, Math.min(1.25, Math.min(widthScale, heightScale)));
+        } catch (e) {
+          return 1;
+        }
+      }
+
+      function mapVisualPx(value, minimum) {
+        const n = Number(value);
+        const scaled = (Number.isFinite(n) ? n : 0) * getMapResolutionScale();
+        return Math.max(minimum == null ? 0.5 : minimum, scaled);
+      }
+
       const COLORS = {
         CITY: "#007F86",   // 청록 계열
         MYEON: "#D94A3A",  // 적갈/적색 계열
@@ -3060,7 +3090,7 @@
           visible: false,
           maxScale: Infinity,
           strokeColor: "#4C5863",
-          strokeWeight: 1.0,
+          strokeWeight: mapVisualPx(1.0, 0.5),
           strokeOpacity: 0.88,
           strokeStyle: "shortdash",
           zIndex: 2,
@@ -3146,7 +3176,7 @@
 
           if (isSkyViewMode) {
             poly.setOptions({
-              strokeWeight: selected ? 3.4 : hover ? 3.0 : 2.6,
+              strokeWeight: mapVisualPx(selected ? 3.4 : hover ? 3.0 : 2.6, 0.6),
               strokeColor: selected ? "#3DB2FF" : hover ? "#FFE066" : "#FFFFFF",
               strokeOpacity: 1,
               strokeStyle: "shortdash",
@@ -3155,7 +3185,7 @@
             });
           } else {
             poly.setOptions({
-              strokeWeight: selected ? 2.2 : hover ? 2.0 : 1.6,
+              strokeWeight: mapVisualPx(selected ? 2.2 : hover ? 2.0 : 1.6, 0.6),
               strokeColor: selected ? "#258FFF" : hover ? "#3D7194" : "#59636D",
               strokeOpacity: selected ? 1 : hover ? 1 : 0.92,
               strokeStyle: "shortdash",
@@ -3171,7 +3201,7 @@
             shouldAutoShowTownshipBoundary();
           poly.setMap(isSkyViewMode && boundaryVisible ? map : null);
           poly.setOptions({
-            strokeWeight: selected ? 6.2 : hover ? 5.8 : 5.0,
+            strokeWeight: mapVisualPx(selected ? 6.2 : hover ? 5.8 : 5.0, 1),
             strokeColor: "#111111",
             strokeOpacity: selected ? 0.82 : hover ? 0.78 : 0.72,
             strokeStyle: "solid"
@@ -6063,7 +6093,7 @@
       }
 
       function applyLabelScale() {
-        const scale = limitNumber(LABEL_STYLES.SCALE, 50, 150) / 100;
+        const scale = (limitNumber(LABEL_STYLES.SCALE, 50, 150) / 100) * getMapResolutionScale();
         document.documentElement.style.setProperty("--road-label-scale", scale);
         document.querySelectorAll(".road-label").forEach(function (label) {
           label.style.setProperty("--label-scale", scale);
@@ -6162,7 +6192,7 @@
         ensureTownshipLabelStyleModel();
         const activeColors = TOWNSHIP_LABEL_STYLES.TEXT_COLORS.filter(function(item){ return item && item.visible !== false; }).map(function(item){ return normalizeLabelHex(item.color, "#2F3740"); });
         const textColor = activeColors[0] || "transparent";
-        const scale = TOWNSHIP_LABEL_STYLES.SCALE / 100;
+        const scale = (TOWNSHIP_LABEL_STYLES.SCALE / 100) * getMapResolutionScale();
         const shapeVisible = TOWNSHIP_LABEL_STYLES.SHAPE_VISIBLE !== false && TOWNSHIP_LABEL_STYLES.SHAPE !== "none";
         const shape = TOWNSHIP_LABEL_STYLES.SHAPE || "rounded";
         document.querySelectorAll(".township-select-label").forEach(function(el) {
@@ -6172,7 +6202,7 @@
           el.style.padding = shapeVisible ? ((4 * scale) + "px " + (8 * scale) + "px") : "0";
           el.style.background = shapeVisible ? TOWNSHIP_LABEL_STYLES.SHAPE_FILL_COLOR : "transparent";
           el.style.border = shapeVisible && TOWNSHIP_LABEL_STYLES.SHAPE_LINE_WIDTH > 0
-            ? (TOWNSHIP_LABEL_STYLES.SHAPE_LINE_WIDTH + "px solid " + TOWNSHIP_LABEL_STYLES.SHAPE_LINE_COLOR)
+            ? (mapVisualPx(TOWNSHIP_LABEL_STYLES.SHAPE_LINE_WIDTH, 0.5) + "px solid " + TOWNSHIP_LABEL_STYLES.SHAPE_LINE_COLOR)
             : "0";
           el.style.borderRadius = !shapeVisible ? "0" : (shape === "box" ? "0" : (shape === "pill" ? "999px" : (8 * scale) + "px"));
           el.style.boxShadow = shapeVisible ? "0 1px 4px rgba(0,0,0,.16)" : "none";
@@ -6402,10 +6432,12 @@
           line.setPath(path);
           line.setOptions({
             strokeColor: getRoadLayerDisplayColor(road.styleKey, config),
-            strokeWeight:
+            strokeWeight: mapVisualPx(
               road.statusKey === "UNOPENED"
                 ? Math.max(config.width, STATUS_STYLES.UNOPENED_SIZE)
                 : config.width,
+              0.75
+            ),
             strokeOpacity:
               Math.max(0, Math.min(100, Number(config.opacity) || 0)) / 100,
             strokeStyle: getRoadLayerStrokeStyle(road, config, index),
@@ -7735,7 +7767,7 @@
 
             const line = new kakao.maps.Polyline({
               path: path,
-              strokeWeight: layer.strokeWeight,
+              strokeWeight: mapVisualPx(layer.strokeWeight, 0.5),
               strokeColor: layer.strokeColor,
               strokeOpacity: layer.strokeOpacity,
               strokeStyle: layer.strokeStyle,
@@ -7771,7 +7803,7 @@
           // 그 아래에 어두운 바깥선을 한 겹 더 둠.
           const skyBackPolygon = new kakao.maps.Polygon({
             path: path,
-            strokeWeight: 5.0,
+            strokeWeight: mapVisualPx(5.0, 1),
             strokeColor: "#111111",
             strokeOpacity: 0.72,
             strokeStyle: "solid",
@@ -7792,7 +7824,7 @@
           // 화면에 보이는 읍면동 경계/면 표현용 폴리곤
           const polygon = new kakao.maps.Polygon({
             path: path,
-            strokeWeight: 1.0,
+            strokeWeight: mapVisualPx(1.0, 0.5),
             strokeColor: "#59636D",
             strokeOpacity: .92,
             strokeStyle: "shortdash",
@@ -8332,7 +8364,7 @@
             ? new kakao.maps.Polyline({
                 map: null,
                 path: displayPath,
-                strokeWeight: style.base,
+                strokeWeight: mapVisualPx(style.base, 0.75),
                 strokeColor: style.baseColor,
                 strokeOpacity: style.baseOpacity / 100,
                 strokeStyle: getStatusStrokeStyle(statusKey),
@@ -8344,10 +8376,12 @@
         const roadLine = new kakao.maps.Polyline({
           map: null,
           path: displayPath,
-          strokeWeight:
+          strokeWeight: mapVisualPx(
             statusKey === "UNOPENED"
               ? STATUS_STYLES.UNOPENED_SIZE
               : style.mid,
+            0.75
+          ),
           strokeColor: style.color,
           strokeOpacity: style.topOpacity / 100,
           strokeStyle: getStatusStrokeStyle(statusKey),
@@ -8426,7 +8460,7 @@
             ) {
               roadLine.setOptions({
                 strokeColor: isSkyViewMode ? "#FFFFFF" : "#FFFF00",
-                strokeWeight: getRoadStrokeWeight(road) + 2
+                strokeWeight: getRoadStrokeWeight(road) + mapVisualPx(2, 0.5)
               });
             }
           }
@@ -8928,17 +8962,20 @@
               strokeColor: enabled
                 ? highlightColor
                 : getRoadLayerDisplayColor(road.styleKey, config),
-              strokeWeight: enabled
-                ? (Number(config.width) || 3) +
-                  (isSelectedSegment ? 3 : 2.5)
-                : (
-                    road.statusKey === "UNOPENED"
-                      ? Math.max(
-                          Number(config.width) || 3,
-                          STATUS_STYLES.UNOPENED_SIZE
-                        )
-                      : Number(config.width) || 3
-                  ),
+              strokeWeight: mapVisualPx(
+                enabled
+                  ? (Number(config.width) || 3) +
+                    (isSelectedSegment ? 3 : 2.5)
+                  : (
+                      road.statusKey === "UNOPENED"
+                        ? Math.max(
+                            Number(config.width) || 3,
+                            STATUS_STYLES.UNOPENED_SIZE
+                          )
+                        : Number(config.width) || 3
+                    ),
+                0.75
+              ),
               strokeOpacity: enabled
                 ? 1
                 : Math.max(
@@ -8967,6 +9004,36 @@
             }
           }
         });
+      }
+
+      function refreshResolutionNormalizedVisuals() {
+        // 사용자가 설정한 숫자는 4K 기준값으로 유지하고 화면 출력에만 배율을 적용함.
+        ["CITY", "MYEON", "RI", "FARM"].forEach(function(styleKey) {
+          syncRoadLayerStackForStyle(styleKey);
+        });
+
+        Object.keys(BOUNDARY_LAYERS).forEach(function(key) {
+          const layer = BOUNDARY_LAYERS[key];
+          (layer.shapes || []).forEach(function(shape) {
+            if (shape && typeof shape.setOptions === "function") {
+              shape.setOptions({ strokeWeight: mapVisualPx(layer.strokeWeight, 0.5) });
+            }
+          });
+        });
+
+        townshipSelectGroups.forEach(function(group) {
+          if (!group) return;
+          const mode = selectedTownshipName === group.name ? "selected" : "normal";
+          setTownshipGroupStyle(group, mode);
+        });
+
+        applyLabelScale();
+        applyLabelAppearance();
+        applyTownshipLabelAppearance();
+
+        if (selectedRoadGroupKey) {
+          setRoadGroupHighlight(selectedRoadGroupKey, true);
+        }
       }
 
       function clearSelectedRoadHighlight() {
@@ -9550,7 +9617,7 @@
             ? STATUS_STYLES.UNOPENED_SIZE
             : ROAD_STYLES[road.styleKey].mid;
 
-        return weight + (selected ? 2 : 0);
+        return mapVisualPx(weight + (selected ? 2 : 0), 0.75);
       }
 
       function parseRoadLength(value) {
@@ -9586,6 +9653,24 @@
 
       // 노선 레이어 메뉴 이벤트 최종 연결
       initRoadLayerEditor();
+      let resolutionRefreshTimer = null;
+      window.addEventListener("resize", function() {
+        clearTimeout(resolutionRefreshTimer);
+        resolutionRefreshTimer = setTimeout(function() {
+          refreshResolutionNormalizedVisuals();
+        }, 180);
+      });
+
+      // 다른 모니터로 창을 옮기거나 OS 해상도/배율을 변경했을 때 DPR 변화도 반영
+      let lastResolutionDpr = window.devicePixelRatio || 1;
+      setInterval(function() {
+        const currentDpr = window.devicePixelRatio || 1;
+        if (Math.abs(currentDpr - lastResolutionDpr) > 0.01) {
+          lastResolutionDpr = currentDpr;
+          refreshResolutionNormalizedVisuals();
+        }
+      }, 1200);
+
     });
   </script>
   <div id="coordCopyToast" class="coord-copy-toast"></div>
