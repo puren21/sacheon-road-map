@@ -3280,6 +3280,229 @@
     padding-bottom: 4px !important;
   }
 
+
+  /* ===== 모바일 전용 UI ===== */
+  @media (max-width:700px) {
+    /* 좌측 도로찾기 → 하단 바텀시트 */
+    #listPanel {
+      top: auto !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      max-width: none !important;
+      height: 38dvh !important;
+      min-height: 190px !important;
+      max-height: 76dvh !important;
+      display: flex !important;
+      flex-direction: column !important;
+      border-radius: 16px 16px 0 0 !important;
+      box-shadow: 0 -5px 20px rgba(0,0,0,.28) !important;
+      overflow: visible !important;
+      transition: height .18s ease, transform .18s ease;
+    }
+
+    body.list-collapsed #listPanel {
+      display: none !important;
+    }
+
+    /* 위쪽 드래그 손잡이 */
+    #listResizeHandle {
+      top: -18px !important;
+      right: 0 !important;
+      bottom: auto !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 36px !important;
+      cursor: ns-resize !important;
+      touch-action: none !important;
+      background: transparent !important;
+      z-index: 30 !important;
+    }
+
+    #listResizeHandle::after {
+      content: "";
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      width: 54px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(47,145,242,.78);
+      transform: translateX(-50%);
+      box-shadow: 0 1px 4px rgba(0,0,0,.18);
+    }
+
+    .list-header {
+      min-height: 52px !important;
+      border-radius: 16px 16px 0 0 !important;
+      flex: 0 0 auto !important;
+    }
+
+    #listClose {
+      top: 11px !important;
+      right: 10px !important;
+      width: 31px !important;
+      height: 28px !important;
+      border-radius: 7px !important;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    #listOpen {
+      top: auto !important;
+      right: auto !important;
+      bottom: 0 !important;
+      left: 50% !important;
+      width: 92px !important;
+      height: 31px !important;
+      border-radius: 10px 10px 0 0 !important;
+      transform: translateX(-50%) !important;
+      font-size: 0 !important;
+      box-shadow: 0 -2px 8px rgba(0,0,0,.22) !important;
+    }
+
+    #listOpen::after {
+      content: "도로 찾기";
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    #listContent {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      height: auto !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .road-search-wrap {
+      flex: 0 0 auto !important;
+    }
+
+    .search-result-summary {
+      flex: 0 0 auto !important;
+    }
+
+    /* 모바일 상단 메뉴는 크기 축소 */
+    .top-toolbar {
+      top: 8px !important;
+      right: 8px !important;
+      gap: 5px !important;
+      max-width: calc(100vw - 16px) !important;
+      flex-wrap: nowrap !important;
+    }
+
+    .top-map-switch {
+      height: 40px !important;
+    }
+
+    .top-map-switch button {
+      min-width: 58px !important;
+      height: 40px !important;
+      padding: 0 8px !important;
+      font-size: 13px !important;
+    }
+
+    .top-square-button,
+    #roadLayerEditorBtn.top-square-button {
+      width: 42px !important;
+      min-width: 42px !important;
+      height: 40px !important;
+    }
+
+    .top-load-button {
+      min-width: 66px !important;
+      height: 40px !important;
+      padding: 0 9px !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+    }
+
+    /* 우측 지도도구는 하단시트가 열렸을 때 지도 위에 남지 않게 */
+    body:not(.list-collapsed) #mapTools,
+    body:not(.list-collapsed) #scaleControl {
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    body.list-collapsed #mapTools,
+    body.list-collapsed #scaleControl {
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
+    /* 노선 정보창 → 하단 미니카드 */
+    .road-popup {
+      position: fixed !important;
+      top: auto !important;
+      right: 8px !important;
+      bottom: 10px !important;
+      left: 8px !important;
+      width: auto !important;
+      max-width: none !important;
+      max-height: 38dvh !important;
+      border-radius: 14px !important;
+      overflow-y: auto !important;
+      box-shadow: 0 6px 22px rgba(0,0,0,.26) !important;
+      z-index: 12050 !important;
+      transform: none !important;
+    }
+
+    .road-popup .popup-header {
+      min-height: 60px !important;
+      margin: -22px -20px 6px !important;
+      padding: 18px 18px 0 !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 2 !important;
+    }
+
+    .road-popup .popup-title {
+      padding-right: 36px !important;
+      padding-bottom: 10px !important;
+      font-size: 18px !important;
+    }
+
+    .road-popup .popup-eyebrow {
+      font-size: 11px !important;
+    }
+
+    .road-popup .popup-close {
+      top: 10px !important;
+      right: 10px !important;
+      width: 30px !important;
+      height: 30px !important;
+      line-height: 28px !important;
+    }
+
+    /* 도로정보가 열리면 도로찾기 바텀시트는 자동 축소용 상태 */
+    body.mobile-road-info-open #listPanel:not([style*="display: none"]) {
+      height: 25dvh !important;
+      min-height: 150px !important;
+    }
+
+    /* 둘이 겹치지 않도록 정보창이 열리면 도로찾기 패널은 아래로 밀기 */
+    body.mobile-road-info-open:not(.list-collapsed) .road-popup {
+      bottom: calc(25dvh + 12px) !important;
+      max-height: 30dvh !important;
+    }
+
+    /* 말풍선은 모바일에서 약간 작게 */
+    .selected-route-balloon {
+      min-width: 82px !important;
+      padding: 7px 10px 6px !important;
+    }
+
+    .selected-route-balloon-number {
+      font-size: 15px !important;
+    }
+
+    .selected-route-balloon-type {
+      font-size: 11px !important;
+    }
+  }
+
 </style>
 </head>
 
@@ -9559,6 +9782,7 @@
         // selectedRoadGroupKey를 기준으로 강조가 자동 복원되도록 한다.
         selectedRoadObject = null;
         selectRoadGroupHighlight(groupKey);
+        collapseRoadListForMobileSelection();
 
         document
           .querySelectorAll(".list-item")
@@ -9656,6 +9880,10 @@
       function enableRoadPopupDrag() {
         const popup = document.querySelector("body > .road-popup");
         if (!popup || popup.dataset.dragBound === "1") return;
+        if (isMobileMapUI()) {
+          popup.dataset.dragBound = "1";
+          return;
+        }
         const handle = popup.querySelector(".popup-drag-handle") || popup.querySelector(".popup-header") || popup;
         const closeButton = popup.querySelector(".popup-close");
         let dragging = false;
@@ -9735,6 +9963,7 @@
         if (typeof infoWindow !== "undefined" && infoWindow) {
           infoWindow.close();
         }
+        syncMobileRoadInfoState(false);
       }
 
       window.closeRoadPopup = closeRoadPopup;
@@ -10014,6 +10243,15 @@
       function placeRoadPopupTopRight() {
         const popup = document.querySelector("body > .road-popup");
         if (!popup) return;
+        if (isMobileMapUI()) {
+          popup.style.position = "fixed";
+          popup.style.top = "auto";
+          popup.style.right = "8px";
+          popup.style.left = "8px";
+          popup.style.bottom = "10px";
+          popup.style.transform = "none";
+          return;
+        }
         if (popup.dataset.userMoved === "1") return;
 
         // 지도 좌표와 완전히 분리된 고정 화면 패널.
@@ -10066,6 +10304,25 @@
         });
       }
 
+
+      function isMobileMapUI() {
+        return window.matchMedia && window.matchMedia("(max-width:700px)").matches;
+      }
+
+      function syncMobileRoadInfoState(open) {
+        if (!isMobileMapUI()) {
+          document.body.classList.remove("mobile-road-info-open");
+          return;
+        }
+        document.body.classList.toggle("mobile-road-info-open", !!open);
+      }
+
+      function collapseRoadListForMobileSelection() {
+        if (!isMobileMapUI()) return;
+        // 노선을 선택한 뒤에는 지도 영역을 확보하도록 목록을 접음.
+        document.body.classList.add("list-collapsed");
+      }
+
       function createFixedRoadPopup(html) {
         const holder = document.createElement("div");
         holder.innerHTML = html.trim();
@@ -10079,6 +10336,7 @@
 
         document.body.appendChild(popup);
         roadPopupOverlay = popup;
+        syncMobileRoadInfoState(true);
 
         placeRoadPopupTopRight();
         keepRoadPopupInSafeViewport();
@@ -10112,6 +10370,7 @@
         selectedRoadObject = road || null;
         selectRoadGroupHighlight(groupKey);
         updateSelectedRouteBalloon();
+        collapseRoadListForMobileSelection();
         selectedRoadPopupState = {
           groupKey: groupKey,
           road: road,
