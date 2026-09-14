@@ -221,7 +221,7 @@
       top: 58px;
       right: 0;
       z-index: 31;
-      width: 690px;
+      width: 820px;
       max-width: calc(100vw - 30px);
       max-height: calc(100vh - 90px);
       display: none;
@@ -277,7 +277,7 @@
     .style-head,
     .style-row {
       display: grid;
-      grid-template-columns: 58px 46px 46px 60px 60px minmax(105px, 1fr) minmax(105px, 1fr);
+      grid-template-columns: 58px 108px 108px 60px 60px minmax(105px, 1fr) minmax(105px, 1fr);
       gap: 7px;
       align-items: center;
       text-align: center;
@@ -306,6 +306,34 @@
       border: 1px solid #cfd5dc;
       border-radius: 6px;
       background: white;
+    }
+
+    .color-code-control {
+      display: grid;
+      grid-template-columns: 38px minmax(64px, 1fr);
+      gap: 5px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .color-code-input {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      padding: 3px 5px;
+      border: 1px solid #cfd5dc;
+      border-radius: 6px;
+      background: #fff;
+      color: #333;
+      font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      text-transform: uppercase;
+      box-sizing: border-box;
+    }
+
+    .color-code-input:focus {
+      outline: none;
+      border-color: #258fff;
+      box-shadow: 0 0 0 2px rgba(37,143,255,.12);
     }
 
     .style-row input[type="number"] {
@@ -918,8 +946,8 @@
       width: auto;
       min-width: 0;
       padding: calc(1px * var(--label-scale)) calc(3px * var(--label-scale));
-      color: #111;
-      background: white;
+      color: var(--road-label-text-color, #111111);
+      background: var(--road-label-bg-color, #FFFFFF);
       border: 0;
       border-radius: 0;
       box-shadow: 0 1px 3px #0006;
@@ -947,19 +975,112 @@
       font-size: calc(13px * var(--label-scale));
     }
 
+    /* 노선번호 도형 사용자 설정 */
+    .road-label.shape-none,
+    .road-label.shape-none.city {
+      width: auto;
+      height: auto;
+      min-width: 0;
+      padding: 0;
+      background: transparent !important;
+      border-radius: 0;
+      box-shadow: none !important;
+    }
+
+    .road-label.shape-box,
+    .road-label.shape-box.city {
+      width: auto;
+      height: auto;
+      min-width: 0;
+      padding: calc(1px * var(--label-scale)) calc(3px * var(--label-scale));
+      border-radius: 0;
+    }
+
+    .road-label.shape-rounded,
+    .road-label.shape-rounded.city {
+      width: auto;
+      height: auto;
+      min-width: 0;
+      padding: calc(2px * var(--label-scale)) calc(5px * var(--label-scale));
+      border-radius: calc(5px * var(--label-scale));
+    }
+
+    .road-label.shape-circle,
+    .road-label.shape-circle.city {
+      width: calc(25px * var(--label-scale));
+      height: calc(25px * var(--label-scale));
+      min-width: calc(25px * var(--label-scale));
+      padding: 0;
+      border-radius: 50%;
+    }
+
+    .label-color-list {
+      display: grid;
+      gap: 7px;
+      width: 100%;
+    }
+    .label-color-item {
+      display: grid;
+      grid-template-columns: 24px 38px minmax(82px, 1fr) 30px;
+      gap: 6px;
+      align-items: center;
+    }
+    .label-color-item input[type="color"] {
+      width: 38px;
+      height: 30px;
+      padding: 2px;
+      border: 1px solid #cfd5dc;
+      border-radius: 6px;
+      background: #fff;
+    }
+    .label-color-code {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      padding: 4px 7px;
+      border: 1px solid #cfd5dc;
+      border-radius: 6px;
+      font: 12px/1 Arial, sans-serif;
+      text-transform: uppercase;
+    }
+    .label-color-remove {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #d6dbe1;
+      border-radius: 6px;
+      background: #fff;
+      color: #777;
+      cursor: pointer;
+    }
+    .label-color-add {
+      width: 100%;
+      margin-top: 7px;
+      padding: 8px;
+      border: 1px dashed #bfc8d2;
+      border-radius: 7px;
+      background: #f8fafc;
+      color: #45515d;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     /* =========================
        속성 팝업 - 둥근 카드형
        ========================= */
 
     .road-popup {
-      position: relative;
-      width: 310px;
-      max-width: calc(100vw - 28px);
+      position: fixed;
+      top: 72px;
+      right: 15px;
+      left: auto;
+      width: 275px;
+      max-width: calc(100vw - 24px);
       padding: 22px 20px 18px;
       box-sizing: border-box;
       color: #202124;
       background: rgba(255,255,255,.98);
       border: 0;
+      z-index: 10000;
       border-radius: 22px;
       box-shadow: 0 10px 32px rgba(0,0,0,.18);
       font-size: 14px;
@@ -986,19 +1107,15 @@
     }
 
     .popup-drag-handle {
-      cursor: grab;
+      cursor: default;
       user-select: none;
       -webkit-user-select: none;
-      touch-action: none;
+      touch-action: auto;
     }
 
     .popup-drag-handle * {
       user-select: none;
       -webkit-user-select: none;
-    }
-
-    .popup-drag-handle:active {
-      cursor: grabbing;
     }
 
     .popup-header {
@@ -1016,10 +1133,13 @@
       margin: 0;
       padding: 0 40px 15px 0;
       color: #202124;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
       line-height: 1.22;
-      letter-spacing: -.65px;
+      letter-spacing: -.55px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .road-attributes {
@@ -1030,7 +1150,7 @@
 
     .popup-row {
       display: grid;
-      grid-template-columns: 96px minmax(0, 1fr);
+      grid-template-columns: 82px minmax(0, 1fr);
       align-items: start;
       gap: 8px;
       padding: 8px 0;
@@ -1052,16 +1172,19 @@
     }
 
     .popup-value {
+      min-width: 0;
       color: #202124;
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 500;
+      white-space: normal;
       overflow-wrap: anywhere;
-      word-break: keep-all;
+      word-break: break-word;
+      line-height: 1.45;
     }
 
     .popup-value.wrap-status {
       white-space: normal;
-      word-break: keep-all;
+      word-break: break-word;
       overflow-wrap: anywhere;
       line-height: 1.5;
     }
@@ -1368,7 +1491,10 @@
 
       #mapTools { right: 8px; top: 59%; }
       #scaleControl { right: 8px; bottom: 8px; }
-      .road-popup { max-width: calc(100vw - 24px); }
+      .road-popup {
+        width: min(275px, calc(100vw - 24px));
+        max-width: calc(100vw - 24px);
+      }
       #measureHint { top: auto; right: 8px; bottom: 66px; max-width: calc(100vw - 16px); }
       .top-toolbar { max-width: calc(100vw - 16px); flex-wrap: wrap; justify-content: flex-end; }
     }
@@ -2036,6 +2162,297 @@
       visibility: hidden !important;
     }
 
+    /* 우측 레이어 편집기 - 기본 화면은 간결하게, 세부설정은 한 단계 안쪽 */
+    #roadLayerEditorPanel {
+      position: fixed;
+      top: 78px;
+      right: 14px;
+      z-index: 9999;
+      width: 392px;
+      max-width: calc(100vw - 28px);
+      max-height: calc(100vh - 94px);
+      display: none;
+      overflow: hidden;
+      background: #f6f8fb;
+      border: 1px solid #d9dfe7;
+      border-radius: 14px;
+      box-shadow: 0 12px 34px rgba(0,0,0,.22);
+    }
+
+    #roadLayerEditorPanel.open {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #roadLayerUnifiedScroll {
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .road-layer-editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 15px;
+      background: #fff;
+      border-bottom: 1px solid #e5e8ec;
+    }
+
+    .road-layer-editor-title {
+      color: #24282d;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .road-layer-editor-subtitle {
+      margin-top: 3px;
+      color: #858b93;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .road-layer-editor-close {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: #f0f2f5;
+      color: #555;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    #roadLayerEditorBody {
+      padding: 10px;
+    }
+
+    #roadLayerCustomizationBody {
+      display: none !important;
+    }
+
+    .layer-simple-section {
+      margin-bottom: 10px;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid #e0e5eb;
+      border-radius: 11px;
+    }
+
+    .layer-simple-title {
+      padding: 10px 12px 7px;
+      color: #707780;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: -.1px;
+    }
+
+    .layer-simple-row {
+      min-height: 54px;
+      display: grid;
+      grid-template-columns: 26px 58px minmax(82px, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-top: 1px solid #eef1f4;
+      background: #fff;
+    }
+
+    .layer-simple-row:first-of-type { border-top: 0; }
+    .layer-simple-row:hover { background: #f8fbff; }
+
+    .layer-simple-check {
+      width: 18px;
+      height: 18px;
+      margin: 0 auto;
+      accent-color: #258fff;
+    }
+
+    .layer-simple-name {
+      color: #30353a;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .layer-simple-summary {
+      min-width: 0;
+      color: #7b838c;
+      font-size: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .layer-simple-detail {
+      min-width: 54px;
+      height: 30px;
+      padding: 0 8px;
+      border: 1px solid #d3dae2;
+      border-radius: 7px;
+      background: #fff;
+      color: #4d555d;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .layer-simple-detail:hover { border-color: #95bee9; background: #f1f7ff; color: #1976d2; }
+
+    .layer-line-preview {
+      position: relative;
+      width: 76px;
+      height: 18px;
+      overflow: hidden;
+    }
+
+    .layer-line-preview i {
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      top: 50%;
+      display: block;
+      border-radius: 99px;
+      transform: translateY(-50%);
+    }
+
+    .layer-action-row {
+      display: grid;
+      grid-template-columns: 1fr auto 20px;
+      gap: 8px;
+      align-items: center;
+      min-height: 50px;
+      padding: 9px 12px;
+      border-top: 1px solid #eef1f4;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .layer-action-row:first-of-type { border-top: 0; }
+    .layer-action-row:hover { background: #f8fbff; }
+    .layer-action-name { color:#30353a; font-size:13px; font-weight:800; }
+    .layer-action-summary { color:#818891; font-size:10px; text-align:right; white-space:nowrap; }
+    .layer-action-arrow { color:#a0a6ad; font-size:17px; text-align:center; }
+
+    .layer-editor-backbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 9px;
+      padding: 2px 2px 7px;
+    }
+
+    .layer-editor-back {
+      width: 31px;
+      height: 31px;
+      padding: 0;
+      border: 1px solid #d7dde4;
+      border-radius: 8px;
+      background: #fff;
+      color: #444;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .layer-editor-detail-title { color:#2f3439; font-size:15px; font-weight:800; }
+    .layer-editor-detail-note { margin-top:2px; color:#858b93; font-size:10px; }
+
+    .road-layer-group {
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid #e0e5eb;
+      border-radius: 11px;
+    }
+
+    .road-layer-group-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 9px 10px;
+      background: #fafbfc;
+      border-bottom: 1px solid #edf0f3;
+    }
+
+    .road-layer-group-name { font-size:12px; font-weight:800; color:#34383d; }
+    .road-layer-add {
+      padding: 5px 8px;
+      border: 1px solid #cfd6de;
+      border-radius: 6px;
+      background: #fff;
+      color: #2d3136;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .road-layer-list { padding: 7px; }
+
+    .road-layer-item {
+      padding: 9px;
+      margin-bottom: 7px;
+      border: 1px solid #e5e9ee;
+      border-radius: 9px;
+      background: #fff;
+    }
+    .road-layer-item:last-child { margin-bottom:0; }
+
+    .road-layer-item-top {
+      display:grid;
+      grid-template-columns: 24px 1fr auto;
+      gap:7px;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .road-layer-visible { width:18px; height:18px; margin:0 auto; accent-color:#258fff; cursor:pointer; }
+    .road-layer-name { color:#40464d; font-size:12px; font-weight:800; }
+    .road-layer-order { color:#8b929a; font-size:10px; font-weight:700; }
+
+    .road-layer-control-grid {
+      display:grid;
+      grid-template-columns: 1fr 72px;
+      gap:7px 8px;
+      align-items:center;
+    }
+    .road-layer-field-label { color:#747b83; font-size:10px; font-weight:700; }
+    .road-layer-color-wrap { display:grid; grid-template-columns:40px 1fr; gap:5px; align-items:center; min-width:0; }
+    .road-layer-color { width:40px; height:30px; padding:2px; border:1px solid #ccd3db; border-radius:6px; background:#fff; }
+    .road-layer-color-code { width:100%; min-width:0; height:30px; padding:3px 6px; border:1px solid #ccd3db; border-radius:6px; background:#fff; color:#333; font:11px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; text-transform:uppercase; box-sizing:border-box; }
+    .road-layer-width { width:100%; height:30px; padding:2px 4px; border:1px solid #ccd3db; border-radius:6px; text-align:center; font-size:11px; }
+    .road-layer-opacity-wrap { display:grid; grid-template-columns:1fr 48px; gap:5px; align-items:center; min-width:0; grid-column:1 / -1; }
+    .road-layer-opacity { width:100%; min-width:0; accent-color:#258fff; }
+    .road-layer-opacity-number { width:48px; height:28px; padding:2px 3px; border:1px solid #ccd3db; border-radius:5px; background:#fff; color:#555; font-size:10px; font-weight:700; text-align:center; }
+
+    .road-layer-item-actions { display:flex; justify-content:flex-end; gap:5px; margin-top:8px; padding-top:7px; border-top:1px solid #f0f2f4; }
+    .road-layer-move,.road-layer-remove { min-width:31px; height:27px; padding:0 7px; border:1px solid #d4dae1; border-radius:5px; background:#fff; color:#5d646c; font-size:11px; cursor:pointer; }
+    .road-layer-move:disabled,.road-layer-remove:disabled { opacity:.32; cursor:default; }
+    .road-layer-remove { color:#d64545; }
+
+    .layer-detail-card { padding:11px; background:#fff; border:1px solid #e0e5eb; border-radius:11px; }
+    .layer-detail-row { display:grid; grid-template-columns:92px 1fr; gap:10px; align-items:center; min-height:44px; border-top:1px solid #eef1f4; }
+    .layer-detail-row:first-child { border-top:0; }
+    .layer-detail-row > span { color:#555d65; font-size:12px; font-weight:700; }
+    .layer-detail-row input[type="range"] { width:100%; accent-color:#258fff; }
+    .layer-detail-row input[type="number"],.layer-detail-row select { width:100%; height:32px; padding:0 7px; border:1px solid #cfd6de; border-radius:6px; background:#fff; font-size:12px; }
+    .layer-detail-inline { display:grid; grid-template-columns:1fr 52px; gap:7px; align-items:center; }
+    .layer-toggle-line { display:flex; align-items:center; gap:7px; color:#3f454b; font-size:12px; font-weight:700; }
+    .layer-toggle-line input { width:18px; height:18px; accent-color:#258fff; }
+
+    .layer-reset-button { width:100%; margin-top:10px; padding:9px; border:1px solid #d6dce3; border-radius:8px; background:#fff; color:#59616a; font-size:11px; font-weight:800; cursor:pointer; }
+    .layer-reset-button:hover { background:#f3f6f9; }
+
+    .road-layer-editor-note { display:none; }
+
+    @media (max-width: 720px) {
+      #roadLayerEditorPanel { top:66px; right:8px; width:min(392px, calc(100vw - 16px)); max-height:calc(100vh - 76px); }
+    }
+
+    #roadLayerEditorBtn { width:72px; pointer-events:auto !important; cursor:pointer; font-size:13px; font-weight:800; }
+    #legacyStyleWrap { display:none !important; }
+
+
   </style>
 </head>
 
@@ -2146,6 +2563,21 @@
     </div>
   </div>
 
+  <div id="roadLayerEditorPanel" role="dialog" aria-label="레이어 설정">
+    <div class="road-layer-editor-header">
+      <div>
+        <div class="road-layer-editor-title">레이어</div>
+        <div class="road-layer-editor-subtitle">표시할 도로와 표현 방식을 간단히 설정합니다.</div>
+      </div>
+      <button id="roadLayerEditorClose" class="road-layer-editor-close" type="button" aria-label="닫기">×</button>
+    </div>
+    <div id="roadLayerUnifiedScroll">
+      <div id="roadLayerEditorBody"></div>
+      <div id="roadLayerCustomizationBody"></div>
+      <div class="road-layer-editor-note">각 라인별로 색상·두께·투명도를 조절하고 체크박스로 켜고 끌 수 있습니다. 색상은 컬러피커 또는 HEX 코드(#RRGGBB)로 직접 입력할 수 있고, 투명도는 슬라이더 또는 숫자(0~100)로 입력할 수 있습니다. 목록의 위쪽 선이 지도에서도 위에 표시되며, + 라인 추가 후 ▲▼로 순서를 변경할 수 있습니다.</div>
+    </div>
+  </div>
+
   <!-- 오른쪽 상단 메뉴 -->
   <div class="top-toolbar">
     <div class="base-map-menu">
@@ -2193,7 +2625,7 @@
       <button
         id="layerBtn"
         class="tool-button"
-        title="레이어 설정"
+        title="지도설정"
       >
         <span class="layer-symbol">
           <span></span>
@@ -2235,12 +2667,12 @@
           
 
           <div class="layer-item">
-            <input id="townshipBoundaryCheck" type="checkbox" checked>
+            <input id="townshipBoundaryCheck" type="checkbox">
             <label for="townshipBoundaryCheck">읍면동</label>
           </div>
 
           <div class="layer-item">
-            <input id="riBoundaryCheck" type="checkbox" checked>
+            <input id="riBoundaryCheck" type="checkbox">
             <label for="riBoundaryCheck">리 경계</label>
           </div>
 
@@ -2249,8 +2681,11 @@
       </div>
     </div>
 
-    <!-- 사용자화 설정 -->
-    <div class="tool-wrap">
+    <!-- 통합 레이어 설정 -->
+    <button id="roadLayerEditorBtn" class="tool-button" title="레이어" aria-label="레이어">레이어</button>
+
+    <!-- 기존 사용자화 설정(통합 레이어 메뉴로 이동) -->
+    <div class="tool-wrap" id="legacyStyleWrap">
       <button id="styleBtn" class="tool-button" title="사용자화">사용자화</button>
 
       <div id="stylePanel">
@@ -2268,8 +2703,8 @@
           </div>
 
           <div class="style-row" data-style="CITY">
-            <span>시도</span><input class="style-color" type="color" aria-label="시도 선 색상">
-            <input class="style-base-color" type="color" aria-label="시도 배경 색상">
+            <span>시도</span><div class="color-code-control"><input class="style-color" type="color" aria-label="시도 선 색상"><input class="style-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="시도 선 색상 코드"></div>
+            <div class="color-code-control"><input class="style-base-color" type="color" aria-label="시도 배경 색상"><input class="style-base-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="시도 배경 색상 코드"></div>
             <input class="style-top" type="number" min="1" max="20" aria-label="시도 선 두께">
             <input class="style-base" type="number" min="1" max="30" aria-label="시도 배경 두께">
             <div class="opacity-control"><input class="style-top-opacity" type="range" min="0" max="100" step="5" aria-label="시도 선 투명도"><span class="top-opacity-value opacity-value">100%</span></div>
@@ -2277,8 +2712,8 @@
           </div>
 
           <div class="style-row" data-style="MYEON">
-            <span>면도</span><input class="style-color" type="color" aria-label="면도 선 색상">
-            <input class="style-base-color" type="color" aria-label="면도 배경 색상">
+            <span>면도</span><div class="color-code-control"><input class="style-color" type="color" aria-label="면도 선 색상"><input class="style-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="면도 선 색상 코드"></div>
+            <div class="color-code-control"><input class="style-base-color" type="color" aria-label="면도 배경 색상"><input class="style-base-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="면도 배경 색상 코드"></div>
             <input class="style-top" type="number" min="1" max="20" aria-label="면도 선 두께">
             <input class="style-base" type="number" min="1" max="30" aria-label="면도 배경 두께">
             <div class="opacity-control"><input class="style-top-opacity" type="range" min="0" max="100" step="5" aria-label="면도 선 투명도"><span class="top-opacity-value opacity-value">100%</span></div>
@@ -2286,8 +2721,8 @@
           </div>
 
           <div class="style-row" data-style="RI">
-            <span>리도</span><input class="style-color" type="color" aria-label="리도 선 색상">
-            <input class="style-base-color" type="color" aria-label="리도 배경 색상">
+            <span>리도</span><div class="color-code-control"><input class="style-color" type="color" aria-label="리도 선 색상"><input class="style-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="리도 선 색상 코드"></div>
+            <div class="color-code-control"><input class="style-base-color" type="color" aria-label="리도 배경 색상"><input class="style-base-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="리도 배경 색상 코드"></div>
             <input class="style-top" type="number" min="1" max="20" aria-label="리도 선 두께">
             <input class="style-base" type="number" min="1" max="30" aria-label="리도 배경 두께">
             <div class="opacity-control"><input class="style-top-opacity" type="range" min="0" max="100" step="5" aria-label="리도 선 투명도"><span class="top-opacity-value opacity-value">100%</span></div>
@@ -2295,8 +2730,8 @@
           </div>
 
           <div class="style-row" data-style="FARM">
-            <span>농도</span><input class="style-color" type="color" aria-label="농도 선 색상">
-            <input class="style-base-color" type="color" aria-label="농도 배경 색상">
+            <span>농도</span><div class="color-code-control"><input class="style-color" type="color" aria-label="농도 선 색상"><input class="style-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="농도 선 색상 코드"></div>
+            <div class="color-code-control"><input class="style-base-color" type="color" aria-label="농도 배경 색상"><input class="style-base-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="농도 배경 색상 코드"></div>
             <input class="style-top" type="number" min="1" max="20" aria-label="농도 선 두께">
             <input class="style-base" type="number" min="1" max="30" aria-label="농도 배경 두께">
             <div class="opacity-control"><input class="style-top-opacity" type="range" min="0" max="100" step="5" aria-label="농도 선 투명도"><span class="top-opacity-value opacity-value">100%</span></div>
@@ -2318,27 +2753,38 @@
 
         <div class="status-style-settings">
           <div class="status-style-title">개설상태 표현</div>
-          <div class="style-section-note">미개설 표현은 시도와 농어촌도로에 함께 적용됩니다.</div>
+          <div class="style-section-note">미확장·미개설 각각 없음, 실선, 대시, 점선, 대시+점 조합을 자유롭게 선택할 수 있으며 시도와 농어촌도로에 함께 적용됩니다.</div>
           <label class="status-style-row two-column">
             <span>미확장</span>
             <select id="unexpandedStyle">
+                            <option value="none">없음</option>
+<option value="solid">실선</option>
               <option value="shortdash">짧은 대시</option>
+              <option value="shortdot">짧은 점선</option>
+              <option value="shortdashdot">짧은 대시+점</option>
+              <option value="shortdashdotdot">짧은 대시+점 2개</option>
+              <option value="dot">점선</option>
               <option value="dash">대시</option>
+              <option value="dashdot">대시+점</option>
               <option value="longdash">긴 대시</option>
+              <option value="longdashdot">긴 대시+점</option>
+              <option value="longdashdotdot">긴 대시+점 2개</option>
             </select>
           </label>
           <label class="status-style-row">
             <span>미개설</span>
             <input id="unopenedDotSize" type="number" min="1" max="20" aria-label="미개설 선 두께">
             <select id="unopenedDotGap" aria-label="미개설 선 모양">
-              <option value="shortdash">대시 간격 좁게</option>
-              <option value="dash">대시 간격 보통</option>
-              <option value="longdash">대시 간격 넓게</option>
-              <option value="shortdot">점선 간격 좁게</option>
-              <option value="shortdash">점선 간격 보통</option>
-              <option value="dash">짧은 대시+점</option>
+                            <option value="none">없음</option>
+<option value="solid">실선</option>
+              <option value="shortdash">짧은 대시</option>
+              <option value="shortdot">짧은 점선</option>
+              <option value="shortdashdot">짧은 대시+점</option>
               <option value="shortdashdotdot">짧은 대시+점 2개</option>
+              <option value="dot">점선</option>
+              <option value="dash">대시</option>
               <option value="dashdot">대시+점</option>
+              <option value="longdash">긴 대시</option>
               <option value="longdashdot">긴 대시+점</option>
               <option value="longdashdotdot">긴 대시+점 2개</option>
             </select>
@@ -2394,23 +2840,64 @@
       const SELECTED_WIDTH = ROAD_WIDTH + 3;
 
       const COLORS = {
-        CITY: "#1F6F78",
-        MYEON: "#B85C4A",
-        RI: "#5967A8",
-        FARM: "#A67C2D",
+        CITY: "#007F86",   // 청록 계열
+        MYEON: "#D94A3A",  // 적갈/적색 계열
+        RI: "#3659C9",     // 파랑 계열
+        FARM: "#C88700",   // 황토/노랑 계열
         OTHER: "#7A7A7A",
         BASE: "#FFFFFF",
         SELECTED: "#E60012"
       };
 
       const DEFAULT_STYLES = {
-        // 법정 색상과 무관하게 가시성과 상호 구분성을 우선한 팔레트
-        // 단선: 노선별 본색 1개 선만 표시
-        CITY:  { color: "#1F6F78", baseColor: "#D7EAEC", top: 3, base: 6.4, mid: 5.4, inner: 1.2, topOpacity: 95, baseOpacity: 100 },
-        MYEON: { color: "#B85C4A", baseColor: "#F1DDD8", top: 3, base: 6.0, mid: 5.0, inner: 1.0, topOpacity: 95, baseOpacity: 100 },
-        RI:    { color: "#5967A8", baseColor: "#DEE2F3", top: 3, base: 5.6, mid: 4.6, inner: 0.9, topOpacity: 95, baseOpacity: 100 },
-        FARM:  { color: "#A67C2D", baseColor: "#EFE5CA", top: 3, base: 5.2, mid: 4.2, inner: 0.8, topOpacity: 95, baseOpacity: 100 }
+        // 2026-09-14 통합 레이어 메뉴 기준값
+        CITY:  { color: "#77B959", baseColor: "#FFFFFF", top: 4, base: 7.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 },
+        MYEON: { color: "#E7725A", baseColor: "#FFFFFF", top: 4, base: 6.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 },
+        RI:    { color: "#8896F8", baseColor: "#FFFFFF", top: 4, base: 6.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 },
+        FARM:  { color: "#CDAD5A", baseColor: "#FFFFFF", top: 4, base: 6.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 }
       };
+
+      // 스카이뷰 전용 고대비 도로색
+      const SKY_ROAD_COLORS = {
+        CITY:  "#00E5FF",  // 밝은 청록
+        MYEON: "#FF453A",  // 선명한 적색
+        RI:    "#1E5BFF",  // 강한 파랑
+        FARM:  "#FFC400"   // 선명한 노랑
+      };
+
+      const DEFAULT_ROAD_LAYER_STACKS = {
+        CITY: [
+          { name: "라인 1", color: "#77B959", skyColor: "#77B959", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "라인 2", color: "#FFFFFF", skyColor: "#FFFFFF", width: 7.0, lineStyle: "inherit", opacity: 100, visible: true }
+        ],
+        MYEON: [
+          { name: "라인 1", color: "#E7725A", skyColor: "#E7725A", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "라인 2", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
+        ],
+        RI: [
+          { name: "라인 1", color: "#8896F8", skyColor: "#8896F8", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "라인 2", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
+        ],
+        FARM: [
+          { name: "라인 1", color: "#CDAD5A", skyColor: "#CDAD5A", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "라인 2", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
+        ]
+      };
+
+      let ROAD_LAYER_STACKS;
+
+      try {
+        const savedLayerStacks = JSON.parse(
+          localStorage.getItem("roadLayerStacks") || "null"
+        );
+        ROAD_LAYER_STACKS =
+          savedLayerStacks && typeof savedLayerStacks === "object"
+            ? savedLayerStacks
+            : JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS));
+      } catch (error) {
+        ROAD_LAYER_STACKS =
+          JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS));
+      }
 
       const DEFAULT_STATUS_STYLES = {
         UNOPENED_SIZE: 4,
@@ -2419,10 +2906,19 @@
       };
 
       const DEFAULT_LABEL_STYLES = {
-        SCALE: 70
+        SCALE: 70,
+        VISIBLE: true,
+        SHAPE_VISIBLE: true,
+        SHAPE: "auto",
+        SHAPE_FILL_COLOR: "#FFFFFF",
+        SHAPE_LINE_COLOR: "#111111",
+        SHAPE_LINE_WIDTH: 0,
+        TEXT_COLORS: [
+          { color: "#111111", visible: true }
+        ]
       };
 
-      const STYLE_DEFAULTS_VERSION = "2026-09-11-3";
+      const STYLE_DEFAULTS_VERSION = "2026-09-14-unified-layer-1";
 
       if (
         localStorage.getItem("styleDefaultsVersion") !==
@@ -2431,6 +2927,8 @@
         localStorage.removeItem("roadStyles");
         localStorage.removeItem("statusStyles");
         localStorage.removeItem("labelStyles");
+        localStorage.removeItem("roadLayerStacks");
+        ROAD_LAYER_STACKS = JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS));
         localStorage.setItem(
           "styleDefaultsVersion",
           STYLE_DEFAULTS_VERSION
@@ -2478,6 +2976,7 @@
       }
 
       applyLabelScale();
+      // 라벨 DOM 생성 전에도 기본값을 확정하고, 생성 후 buildGroupLabels에서 다시 적용함.
 
       const LAYERS = {
         city: {
@@ -2509,7 +3008,7 @@
         },
         townshipBoundary: {
           files: ["township_boundary.geojson", "Township Boundary.geojson"],
-          visible: true,
+          visible: false,
           maxScale: Infinity,
           strokeColor: "#4C5863",
           strokeWeight: 1.0,
@@ -2520,7 +3019,7 @@
         },
         riBoundary: {
           files: ["ri_boundary.geojson", "Ri Boundary.geojson"],
-          visible: true,
+          visible: false,
           maxScale: 75000,
           strokeColor: "#7D8790",
           strokeWeight: 1,
@@ -2618,7 +3117,9 @@
         });
 
         (group.skyBackPolygons || []).forEach(function(poly) {
-          const boundaryVisible = BOUNDARY_LAYERS.townshipBoundary.visible;
+          const boundaryVisible =
+            BOUNDARY_LAYERS.townshipBoundary.visible ||
+            shouldAutoShowTownshipBoundary();
           poly.setMap(isSkyViewMode && boundaryVisible ? map : null);
           poly.setOptions({
             strokeWeight: selected ? 6.2 : hover ? 5.8 : 5.0,
@@ -3216,6 +3717,7 @@
         selectedTownshipName = name;
         townshipStartMode = false;
         activeTownshipHoverGroup = null;
+        updateBoundaryVisibility();
         townshipSelectionFillShown = true;
 
         // 새 읍면 진입 시 주변 읍면 hover 상태 초기화
@@ -3238,7 +3740,10 @@
         // 선택 후에는 경계/라벨만 남기고 hover·클릭용 hit polygon은 제거함.
         townshipSelectGroups.forEach(function(otherGroup) {
           otherGroup.polygons.forEach(function(poly) {
-            poly.setMap(map);
+            poly.setMap(null);
+          });
+          (otherGroup.skyBackPolygons || []).forEach(function(poly) {
+            poly.setMap(null);
           });
           (otherGroup.hitPolygons || []).forEach(function(poly) {
             poly.setMap(null);
@@ -3280,7 +3785,10 @@
           // 확대 후에도 경계와 라벨만 유지하고 읍면 선택/강조 영역은 비활성화함.
           townshipSelectGroups.forEach(function(otherGroup) {
             otherGroup.polygons.forEach(function(poly) {
-              poly.setMap(map);
+              poly.setMap(null);
+            });
+            (otherGroup.skyBackPolygons || []).forEach(function(poly) {
+              poly.setMap(null);
             });
             (otherGroup.hitPolygons || []).forEach(function(poly) {
               poly.setMap(null);
@@ -3302,7 +3810,10 @@
           // 선택 후에는 읍면 경계/라벨만 유지하고 강조용 hit polygon은 계속 비활성화함.
           townshipSelectGroups.forEach(function(otherGroup) {
             otherGroup.polygons.forEach(function(poly) {
-              poly.setMap(map);
+              poly.setMap(null);
+            });
+            (otherGroup.skyBackPolygons || []).forEach(function(poly) {
+              poly.setMap(null);
             });
             (otherGroup.hitPolygons || []).forEach(function(poly) {
               poly.setMap(null);
@@ -3321,10 +3832,35 @@
         selectedTownshipName = null;
         townshipStartMode = true;
         activeTownshipHoverGroup = null;
+        updateBoundaryVisibility();
         updateTownshipLabelPointerEvents();
 
         townshipSelectGroups.forEach(function(group) {
           group.hoverDismissed = false;
+
+          group.polygons.forEach(function(poly) {
+            poly.setMap(
+              (
+                shouldAutoShowTownshipBoundary() ||
+                BOUNDARY_LAYERS.townshipBoundary.visible
+              )
+                ? map
+                : null
+            );
+          });
+
+          (group.skyBackPolygons || []).forEach(function(poly) {
+            poly.setMap(
+              (
+                shouldAutoShowTownshipBoundary() ||
+                BOUNDARY_LAYERS.townshipBoundary.visible
+              ) &&
+              isSkyViewMode
+                ? map
+                : null
+            );
+          });
+
           (group.hitPolygons || []).forEach(function(hit) {
             hit.setMap(map);
           });
@@ -3343,6 +3879,7 @@
         document.body.classList.remove("township-selected");
         document.getElementById("cityOverviewBtn").style.display = "none";
         resetTownshipStyles();
+        syncTownshipBoundaryDisplay();
         applyRoadVisibility();
         updateLabels();
         updateRiLabelVisibility();
@@ -3355,12 +3892,13 @@
       let lastRoadScaleTier = null;
       let lastBoundaryVisibilitySignature = "";
       let lastDongLabelVisible = null;
+      let lastTownshipBoundaryAutoVisible = null;
 
       function getRoadScaleTier(scale) {
         if (!Number.isFinite(scale)) return "init";
         if (scale >= 100000) return "100k+";
-        if (scale >= 50000) return "50k-100k";
-        if (scale >= 25000) return "25k-50k";
+        if (scale > 60000) return "60k-100k";
+        if (scale >= 25000) return "25k-60k";
         return "under25k";
       }
 
@@ -3370,7 +3908,16 @@
           const scaleVisible =
             !Number.isFinite(currentScaleDenominator) ||
             currentScaleDenominator <= layer.maxScale;
-          return layerId + ":" + (layer.visible && scaleVisible ? "1" : "0");
+
+          const autoTownshipVisible =
+            layerId === "townshipBoundary" &&
+            shouldAutoShowTownshipBoundary();
+
+          const visible =
+            scaleVisible &&
+            (layer.visible || autoTownshipVisible);
+
+          return layerId + ":" + (visible ? "1" : "0");
         }).join("|");
       }
 
@@ -3405,9 +3952,16 @@
         document.getElementById("scaleRatio").textContent =
           "축척 1:" + denominator.toLocaleString("ko-KR");
 
+        const townshipBoundaryAutoVisible =
+          shouldAutoShowTownshipBoundary();
+
         const boundarySignature = getBoundaryVisibilitySignature();
-        if (boundarySignature !== lastBoundaryVisibilitySignature) {
+        if (
+          boundarySignature !== lastBoundaryVisibilitySignature ||
+          townshipBoundaryAutoVisible !== lastTownshipBoundaryAutoVisible
+        ) {
           lastBoundaryVisibilitySignature = boundarySignature;
+          lastTownshipBoundaryAutoVisible = townshipBoundaryAutoVisible;
           updateBoundaryVisibility();
         }
 
@@ -3478,6 +4032,8 @@
             if (labelItem.overlay.getMap()) {
               labelItem.overlay.setMap(null);
             }
+            // 지도 이동 중 숨긴 라벨은 idle에서 반드시 다시 판정하도록 상태도 초기화
+            labelItem._visible = false;
           });
         });
       }
@@ -3531,28 +4087,29 @@
       }
 
       function hideAllRoadsForWindowsPan() {
-        // 이동/확대축소 중에도 본선(roadLine)은 계속 유지함.
-        // 무거운 장식선/클릭선/라벨/경계만 잠시 제거.
         allRoads.forEach(function(road) {
           if (!road._visible) return;
 
-          if (road.baseLine && road.baseLine.getMap()) {
-            road.baseLine.setMap(null);
-          }
+          const lines = getRoadVisualLines(road);
+          const topVisibleIndex = getTopVisibleRoadLineIndex(road);
+          const topLine =
+            topVisibleIndex >= 0 ? (lines[topVisibleIndex] || null) : null;
+
+          lines.forEach(function(line, index) {
+            if (!line) return;
+            if (index === topVisibleIndex) {
+              if (!line.getMap()) line.setMap(map);
+            } else if (line.getMap()) {
+              line.setMap(null);
+            }
+          });
+
           if (road.hitLine && road.hitLine.getMap()) {
             road.hitLine.setMap(null);
           }
-          if (road.selectionInnerLine && road.selectionInnerLine.getMap()) {
-            road.selectionInnerLine.setMap(null);
-          }
 
-          if (road.roadLine && !road.roadLine.getMap()) {
-            road.roadLine.setMap(map);
-          }
-
-          // 조작 중에는 본선만 조금 얇게 유지
-          if (road.roadLine) {
-            road.roadLine.setOptions({
+          if (topLine) {
+            topLine.setOptions({
               strokeWeight: Math.max(2.2, getRoadStrokeWeight(road) - 0.7)
             });
           }
@@ -3593,10 +4150,12 @@
 
         allRoads.forEach(function(road) {
           const visible = roadShouldBeVisibleNow(road, viewport);
+          const visualLines = getRoadVisualLines(road);
 
           if (!visible) {
             road._visible = false;
-            [road.roadLine, road.hitLine]
+            visualLines
+              .concat(road.hitLine ? [road.hitLine] : [])
               .forEach(function(line) {
                 if (line && line.getMap()) line.setMap(null);
               });
@@ -3605,28 +4164,22 @@
 
           road._visible = true;
           applyRoadPathTier(road, pathTier);
-
-          // 본선은 즉시 표시
-          if (road.roadLine && !road.roadLine.getMap()) {
-            road.roadLine.setMap(map);
-          }
-
           applyRoadNormalVisualStyle(road);
           road._visualTier = visualTier;
 
-          // 외곽선과 흰 중앙선도 같은 갱신에서 즉시 복원
-          if (road.baseLine && !road.baseLine.getMap()) {
-            road.baseLine.setMap(map);
-          }
-          if (road.selectionInnerLine && !road.selectionInnerLine.getMap()) {
-            road.selectionInnerLine.setMap(map);
-          }
+          visualLines.forEach(function(line, index) {
+            const config = getRoadLayerStack(road.styleKey)[index];
+            const enabled = !config || config.visible !== false;
+
+            if (line) {
+              if (enabled && !line.getMap()) line.setMap(map);
+              if (!enabled && line.getMap()) line.setMap(null);
+            }
+          });
 
           visibleRoads.push(road);
         });
 
-        // 클릭용 투명선과 라벨만 다음 프레임에 복원.
-        // requestIdleCallback을 사용하지 않아 늦게 뜨는 현상 제거.
         requestAnimationFrame(function() {
           if (
             token !== deferredRoadRestoreToken ||
@@ -3652,19 +4205,21 @@
         allRoads.forEach(function(road) {
           if (!road._visible) return;
 
-          // 이동 중에는 본선만 남기고 나머지 도형을 숨겨 렌더링 비용 절감.
-          if (road.baseLine && road.baseLine.getMap()) {
-            road.baseLine.setMap(null);
-          }
+          const lines = getRoadVisualLines(road);
+          const topVisibleIndex = getTopVisibleRoadLineIndex(road);
+
+          lines.forEach(function(line, index) {
+            if (index !== topVisibleIndex && line && line.getMap()) {
+              line.setMap(null);
+            }
+          });
+
           if (road.hitLine && road.hitLine.getMap()) {
             road.hitLine.setMap(null);
           }
-          if (road.selectionInnerLine && road.selectionInnerLine.getMap()) {
-            road.selectionInnerLine.setMap(null);
-          }
 
-          if (road.roadLine) {
-            road.roadLine.setOptions({
+          if (topVisibleIndex >= 0 && lines[topVisibleIndex]) {
+            lines[topVisibleIndex].setOptions({
               strokeWeight: Math.max(2, getRoadStrokeWeight(road) - 1.2)
             });
           }
@@ -3675,17 +4230,21 @@
         allRoads.forEach(function(road) {
           if (!road._visible) return;
 
-          if (road.baseLine && !road.baseLine.getMap()) {
-            road.baseLine.setMap(map);
-          }
+          applyRoadNormalVisualStyle(road);
+
+          getRoadVisualLines(road).forEach(function(line, index) {
+            const config = getRoadLayerStack(road.styleKey)[index];
+            const enabled = !config || config.visible !== false;
+
+            if (line) {
+              if (enabled && !line.getMap()) line.setMap(map);
+              if (!enabled && line.getMap()) line.setMap(null);
+            }
+          });
+
           if (road.hitLine && !road.hitLine.getMap()) {
             road.hitLine.setMap(map);
           }
-          if (road.selectionInnerLine && !road.selectionInnerLine.getMap()) {
-            road.selectionInnerLine.setMap(map);
-          }
-
-          applyRoadNormalVisualStyle(road);
         });
       }
 
@@ -3716,35 +4275,43 @@
         allRoads.forEach(function(road) {
           if (!road._visible) return;
 
+          const lines = getRoadVisualLines(road);
+          const topVisibleIndex = getTopVisibleRoadLineIndex(road);
+          const topLine =
+            topVisibleIndex >= 0 ? (lines[topVisibleIndex] || null) : null;
+
           if (enabled) {
-            if (road.baseLine && road.baseLine.getMap()) {
-              road.baseLine.setMap(null);
-            }
+            lines.forEach(function(line, index) {
+              if (index !== topVisibleIndex && line && line.getMap()) {
+                line.setMap(null);
+              }
+            });
+
             if (road.hitLine && road.hitLine.getMap()) {
               road.hitLine.setMap(null);
             }
-            if (road.selectionInnerLine && road.selectionInnerLine.getMap()) {
-              road.selectionInnerLine.setMap(null);
-            }
 
-            // 확대·축소 중에는 본선만 유지하고 두께도 약간 줄여 GPU/SVG 부담 감소
-            if (road.roadLine) {
-              road.roadLine.setOptions({
+            if (topLine) {
+              topLine.setOptions({
                 strokeWeight: Math.max(2.2, getRoadStrokeWeight(road) - 0.8)
               });
             }
           } else {
-            // idle 후 원래 렌더링 복원
-            if (road.baseLine && !road.baseLine.getMap()) {
-              road.baseLine.setMap(map);
-            }
+            applyRoadNormalVisualStyle(road);
+
+            lines.forEach(function(line, index) {
+              const config = getRoadLayerStack(road.styleKey)[index];
+              const lineEnabled = !config || config.visible !== false;
+
+              if (line) {
+                if (lineEnabled && !line.getMap()) line.setMap(map);
+                if (!lineEnabled && line.getMap()) line.setMap(null);
+              }
+            });
+
             if (road.hitLine && !road.hitLine.getMap()) {
               road.hitLine.setMap(map);
             }
-            if (road.selectionInnerLine && !road.selectionInnerLine.getMap()) {
-              road.selectionInnerLine.setMap(map);
-            }
-            applyRoadNormalVisualStyle(road);
           }
         });
 
@@ -3775,6 +4342,11 @@
 
         updateScale();
 
+        // 이동/확대축소 후 라벨 오버레이 실제 상태와 캐시가 어긋나지 않도록 매번 재판정
+        Object.values(LAYERS).forEach(function(layer) {
+          layer.labels.forEach(function(labelItem) { labelItem._visible = false; });
+        });
+
         if (IS_WINDOWS && (wasWindowsDragFastMode || wasWindowsZoomFastMode)) {
           restoreInteractionLayers();
           restoreRoadsInStages();
@@ -3789,9 +4361,7 @@
 
         restoreSelectedRoadPopup();
 
-        if (roadPopupOverlay) {
-          scheduleRoadPopupSafeViewportCheck();
-        }
+        // 도로노선 정보 팝업은 viewport-fixed이므로 지도 이동 후 재배치하지 않음.
         if (basePlaceOverlay && parcelInfoPopupActive) {
           scheduleBasePlacePopupViewportCheck();
         }
@@ -4801,6 +5371,9 @@
 
         normalBtn.classList.add("active");
         skyBtn.classList.remove("active");
+
+        refreshRoadColorsForMapType();
+        updateBoundaryVisibility();
         resetTownshipStyles();
       };
 
@@ -4810,12 +5383,17 @@
 
         skyBtn.classList.add("active");
         normalBtn.classList.remove("active");
+
+        refreshRoadColorsForMapType();
+        updateBoundaryVisibility();
         resetTownshipStyles();
       };
 
       hybridCheck.onchange = function () {
         if (skyBtn.classList.contains("active")) {
           setSkyMap();
+          refreshRoadColorsForMapType();
+          updateBoundaryVisibility();
         }
       };
 
@@ -5281,6 +5859,43 @@
         };
       }
 
+      function normalizeHexColor(value) {
+        let v = String(value || "").trim().toUpperCase();
+        if (!v) return null;
+        if (v.charAt(0) !== "#") v = "#" + v;
+        return /^#[0-9A-F]{6}$/.test(v) ? v : null;
+      }
+
+      function bindColorCodeInput(colorInput, codeInput, onApply) {
+        if (!colorInput || !codeInput) return;
+
+        function syncFromPicker() {
+          codeInput.value = String(colorInput.value || "").toUpperCase();
+          if (onApply) onApply(colorInput.value);
+        }
+
+        function applyCode() {
+          const normalized = normalizeHexColor(codeInput.value);
+          if (!normalized) {
+            codeInput.value = String(colorInput.value || "").toUpperCase();
+            return;
+          }
+          codeInput.value = normalized;
+          colorInput.value = normalized.toLowerCase();
+          if (onApply) onApply(colorInput.value);
+        }
+
+        colorInput.addEventListener("input", syncFromPicker);
+        codeInput.addEventListener("change", applyCode);
+        codeInput.addEventListener("keydown", function(event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            applyCode();
+            this.blur();
+          }
+        });
+      }
+
       initStylePanel();
 
       function initStylePanel() {
@@ -5290,6 +5905,8 @@
           const key = row.dataset.style;
           const color = row.querySelector(".style-color");
           const baseColor = row.querySelector(".style-base-color");
+          const colorCode = row.querySelector(".style-color-code");
+          const baseColorCode = row.querySelector(".style-base-color-code");
           const top = row.querySelector(".style-top");
           const base = row.querySelector(".style-base");
           const topOpacity = row.querySelector(".style-top-opacity");
@@ -5297,23 +5914,30 @@
           const topOpacityValue = row.querySelector(".top-opacity-value");
           const baseOpacityValue = row.querySelector(".base-opacity-value");
 
-          [color, baseColor, top, base, topOpacity, baseOpacity].forEach(function (input) {
-            input.addEventListener("input", function () {
-              ROAD_STYLES[key] = {
-                ...ROAD_STYLES[key],
-                color: color.value,
-                baseColor: baseColor.value,
-                top: limitNumber(top.value, 1, 20),
-                base: limitNumber(base.value, 1, 30),
-                topOpacity: limitNumberAllowZero(topOpacity.value, 0, 100),
-                baseOpacity: limitNumberAllowZero(baseOpacity.value, 0, 100)
-              };
+          function applyStyleRow() {
+            ROAD_STYLES[key] = {
+              ...ROAD_STYLES[key],
+              color: color.value,
+              baseColor: baseColor.value,
+              top: limitNumber(top.value, 1, 20),
+              base: limitNumber(base.value, 1, 30),
+              topOpacity: limitNumberAllowZero(topOpacity.value, 0, 100),
+              baseOpacity: limitNumberAllowZero(baseOpacity.value, 0, 100)
+            };
 
-              topOpacityValue.textContent = ROAD_STYLES[key].topOpacity + "%";
-              baseOpacityValue.textContent = ROAD_STYLES[key].baseOpacity + "%";
-              applyRoadStyles();
-              saveRoadStyles();
-            });
+            colorCode.value = String(color.value || "").toUpperCase();
+            baseColorCode.value = String(baseColor.value || "").toUpperCase();
+            topOpacityValue.textContent = ROAD_STYLES[key].topOpacity + "%";
+            baseOpacityValue.textContent = ROAD_STYLES[key].baseOpacity + "%";
+            applyRoadStyles();
+            saveRoadStyles();
+          }
+
+          bindColorCodeInput(color, colorCode, applyStyleRow);
+          bindColorCodeInput(baseColor, baseColorCode, applyStyleRow);
+
+          [top, base, topOpacity, baseOpacity].forEach(function (input) {
+            input.addEventListener("input", applyStyleRow);
           });
         });
 
@@ -5337,15 +5961,19 @@
 
         document.getElementById("styleReset").onclick = function () {
           ROAD_STYLES = JSON.parse(JSON.stringify(DEFAULT_STYLES));
+          ROAD_LAYER_STACKS = JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS));
           STATUS_STYLES = { ...DEFAULT_STATUS_STYLES };
-          LABEL_STYLES = { ...DEFAULT_LABEL_STYLES };
+          LABEL_STYLES = JSON.parse(JSON.stringify(DEFAULT_LABEL_STYLES));
           localStorage.removeItem("roadStyles");
+          localStorage.removeItem("roadLayerStacks");
           localStorage.removeItem("statusStyles");
           localStorage.removeItem("labelStyles");
           syncStyleInputs();
-          applyRoadStyles();
+          ["CITY", "MYEON", "RI", "FARM"].forEach(syncRoadLayerStackForStyle);
           applyStatusStyles();
           applyLabelScale();
+          applyLabelAppearance();
+          renderRoadLayerEditor();
         };
       }
 
@@ -5354,6 +5982,8 @@
           const style = ROAD_STYLES[row.dataset.style];
           row.querySelector(".style-color").value = style.color;
           row.querySelector(".style-base-color").value = style.baseColor;
+          row.querySelector(".style-color-code").value = String(style.color || "").toUpperCase();
+          row.querySelector(".style-base-color-code").value = String(style.baseColor || "").toUpperCase();
           row.querySelector(".style-top").value = style.top;
           row.querySelector(".style-base").value = style.base;
           row.querySelector(".style-top-opacity").value = style.topOpacity;
@@ -5380,6 +6010,62 @@
         });
       }
 
+      function ensureLabelStyleModel() {
+        // 기존 저장값과 호환
+        if (!LABEL_STYLES.SHAPE_FILL_COLOR) {
+          const old = Array.isArray(LABEL_STYLES.BACKGROUND_COLORS) ? LABEL_STYLES.BACKGROUND_COLORS.find(function(item){ return item && item.visible !== false; }) : null;
+          LABEL_STYLES.SHAPE_FILL_COLOR = normalizeLabelHex(old && old.color, '#FFFFFF');
+        }
+        if (!LABEL_STYLES.SHAPE_LINE_COLOR) {
+          const old2 = Array.isArray(LABEL_STYLES.BACKGROUND_COLORS) ? LABEL_STYLES.BACKGROUND_COLORS.filter(function(item){ return item && item.visible !== false; })[1] : null;
+          LABEL_STYLES.SHAPE_LINE_COLOR = normalizeLabelHex(old2 && old2.color, '#111111');
+        }
+        if (!Number.isFinite(Number(LABEL_STYLES.SHAPE_LINE_WIDTH))) LABEL_STYLES.SHAPE_LINE_WIDTH = 0;
+        if (!Array.isArray(LABEL_STYLES.TEXT_COLORS) || !LABEL_STYLES.TEXT_COLORS.length) {
+          LABEL_STYLES.TEXT_COLORS = [{ color: normalizeLabelHex(LABEL_STYLES.TEXT_COLOR, '#111111'), visible: true }];
+        }
+        LABEL_STYLES.TEXT_COLORS = LABEL_STYLES.TEXT_COLORS.map(function(item) {
+          return { color: normalizeLabelHex(item && item.color, '#111111'), visible: !item || item.visible !== false };
+        });
+        LABEL_STYLES.SHAPE_FILL_COLOR = normalizeLabelHex(LABEL_STYLES.SHAPE_FILL_COLOR, '#FFFFFF');
+        LABEL_STYLES.SHAPE_LINE_COLOR = normalizeLabelHex(LABEL_STYLES.SHAPE_LINE_COLOR, '#111111');
+        LABEL_STYLES.SHAPE_LINE_WIDTH = Math.min(10, Math.max(0, Number(LABEL_STYLES.SHAPE_LINE_WIDTH) || 0));
+      }
+
+      function applyLabelAppearance() {
+        ensureLabelStyleModel();
+        const activeTextColors = LABEL_STYLES.TEXT_COLORS.filter(function(item) { return item && item.visible !== false; }).map(function(item) { return normalizeLabelHex(item.color, '#111111'); });
+        const textColor = activeTextColors[0] || 'transparent';
+        const shapeMode = LABEL_STYLES.SHAPE_VISIBLE === false ? 'none' : (LABEL_STYLES.SHAPE || 'auto');
+        const fillColor = normalizeLabelHex(LABEL_STYLES.SHAPE_FILL_COLOR, '#FFFFFF');
+        const lineColor = normalizeLabelHex(LABEL_STYLES.SHAPE_LINE_COLOR, '#111111');
+        const lineWidth = Math.min(10, Math.max(0, Number(LABEL_STYLES.SHAPE_LINE_WIDTH) || 0));
+        document.querySelectorAll('.road-label').forEach(function(label) {
+          label.style.setProperty('--road-label-text-color', textColor);
+          label.classList.remove('shape-none','shape-box','shape-rounded','shape-circle');
+          if (shapeMode !== 'auto') label.classList.add('shape-' + shapeMode);
+          label.style.setProperty('--road-label-bg-color', shapeMode === 'none' ? 'transparent' : fillColor);
+          label.style.border = (shapeMode === 'none' || lineWidth <= 0) ? '0' : (lineWidth + 'px solid ' + lineColor);
+          label.style.boxSizing = 'border-box';
+          label.style.boxShadow = shapeMode === 'none' ? 'none' : '0 1px 3px rgba(0,0,0,.38)';
+
+          // 번호 색상: 첫 색상은 글자색, 아래 색상들은 바깥쪽 외곽색으로 순서대로 적용
+          const shadows = [];
+          for (let i = activeTextColors.length - 1; i >= 1; i--) {
+            const radius = i;
+            const color = activeTextColors[i];
+            for (let dx = -radius; dx <= radius; dx++) {
+              for (let dy = -radius; dy <= radius; dy++) {
+                if (dx === 0 && dy === 0) continue;
+                if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+                shadows.push(dx + 'px ' + dy + 'px 0 ' + color);
+              }
+            }
+          }
+          label.style.textShadow = shadows.join(', ');
+        });
+      }
+
       function updateStatusStyles() {
         STATUS_STYLES = {
           UNOPENED_SIZE: limitNumber(
@@ -5398,6 +6084,19 @@
         applyStatusStyles();
       }
 
+      function applyStatusStyles() {
+        allRoads.forEach(function(road) {
+          syncRoadLayerStackForRoad(road);
+          applyRoadLineVisibility(road);
+        });
+
+        if (selectedRoadGroupKey) {
+          setRoadGroupHighlight(selectedRoadGroupKey, true);
+        }
+
+        updateLegendStyles();
+      }
+
       function limitNumber(value, min, max) {
         return Math.min(max, Math.max(min, Number(value) || min));
       }
@@ -5407,46 +6106,684 @@
         return Math.min(max, Math.max(min, Number.isFinite(number) ? number : min));
       }
 
+      const ROAD_LAYER_NAMES = {
+        CITY: "시도",
+        MYEON: "면도",
+        RI: "리도",
+        FARM: "농도"
+      };
+
+      function getRoadLayerStack(styleKey) {
+        const stack = ROAD_LAYER_STACKS[styleKey];
+
+        if (Array.isArray(stack) && stack.length) {
+          stack.forEach(function(item) {
+            if (!item.lineStyle) item.lineStyle = "inherit";
+            if (typeof item.visible !== "boolean") item.visible = true;
+            if (!Number.isFinite(Number(item.opacity))) item.opacity = 100;
+          });
+          return stack;
+        }
+
+        ROAD_LAYER_STACKS[styleKey] =
+          JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS[styleKey]));
+        return ROAD_LAYER_STACKS[styleKey];
+      }
+
+      function saveRoadLayerStacks() {
+        localStorage.setItem(
+          "roadLayerStacks",
+          JSON.stringify(ROAD_LAYER_STACKS)
+        );
+      }
+
+      function getRoadVisualLines(road) {
+        if (Array.isArray(road.visualLines) && road.visualLines.length) {
+          return road.visualLines;
+        }
+
+        const fallback = [];
+        if (road.roadLine) fallback.push(road.roadLine);
+        if (road.baseLine && road.baseLine !== road.roadLine) {
+          fallback.push(road.baseLine);
+        }
+        road.visualLines = fallback;
+        return road.visualLines;
+      }
+
+      function isRoadStatusHidden(statusKey) {
+        if (statusKey === "UNEXPANDED") {
+          return STATUS_STYLES.UNEXPANDED === "none";
+        }
+        if (statusKey === "UNOPENED") {
+          return STATUS_STYLES.UNOPENED_GAP === "none";
+        }
+        return false;
+      }
+
+      function getRoadLayerStrokeStyle(road, layerConfig, layerIndex) {
+        const inherited =
+          !layerConfig ||
+          !layerConfig.lineStyle ||
+          layerConfig.lineStyle === "inherit";
+
+        let requestedStyle = inherited
+          ? getStatusStrokeStyle(road.statusKey)
+          : layerConfig.lineStyle;
+
+        if (requestedStyle === "none") {
+          requestedStyle = "solid";
+        }
+
+        // 카카오 Polyline의 dash/dot 간격은 strokeWeight에 따라 달라짐.
+        // 여러 겹 선이 서로 다른 두께를 가질 때 패턴이 어긋나는 것을 막기 위해
+        // 최상단 선만 dash/dot 패턴을 담당하고 하단 레이어는 solid casing으로 표시.
+        if (
+          layerIndex > 0 &&
+          requestedStyle !== "solid"
+        ) {
+          return "solid";
+        }
+
+        return requestedStyle;
+      }
+
+      function isRoadLayerLineVisible(styleKey, index) {
+        const stack = getRoadLayerStack(styleKey);
+        const config = stack[index];
+        return !config || config.visible !== false;
+      }
+
+      function getTopVisibleRoadLineIndex(road) {
+        const stack = getRoadLayerStack(road.styleKey);
+        for (let i = 0; i < stack.length; i += 1) {
+          if (stack[i].visible !== false) return i;
+        }
+        return -1;
+      }
+
+      function applyRoadLineVisibility(road) {
+        if (!road) return;
+
+        const stack = getRoadLayerStack(road.styleKey);
+        const lines = getRoadVisualLines(road);
+        const roadVisible = !!road._visible;
+        const statusHidden = isRoadStatusHidden(road.statusKey);
+
+        lines.forEach(function(line, index) {
+          if (!line) return;
+          const config = stack[index];
+          const enabled = !config || config.visible !== false;
+          const shouldShow = roadVisible && enabled && !statusHidden;
+          const isShown = !!line.getMap();
+
+          if (shouldShow !== isShown) {
+            line.setMap(shouldShow ? map : null);
+          }
+        });
+
+        // 클릭용 hitLine은 도로 자체가 표시될 때 유지
+        if (road.hitLine) {
+          const hitShown = !!road.hitLine.getMap();
+          const hitShouldShow = roadVisible && !statusHidden;
+          if (hitShouldShow !== hitShown) {
+            road.hitLine.setMap(hitShouldShow ? map : null);
+          }
+        }
+      }
+
+      function getRoadLayerDisplayColor(styleKey, layerConfig) {
+        if (isSkyViewMode) {
+          return layerConfig.skyColor || layerConfig.color;
+        }
+        return layerConfig.color;
+      }
+
+      function roadCurrentPath(road) {
+        return roadPathForTier(road, road._pathTier || "fine");
+      }
+
+      function syncRoadLayerStackForRoad(road) {
+        if (!road) return;
+
+        const stack = getRoadLayerStack(road.styleKey);
+        const lines = getRoadVisualLines(road);
+        const path = roadCurrentPath(road) || road.pathFine;
+
+        while (lines.length < stack.length) {
+          const line = new kakao.maps.Polyline({
+            map: road._visible ? map : null,
+            path: path,
+            strokeWeight: 3,
+            strokeColor: "#888888",
+            strokeOpacity: 1,
+            strokeStyle: getRoadLayerStrokeStyle(
+              road,
+              stack[lines.length] || stack[0],
+              lines.length
+            ),
+            zIndex: 30
+          });
+          lines.push(line);
+          LAYERS[road.layerId].shapes.push(line);
+        }
+
+        while (lines.length > stack.length) {
+          const removed = lines.pop();
+          if (removed) removed.setMap(null);
+
+          const shapes = LAYERS[road.layerId].shapes;
+          const shapeIndex = shapes.indexOf(removed);
+          if (shapeIndex >= 0) shapes.splice(shapeIndex, 1);
+        }
+
+        lines.forEach(function(line, index) {
+          const config = stack[index];
+          line.setPath(path);
+          line.setOptions({
+            strokeColor: getRoadLayerDisplayColor(road.styleKey, config),
+            strokeWeight:
+              road.statusKey === "UNOPENED"
+                ? Math.max(config.width, STATUS_STYLES.UNOPENED_SIZE)
+                : config.width,
+            strokeOpacity:
+              Math.max(0, Math.min(100, Number(config.opacity) || 0)) / 100,
+            strokeStyle: getRoadLayerStrokeStyle(road, config, index),
+            zIndex: 40 - index
+          });
+        });
+
+        applyRoadLineVisibility(road);
+
+        // 기존 코드와의 호환성을 위해 최상단/최하단 선을 연결
+        road.roadLine = lines[0] || null;
+        road.baseLine = lines.length > 1 ? lines[lines.length - 1] : null;
+
+        if (road.hitLine) {
+          const maxWidth = stack.reduce(function(max, item) {
+            return Math.max(max, Number(item.width) || 1);
+          }, 1);
+
+          road.hitLine.setOptions({
+            strokeWeight: Math.max(10, maxWidth + 5),
+            zIndex: 60
+          });
+        }
+      }
+
+      function syncRoadLayerStackForStyle(styleKey) {
+        allRoads.forEach(function(road) {
+          if (road.styleKey === styleKey) {
+            syncRoadLayerStackForRoad(road);
+          }
+        });
+
+        const stack = getRoadLayerStack(styleKey);
+        if (stack.length) {
+          ROAD_STYLES[styleKey].color = stack[0].color;
+          ROAD_STYLES[styleKey].mid = stack[0].width;
+
+          const bottom = stack[stack.length - 1];
+          ROAD_STYLES[styleKey].baseColor = bottom.color;
+          ROAD_STYLES[styleKey].base = bottom.width;
+        }
+
+        saveRoadLayerStacks();
+        saveRoadStyles();
+        updateLegendStyles();
+
+        if (selectedRoadGroupKey) {
+          setRoadGroupHighlight(selectedRoadGroupKey, true);
+        }
+      }
+
+      let roadLayerEditorView = { type: "main", styleKey: null };
+
+      function roadLayerPreviewHtml(styleKey) {
+        const stack = getRoadLayerStack(styleKey).filter(function(item) { return item.visible !== false; });
+        const visibleStack = stack.length ? stack : getRoadLayerStack(styleKey).slice(0, 1);
+        const lines = visibleStack.slice().reverse().map(function(item, reverseIndex) {
+          const width = Math.max(1, Math.min(10, Number(item.width) || 1));
+          return '<i style="height:' + width + 'px;background:' + escapeHTML(item.color || '#777777') + ';opacity:' + (Math.max(0, Math.min(100, Number(item.opacity) || 0)) / 100) + ';z-index:' + reverseIndex + '"></i>';
+        }).join('');
+        return '<span class="layer-line-preview">' + lines + '</span>';
+      }
+
+      function getStatusStyleLabel(value) {
+        const labels = {
+          none: "없음", solid: "실선", shortdash: "짧은 대시", shortdot: "짧은 점선",
+          shortdashdot: "짧은 대시+점", shortdashdotdot: "짧은 대시+점 2개", dot: "점선",
+          dash: "대시", dashdot: "대시+점", longdash: "긴 대시",
+          longdashdot: "긴 대시+점", longdashdotdot: "긴 대시+점 2개"
+        };
+        return labels[value] || value || "-";
+      }
+
+      function statusStyleOptions(selected) {
+        const values = ["none","solid","shortdash","shortdot","shortdashdot","shortdashdotdot","dot","dash","dashdot","longdash","longdashdot","longdashdotdot"];
+        return values.map(function(value) {
+          return '<option value="' + value + '"' + (selected === value ? ' selected' : '') + '>' + getStatusStyleLabel(value) + '</option>';
+        }).join('');
+      }
+
+      function renderRoadLayerMain(body) {
+        const roadsSection = document.createElement("section");
+        roadsSection.className = "layer-simple-section";
+        roadsSection.innerHTML = '<div class="layer-simple-title">도로 표현</div>';
+
+        ["CITY", "MYEON", "RI", "FARM"].forEach(function(styleKey) {
+          const stack = getRoadLayerStack(styleKey);
+          const enabled = stack.some(function(item) { return item.visible !== false; });
+          const top = stack[0] || {};
+          const row = document.createElement("div");
+          row.className = "layer-simple-row";
+          row.innerHTML =
+            '<input class="layer-simple-check" type="checkbox" ' + (enabled ? 'checked ' : '') + 'aria-label="' + ROAD_LAYER_NAMES[styleKey] + ' 표시">' +
+            '<span class="layer-simple-name">' + ROAD_LAYER_NAMES[styleKey] + '</span>' +
+            '<div><div>' + roadLayerPreviewHtml(styleKey) + '</div><div class="layer-simple-summary">' + escapeHTML(String(top.color || '').toUpperCase()) + ' · ' + (Number(top.width) || 0) + 'px</div></div>' +
+            '<button class="layer-simple-detail" type="button">설정 ›</button>';
+
+          row.querySelector('.layer-simple-check').addEventListener('change', function() {
+            const turnOn = this.checked;
+            stack.forEach(function(item) { item.visible = turnOn; });
+            saveRoadLayerStacks();
+            allRoads.forEach(function(road) {
+              if (road.styleKey === styleKey) applyRoadLineVisibility(road);
+            });
+            if (selectedRoadGroupKey) setRoadGroupHighlight(selectedRoadGroupKey, true);
+            renderRoadLayerEditor();
+          });
+
+          function openDetail() {
+            roadLayerEditorView = { type: 'road', styleKey: styleKey };
+            renderRoadLayerEditor();
+          }
+          row.querySelector('.layer-simple-detail').addEventListener('click', function(event) { event.stopPropagation(); openDetail(); });
+          row.addEventListener('dblclick', openDetail);
+          roadsSection.appendChild(row);
+        });
+        body.appendChild(roadsSection);
+
+        const settingsSection = document.createElement('section');
+        settingsSection.className = 'layer-simple-section';
+        settingsSection.innerHTML = '<div class="layer-simple-title">표시 설정</div>';
+
+        const labelRow = document.createElement('div');
+        labelRow.className = 'layer-action-row';
+        labelRow.innerHTML = '<span class="layer-action-name">노선번호</span><span class="layer-action-summary">' + (LABEL_STYLES.VISIBLE === false ? '숨김' : (LABEL_STYLES.SCALE + '%')) + '</span><span class="layer-action-arrow">›</span>';
+        labelRow.addEventListener('click', function() { roadLayerEditorView = { type:'label', styleKey:null }; renderRoadLayerEditor(); });
+        settingsSection.appendChild(labelRow);
+
+        const statusRow = document.createElement('div');
+        statusRow.className = 'layer-action-row';
+        statusRow.innerHTML = '<span class="layer-action-name">개설상태 표현</span><span class="layer-action-summary">미확장 ' + getStatusStyleLabel(STATUS_STYLES.UNEXPANDED) + ' · 미개설 ' + getStatusStyleLabel(STATUS_STYLES.UNOPENED_GAP) + '</span><span class="layer-action-arrow">›</span>';
+        statusRow.addEventListener('click', function() { roadLayerEditorView = { type:'status', styleKey:null }; renderRoadLayerEditor(); });
+        settingsSection.appendChild(statusRow);
+        body.appendChild(settingsSection);
+
+        const reset = document.createElement('button');
+        reset.className = 'layer-reset-button';
+        reset.type = 'button';
+        reset.textContent = '기본값으로 초기화';
+        reset.addEventListener('click', function() {
+          const legacyReset = document.getElementById('styleReset');
+          if (legacyReset) legacyReset.click();
+        });
+        body.appendChild(reset);
+      }
+
+      function renderEditorBackbar(body, title, note) {
+        const bar = document.createElement('div');
+        bar.className = 'layer-editor-backbar';
+        bar.innerHTML = '<button class="layer-editor-back" type="button" aria-label="뒤로">‹</button><div><div class="layer-editor-detail-title">' + escapeHTML(title) + '</div><div class="layer-editor-detail-note">' + escapeHTML(note || '') + '</div></div>';
+        bar.querySelector('.layer-editor-back').addEventListener('click', function() {
+          roadLayerEditorView = { type:'main', styleKey:null };
+          renderRoadLayerEditor();
+        });
+        body.appendChild(bar);
+      }
+
+      function renderRoadStyleDetail(body, styleKey) {
+        renderEditorBackbar(body, ROAD_LAYER_NAMES[styleKey], '색상·두께·투명도는 필요할 때만 세부 조정합니다.');
+        const group = document.createElement('section');
+        group.className = 'road-layer-group';
+        const head = document.createElement('div');
+        head.className = 'road-layer-group-head';
+        head.innerHTML = '<div class="road-layer-group-name">라인 구성</div><button class="road-layer-add" type="button">+ 라인 추가</button>';
+        const list = document.createElement('div');
+        list.className = 'road-layer-list';
+        const stack = getRoadLayerStack(styleKey);
+
+        stack.forEach(function(layerConfig, index) {
+          const item = document.createElement('div');
+          item.className = 'road-layer-item';
+          item.innerHTML =
+            '<div class="road-layer-item-top">' +
+              '<input class="road-layer-visible" type="checkbox" ' + (layerConfig.visible !== false ? 'checked ' : '') + 'aria-label="라인 표시">' +
+              '<span class="road-layer-name">' + escapeHTML(layerConfig.name || ('라인 ' + (index + 1))) + '</span>' +
+              '<span class="road-layer-order">위에서 ' + (index + 1) + '번째</span>' +
+            '</div>' +
+            '<div class="road-layer-control-grid">' +
+              '<span class="road-layer-field-label">색상</span><span class="road-layer-field-label">두께(px)</span>' +
+              '<span class="road-layer-color-wrap"><input class="road-layer-color" type="color" value="' + layerConfig.color + '"><input class="road-layer-color-code" type="text" maxlength="7" spellcheck="false" value="' + String(layerConfig.color || '').toUpperCase() + '"></span>' +
+              '<input class="road-layer-width" type="number" min="0.5" max="30" step="0.1" value="' + layerConfig.width + '">' +
+              '<span class="road-layer-field-label" style="grid-column:1/-1">투명도</span>' +
+              '<span class="road-layer-opacity-wrap"><input class="road-layer-opacity" type="range" min="0" max="100" step="1" value="' + (Number.isFinite(Number(layerConfig.opacity)) ? layerConfig.opacity : 100) + '"><input class="road-layer-opacity-number" type="number" min="0" max="100" step="1" value="' + (Number.isFinite(Number(layerConfig.opacity)) ? layerConfig.opacity : 100) + '"></span>' +
+            '</div>' +
+            '<div class="road-layer-item-actions"><button class="road-layer-move road-layer-up" type="button">▲ 위</button><button class="road-layer-move road-layer-down" type="button">▼ 아래</button><button class="road-layer-remove" type="button">삭제</button></div>';
+
+          const visibleInput = item.querySelector('.road-layer-visible');
+          const colorInput = item.querySelector('.road-layer-color');
+          const colorCodeInput = item.querySelector('.road-layer-color-code');
+          const widthInput = item.querySelector('.road-layer-width');
+          const opacityInput = item.querySelector('.road-layer-opacity');
+          const opacityNumber = item.querySelector('.road-layer-opacity-number');
+          const upBtn = item.querySelector('.road-layer-up');
+          const downBtn = item.querySelector('.road-layer-down');
+          const removeBtn = item.querySelector('.road-layer-remove');
+          upBtn.disabled = index === 0;
+          downBtn.disabled = index === stack.length - 1;
+          removeBtn.disabled = stack.length <= 1;
+
+          visibleInput.addEventListener('change', function() {
+            stack[index].visible = this.checked;
+            saveRoadLayerStacks();
+            allRoads.forEach(function(road) { if (road.styleKey === styleKey) applyRoadLineVisibility(road); });
+            if (selectedRoadGroupKey) setRoadGroupHighlight(selectedRoadGroupKey, true);
+          });
+
+          function applyColor(value) {
+            const normalized = normalizeHexColor(value);
+            if (!normalized) return false;
+            colorInput.value = normalized.toLowerCase();
+            colorCodeInput.value = normalized;
+            stack[index].color = colorInput.value;
+            stack[index].skyColor = colorInput.value;
+            syncRoadLayerStackForStyle(styleKey);
+            return true;
+          }
+          colorInput.addEventListener('input', function() { applyColor(this.value); });
+          colorCodeInput.addEventListener('change', function() { if (!applyColor(this.value)) this.value = String(colorInput.value || '').toUpperCase(); });
+          colorCodeInput.addEventListener('keydown', function(event) { if (event.key === 'Enter') { event.preventDefault(); this.dispatchEvent(new Event('change')); this.blur(); } });
+          widthInput.addEventListener('change', function() { stack[index].width = Math.min(30, Math.max(.5, Number(this.value) || 1)); this.value = stack[index].width; syncRoadLayerStackForStyle(styleKey); });
+          function applyOpacity(raw) {
+            const value = Math.min(100, Math.max(0, Number(raw) || 0));
+            stack[index].opacity = value; opacityInput.value = value; opacityNumber.value = value;
+            allRoads.forEach(function(road) { if (road.styleKey === styleKey) syncRoadLayerStackForRoad(road); });
+            saveRoadLayerStacks();
+            if (selectedRoadGroupKey) setRoadGroupHighlight(selectedRoadGroupKey, true);
+          }
+          opacityInput.addEventListener('input', function() { applyOpacity(this.value); });
+          opacityNumber.addEventListener('input', function() { if (this.value !== '') applyOpacity(this.value); });
+          opacityNumber.addEventListener('change', function() { applyOpacity(this.value); });
+          upBtn.addEventListener('click', function() { if (index <= 0) return; const moved=stack.splice(index,1)[0]; stack.splice(index-1,0,moved); syncRoadLayerStackForStyle(styleKey); renderRoadLayerEditor(); });
+          downBtn.addEventListener('click', function() { if (index >= stack.length-1) return; const moved=stack.splice(index,1)[0]; stack.splice(index+1,0,moved); syncRoadLayerStackForStyle(styleKey); renderRoadLayerEditor(); });
+          removeBtn.addEventListener('click', function() { if (stack.length <= 1) return; stack.splice(index,1); syncRoadLayerStackForStyle(styleKey); renderRoadLayerEditor(); });
+          list.appendChild(item);
+        });
+
+        head.querySelector('.road-layer-add').addEventListener('click', function() {
+          const top = stack[0] || { color:ROAD_STYLES[styleKey].color, skyColor:ROAD_STYLES[styleKey].color, width:ROAD_STYLES[styleKey].mid };
+          stack.unshift({ name:'추가선', color:top.color, skyColor:top.skyColor || top.color, width:Number(top.width)||3, lineStyle:top.lineStyle || 'inherit', opacity:Number.isFinite(Number(top.opacity))?Number(top.opacity):100, visible:true });
+          syncRoadLayerStackForStyle(styleKey);
+          renderRoadLayerEditor();
+        });
+        group.appendChild(head); group.appendChild(list); body.appendChild(group);
+      }
+
+      function normalizeLabelHex(value, fallback) {
+        let text = String(value || "").trim().toUpperCase();
+        if (text && text[0] !== "#") text = "#" + text;
+        return /^#[0-9A-F]{6}$/.test(text) ? text : (fallback || "#FFFFFF");
+      }
+
+      function saveAndApplyLabelStyles(rebuild) {
+        ensureLabelStyleModel();
+        localStorage.setItem('labelStyles', JSON.stringify(LABEL_STYLES));
+        applyLabelScale();
+        applyLabelAppearance();
+        if (rebuild) updateLabels();
+      }
+
+      function renderLabelDetail(body) {
+        ensureLabelStyleModel();
+        renderEditorBackbar(body, '노선번호', '표시·도형·면색·라인색·번호색을 조정합니다.');
+        const card = document.createElement('section');
+        card.className = 'layer-detail-card';
+        card.innerHTML =
+          '<div class="layer-detail-row"><span>표시</span><label class="layer-toggle-line"><input id="editorLabelVisible" type="checkbox" ' + (LABEL_STYLES.VISIBLE !== false ? 'checked' : '') + '> 노선번호 표시</label></div>' +
+          '<div class="layer-detail-row"><span>도형 표시</span><label class="layer-toggle-line"><input id="editorLabelShapeVisible" type="checkbox" ' + (LABEL_STYLES.SHAPE_VISIBLE !== false ? 'checked' : '') + '> 박스/원 표시</label></div>' +
+          '<div class="layer-detail-row"><span>도형</span><select id="editorLabelShape"><option value="auto">기본(시도 원 / 농어촌 사각)</option><option value="box">사각형</option><option value="rounded">둥근 사각형</option><option value="circle">원형</option><option value="none">없음</option></select></div>' +
+          '<div class="layer-detail-row"><span>라벨 크기</span><div class="layer-detail-inline"><input id="editorLabelScale" type="range" min="50" max="150" step="5" value="' + LABEL_STYLES.SCALE + '"><strong id="editorLabelScaleValue" style="font-size:11px;text-align:right">' + LABEL_STYLES.SCALE + '%</strong></div></div>' +
+          '<div class="layer-detail-row"><span>도형 면색</span><div class="road-layer-color-wrap"><input id="editorLabelFillColor" type="color" value="' + LABEL_STYLES.SHAPE_FILL_COLOR + '"><input id="editorLabelFillColorCode" class="road-layer-color-code" type="text" maxlength="7" spellcheck="false" value="' + LABEL_STYLES.SHAPE_FILL_COLOR + '"></div></div>' +
+          '<div class="layer-detail-row"><span>도형 라인색</span><div class="road-layer-color-wrap"><input id="editorLabelLineColor" type="color" value="' + LABEL_STYLES.SHAPE_LINE_COLOR + '"><input id="editorLabelLineColorCode" class="road-layer-color-code" type="text" maxlength="7" spellcheck="false" value="' + LABEL_STYLES.SHAPE_LINE_COLOR + '"></div></div>' +
+          '<div class="layer-detail-row"><span>도형 라인 두께</span><input id="editorLabelLineWidth" type="number" min="0" max="10" step="0.5" value="' + LABEL_STYLES.SHAPE_LINE_WIDTH + '"></div>' +
+          '<div class="layer-detail-row" style="align-items:start"><span>번호 색상</span><div><div id="editorLabelTextColorList" class="label-color-list"></div><button id="editorLabelTextColorAdd" class="label-color-add" type="button">+ 색상 추가</button><div style="margin-top:5px;color:#8a9098;font-size:10px;line-height:1.4">맨 위 색상은 번호 글자색이며, 아래에 추가한 색상은 번호 외곽색으로 적용됩니다. ▲▼로 순서를 바꿀 수 있습니다.</div></div></div>';
+
+        card.querySelector('#editorLabelShape').value = LABEL_STYLES.SHAPE || 'auto';
+
+        card.querySelector('#editorLabelVisible').addEventListener('change', function() {
+          LABEL_STYLES.VISIBLE = this.checked;
+          Object.values(LAYERS).forEach(function(layer) { layer.labels.forEach(function(item) { item._visible = false; }); });
+          saveAndApplyLabelStyles(true);
+        });
+        card.querySelector('#editorLabelShapeVisible').addEventListener('change', function() {
+          LABEL_STYLES.SHAPE_VISIBLE = this.checked;
+          saveAndApplyLabelStyles(false);
+        });
+        card.querySelector('#editorLabelShape').addEventListener('change', function() {
+          LABEL_STYLES.SHAPE = this.value;
+          if (this.value === 'none') card.querySelector('#editorLabelShapeVisible').checked = false;
+          else if (LABEL_STYLES.SHAPE_VISIBLE === false) card.querySelector('#editorLabelShapeVisible').checked = true;
+          LABEL_STYLES.SHAPE_VISIBLE = this.value !== 'none';
+          saveAndApplyLabelStyles(false);
+        });
+        card.querySelector('#editorLabelScale').addEventListener('input', function() {
+          LABEL_STYLES.SCALE = limitNumber(this.value, 50, 150);
+          saveAndApplyLabelStyles(false);
+          card.querySelector('#editorLabelScaleValue').textContent = LABEL_STYLES.SCALE + '%';
+          const legacy = document.getElementById('labelScale'); if (legacy) legacy.value = LABEL_STYLES.SCALE;
+          const legacyValue = document.getElementById('labelScaleValue'); if (legacyValue) legacyValue.textContent = LABEL_STYLES.SCALE + '%';
+        });
+
+        function bindHexPair(pickerId, codeId, getValue, setValue) {
+          const picker = card.querySelector('#' + pickerId);
+          const code = card.querySelector('#' + codeId);
+          function commit(raw) {
+            const value = normalizeLabelHex(raw, getValue());
+            setValue(value); picker.value = value; code.value = value; saveAndApplyLabelStyles(false);
+          }
+          picker.addEventListener('input', function(){ commit(this.value); });
+          code.addEventListener('change', function(){ commit(this.value); });
+          code.addEventListener('keydown', function(e){ if (e.key === 'Enter') { commit(this.value); this.blur(); } });
+        }
+        bindHexPair('editorLabelFillColor','editorLabelFillColorCode', function(){return LABEL_STYLES.SHAPE_FILL_COLOR;}, function(v){LABEL_STYLES.SHAPE_FILL_COLOR=v;});
+        bindHexPair('editorLabelLineColor','editorLabelLineColorCode', function(){return LABEL_STYLES.SHAPE_LINE_COLOR;}, function(v){LABEL_STYLES.SHAPE_LINE_COLOR=v;});
+        card.querySelector('#editorLabelLineWidth').addEventListener('change', function(){
+          LABEL_STYLES.SHAPE_LINE_WIDTH = Math.min(10, Math.max(0, Number(this.value) || 0));
+          this.value = LABEL_STYLES.SHAPE_LINE_WIDTH;
+          saveAndApplyLabelStyles(false);
+        });
+
+        const textColorList = card.querySelector('#editorLabelTextColorList');
+        function renderTextColors() {
+          ensureLabelStyleModel();
+          textColorList.innerHTML = '';
+          LABEL_STYLES.TEXT_COLORS.forEach(function(item, index) {
+            const row = document.createElement('div');
+            row.className = 'label-color-item';
+            row.style.gridTemplateColumns = '18px 34px minmax(72px,1fr) 26px 26px 26px';
+            row.innerHTML = '<input class="label-text-visible" type="checkbox" ' + (item.visible !== false ? 'checked' : '') + ' aria-label="색상 표시">' +
+              '<input class="label-text-color" type="color" value="' + item.color + '">' +
+              '<input class="label-color-code" type="text" maxlength="7" spellcheck="false" value="' + item.color + '">' +
+              '<button class="label-color-up label-color-remove" type="button" title="위로">▲</button>' +
+              '<button class="label-color-down label-color-remove" type="button" title="아래로">▼</button>' +
+              '<button class="label-color-delete label-color-remove" type="button" title="색상 삭제">×</button>';
+            const visible = row.querySelector('.label-text-visible');
+            const picker = row.querySelector('.label-text-color');
+            const code = row.querySelector('.label-color-code');
+            const up = row.querySelector('.label-color-up');
+            const down = row.querySelector('.label-color-down');
+            const del = row.querySelector('.label-color-delete');
+            up.disabled = index === 0;
+            down.disabled = index === LABEL_STYLES.TEXT_COLORS.length - 1;
+            function commit(raw) {
+              const value = normalizeLabelHex(raw, item.color); item.color = value; picker.value = value; code.value = value; saveAndApplyLabelStyles(false);
+            }
+            visible.addEventListener('change', function(){ item.visible = this.checked; saveAndApplyLabelStyles(false); });
+            picker.addEventListener('input', function(){ commit(this.value); });
+            code.addEventListener('change', function(){ commit(this.value); });
+            code.addEventListener('keydown', function(e){ if (e.key === 'Enter') { commit(this.value); this.blur(); } });
+            up.addEventListener('click', function(){ if(index<=0)return; const moved=LABEL_STYLES.TEXT_COLORS.splice(index,1)[0]; LABEL_STYLES.TEXT_COLORS.splice(index-1,0,moved); renderTextColors(); saveAndApplyLabelStyles(false); });
+            down.addEventListener('click', function(){ if(index>=LABEL_STYLES.TEXT_COLORS.length-1)return; const moved=LABEL_STYLES.TEXT_COLORS.splice(index,1)[0]; LABEL_STYLES.TEXT_COLORS.splice(index+1,0,moved); renderTextColors(); saveAndApplyLabelStyles(false); });
+            del.addEventListener('click', function(){
+              if (LABEL_STYLES.TEXT_COLORS.length <= 1) { item.visible=false; renderTextColors(); saveAndApplyLabelStyles(false); return; }
+              LABEL_STYLES.TEXT_COLORS.splice(index,1); renderTextColors(); saveAndApplyLabelStyles(false);
+            });
+            textColorList.appendChild(row);
+          });
+        }
+        card.querySelector('#editorLabelTextColorAdd').addEventListener('click', function(){
+          LABEL_STYLES.TEXT_COLORS.push({ color:'#FFFFFF', visible:true });
+          renderTextColors(); saveAndApplyLabelStyles(false);
+        });
+        renderTextColors();
+        body.appendChild(card);
+      }
+
+      function renderStatusDetail(body) {
+        renderEditorBackbar(body, '개설상태 표현', '미확장·미개설 노선의 선 모양을 조정합니다.');
+        const card = document.createElement('section');
+        card.className = 'layer-detail-card';
+        card.innerHTML =
+          '<div class="layer-detail-row"><span>미확장</span><select id="editorUnexpanded">' + statusStyleOptions(STATUS_STYLES.UNEXPANDED) + '</select></div>' +
+          '<div class="layer-detail-row"><span>미개설 모양</span><select id="editorUnopenedGap">' + statusStyleOptions(STATUS_STYLES.UNOPENED_GAP) + '</select></div>' +
+          '<div class="layer-detail-row"><span>미개설 두께</span><input id="editorUnopenedSize" type="number" min="1" max="20" value="' + STATUS_STYLES.UNOPENED_SIZE + '"></div>';
+        function commit() {
+          STATUS_STYLES.UNEXPANDED = card.querySelector('#editorUnexpanded').value;
+          STATUS_STYLES.UNOPENED_GAP = card.querySelector('#editorUnopenedGap').value;
+          STATUS_STYLES.UNOPENED_SIZE = limitNumber(card.querySelector('#editorUnopenedSize').value, 1, 20);
+          localStorage.setItem('statusStyles', JSON.stringify(STATUS_STYLES));
+          const a=document.getElementById('unexpandedStyle'), b=document.getElementById('unopenedDotGap'), c=document.getElementById('unopenedDotSize');
+          if (a) a.value=STATUS_STYLES.UNEXPANDED; if (b) b.value=STATUS_STYLES.UNOPENED_GAP; if (c) c.value=STATUS_STYLES.UNOPENED_SIZE;
+          applyStatusStyles();
+        }
+        card.querySelector('#editorUnexpanded').addEventListener('change', commit);
+        card.querySelector('#editorUnopenedGap').addEventListener('change', commit);
+        card.querySelector('#editorUnopenedSize').addEventListener('change', commit);
+        body.appendChild(card);
+      }
+
+      function renderRoadLayerEditor() {
+        const body = document.getElementById('roadLayerEditorBody');
+        if (!body) return;
+        body.innerHTML = '';
+        if (roadLayerEditorView.type === 'road' && roadLayerEditorView.styleKey) {
+          renderRoadStyleDetail(body, roadLayerEditorView.styleKey);
+        } else if (roadLayerEditorView.type === 'label') {
+          renderLabelDetail(body);
+        } else if (roadLayerEditorView.type === 'status') {
+          renderStatusDetail(body);
+        } else {
+          roadLayerEditorView = { type:'main', styleKey:null };
+          renderRoadLayerMain(body);
+        }
+      }
+
+      function initRoadLayerEditor() {
+        const button = document.getElementById("roadLayerEditorBtn");
+        const panel = document.getElementById("roadLayerEditorPanel");
+        const close = document.getElementById("roadLayerEditorClose");
+        const customizationBody = document.getElementById("roadLayerCustomizationBody");
+        const legacyStylePanel = document.getElementById("stylePanel");
+
+        if (!button || !panel || !close) return;
+
+        // 기존 사용자화의 라벨/개설상태 설정을 통합 레이어 메뉴로 이동
+        if (customizationBody && legacyStylePanel && !customizationBody.dataset.merged) {
+          legacyStylePanel.querySelectorAll(".status-style-settings").forEach(function(section) {
+            customizationBody.appendChild(section);
+          });
+          const resetButton = legacyStylePanel.querySelector("#styleReset");
+          if (resetButton) customizationBody.appendChild(resetButton);
+          customizationBody.dataset.merged = "1";
+        }
+        if (button.dataset.layerEditorBound === "1") return;
+
+        button.dataset.layerEditorBound = "1";
+
+        button.addEventListener("click", function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const willOpen = !panel.classList.contains("open");
+          panel.classList.toggle("open", willOpen);
+
+          const mapLayerPanel = document.getElementById("layerPanel");
+          const mapLayerButton = document.getElementById("layerBtn");
+          const oldStylePanel = document.getElementById("stylePanel");
+          if (willOpen) {
+            roadLayerEditorView = { type: "main", styleKey: null };
+            if (mapLayerPanel) mapLayerPanel.style.display = "none";
+            if (mapLayerButton) mapLayerButton.classList.remove("active");
+            if (oldStylePanel) oldStylePanel.style.display = "none";
+            renderRoadLayerEditor();
+          }
+        });
+
+        close.addEventListener("click", function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          panel.classList.remove("open");
+        });
+
+        panel.addEventListener("click", function(event) {
+          event.stopPropagation();
+        });
+
+        document.addEventListener("click", function(event) {
+          if (!panel.classList.contains("open")) return;
+          if (panel.contains(event.target) || button.contains(event.target)) return;
+          panel.classList.remove("open");
+        });
+
+        renderRoadLayerEditor();
+      }
+
       function saveRoadStyles() {
         localStorage.setItem("roadStyles", JSON.stringify(ROAD_STYLES));
       }
 
       function applyRoadStyles() {
-        groups.forEach(function (group) {
-          group.roads.forEach(function (road) {
-            const style = ROAD_STYLES[road.styleKey];
+        ["CITY", "MYEON", "RI", "FARM"].forEach(function(styleKey) {
+          const stack = getRoadLayerStack(styleKey);
 
-            if (road.hitLine) {
-              road.hitLine.setOptions({
-                strokeWeight: Math.max(10, style.mid + 4)
-              });
-            }
+          if (stack.length) {
+            // 기존 사용자화 메뉴에서 바꾼 대표 색상/두께도 최상단 선에 반영
+            stack[0].color = ROAD_STYLES[styleKey].color;
+            stack[0].width = ROAD_STYLES[styleKey].mid;
 
-            if (road.roadLine) {
-              road.roadLine.setOptions({
-                strokeWeight:
-                  road.statusKey === "UNOPENED"
-                    ? STATUS_STYLES.UNOPENED_SIZE
-                    : style.mid,
-                strokeColor:
-                  selectedKey === road.groupKey
-                    ? COLORS.SELECTED
-                    : style.color,
-                strokeOpacity: style.topOpacity / 100,
-                strokeStyle: getStatusStrokeStyle(road.statusKey)
-              });
+            if (stack.length > 1) {
+              stack[stack.length - 1].color =
+                ROAD_STYLES[styleKey].baseColor;
+              stack[stack.length - 1].width =
+                ROAD_STYLES[styleKey].base;
             }
-          });
+          }
+
+          syncRoadLayerStackForStyle(styleKey);
         });
+
+        renderRoadLayerEditor();
         updateLegendStyles();
       }
 
       function updateLegendStyles() {
         const legendStyles = {
-          legendCity: ROAD_STYLES.CITY.baseColor,
-          legendMyeon: ROAD_STYLES.MYEON.baseColor,
-          legendRi: ROAD_STYLES.RI.baseColor,
-          legendFarm: ROAD_STYLES.FARM.baseColor
+          legendCity: ROAD_STYLES.CITY.color,
+          legendMyeon: ROAD_STYLES.MYEON.color,
+          legendRi: ROAD_STYLES.RI.color,
+          legendFarm: ROAD_STYLES.FARM.color
         };
         Object.keys(legendStyles).forEach(function (id) {
           const element = document.getElementById(id);
@@ -5455,6 +6792,7 @@
       }
 
       updateLegendStyles();
+      initRoadLayerEditor();
 
       /*
        * 지적편집도
@@ -5477,28 +6815,71 @@
       function setBoundaryLayer(layerId, visible) {
         if (!BOUNDARY_LAYERS[layerId]) return;
         BOUNDARY_LAYERS[layerId].visible = visible;
-        if (layerId === "townshipBoundary") {
-          townshipSelectGroups.forEach(function(group) {
-            group.polygons.forEach(function(poly) { poly.setMap(visible ? map : null); });
-            (group.skyBackPolygons || []).forEach(function(poly) {
-              poly.setMap(visible && isSkyViewMode ? map : null);
-            });
-            if (group.label) group.label.setMap(visible ? map : null);
-          });
-          resetTownshipStyles();
-        }
         updateBoundaryVisibility();
+      }
+
+      function shouldAutoShowTownshipBoundary() {
+        return (
+          townshipStartMode ||
+          (
+            Number.isFinite(currentScaleDenominator) &&
+            currentScaleDenominator >= 55000
+          )
+        );
+      }
+
+      function syncTownshipBoundaryDisplay() {
+        const showTownshipBoundary =
+          BOUNDARY_LAYERS.townshipBoundary.visible ||
+          shouldAutoShowTownshipBoundary();
+
+        townshipSelectGroups.forEach(function(group) {
+          group.polygons.forEach(function(poly) {
+            poly.setMap(showTownshipBoundary ? map : null);
+          });
+
+          (group.skyBackPolygons || []).forEach(function(poly) {
+            poly.setMap(
+              showTownshipBoundary && isSkyViewMode ? map : null
+            );
+          });
+
+          // 클릭용 hit polygon은 초기 선택화면에서만 유지
+          (group.hitPolygons || []).forEach(function(poly) {
+            poly.setMap(townshipStartMode ? map : null);
+          });
+        });
+
+        // 초기화면이 아니면 면 채우기/강조 없이 경계선만 보이도록 정리
+        resetTownshipStyles();
       }
 
       function updateBoundaryVisibility() {
         Object.keys(BOUNDARY_LAYERS).forEach(function(layerId) {
           const layer = BOUNDARY_LAYERS[layerId];
-          const scaleVisible = !Number.isFinite(currentScaleDenominator) || currentScaleDenominator <= layer.maxScale;
-          const show = layer.visible && scaleVisible;
+          const scaleVisible =
+            !Number.isFinite(currentScaleDenominator) ||
+            currentScaleDenominator <= layer.maxScale;
+
+          // 읍면동계는 초기화면 또는 축척 분모 55,000 이상에서 자동 표시.
+          // 리 경계 등 다른 경계는 레이어 메뉴 체크 상태를 따름.
+          const show =
+            scaleVisible &&
+            (
+              layer.visible ||
+              (
+                layerId === "townshipBoundary" &&
+                shouldAutoShowTownshipBoundary()
+              )
+            );
+
           layer.shapes.forEach(function(shape) {
             shape.setMap(show ? map : null);
           });
         });
+
+        // GeoJSON Polyline과 읍면 선택용 Polygon을 항상 같은 조건으로 동기화
+        syncTownshipBoundaryDisplay();
       }
 
       
@@ -5925,10 +7306,11 @@
         // 1:100,000 이상에서는 모든 도로와 도로 라벨을 숨김.
         if (scale >= 100000) return false;
 
-        // 1:50,000 이상 ~ 1:100,000 미만에서는 시도만 표시.
-        if (scale >= 50000) return layerId === "city";
+        // 1:60,000보다 더 축소된 상태에서는 시도만 표시.
+        // 정확히 1:60,000에서는 농어촌도로까지 표시함.
+        if (scale > 60000) return layerId === "city";
 
-        // 1:50,000 미만에서는 시도 + 농어촌도로 모두 표시.
+        // 1:60,000 이하에서는 시도 + 농어촌도로 모두 표시.
         return true;
       }
 
@@ -5940,8 +7322,8 @@
           return { base: 1, top: 0.95, inner: 1 };
         }
 
-        // 1:50,000 이상에서는 기존 표시 규칙상 시도만 보임.
-        if (scale >= 50000) {
+        // 1:60,000보다 더 축소된 상태에서는 시도만 보임.
+        if (scale > 60000) {
           return {
             base: styleKey === "CITY" ? 1.00 : 0.00,
             top:  styleKey === "CITY" ? 0.95 : 0.00,
@@ -5949,8 +7331,8 @@
           };
         }
 
-        // 1:25,000 ~ 1:50,000:
-        // 전체 도로망을 볼 때 리도/농도는 강하게 톤다운하여 복잡도를 낮춤.
+        // 1:25,000 ~ 1:60,000:
+        // 전체 도로망을 볼 때 리도/농도는 톤다운하여 복잡도를 낮춤.
         if (scale >= 25000) {
           const mediumScaleOpacity = {
             CITY:  { base: 0.95, top: 0.92, inner: 0.90 },
@@ -5972,6 +7354,25 @@
         return closeScaleOpacity[styleKey] || closeScaleOpacity.FARM;
       }
 
+      function getRoadDisplayColor(styleKey) {
+        if (isSkyViewMode && SKY_ROAD_COLORS[styleKey]) {
+          return SKY_ROAD_COLORS[styleKey];
+        }
+        return ROAD_STYLES[styleKey].color;
+      }
+
+      function refreshRoadColorsForMapType() {
+        allRoads.forEach(function(road) {
+          applyRoadNormalVisualStyle(road);
+        });
+
+        if (selectedRoadGroupKey) {
+          setRoadGroupHighlight(selectedRoadGroupKey, true);
+        }
+
+        renderRoadLayerEditor();
+      }
+
       function applyRoadNormalVisualStyle(road) {
         if (!road) return;
 
@@ -5979,21 +7380,7 @@
           return;
         }
 
-        const style = ROAD_STYLES[road.styleKey];
-        const opacity = getRoadDisplayOpacity(road.styleKey);
-
-        if (road.roadLine) {
-          road.roadLine.setOptions({
-            strokeColor: style.color,
-            strokeWeight:
-              road.statusKey === "UNOPENED"
-                ? STATUS_STYLES.UNOPENED_SIZE
-                : style.mid,
-            strokeOpacity: (style.topOpacity / 100) * opacity.top,
-            strokeStyle: getStatusStrokeStyle(road.statusKey),
-            zIndex: 30
-          });
-        }
+        syncRoadLayerStackForRoad(road);
       }
 
       function getBufferedViewportBox() {
@@ -6029,16 +7416,30 @@
       }
 
       function setRoadObjectMap(road, visible) {
-        const targetMap = visible ? map : null;
+        road._visible = visible;
 
-        [road.roadLine, road.hitLine]
-          .forEach(function(line) {
-            if (!line) return;
-            const currentlyVisible = !!line.getMap();
-            if (currentlyVisible !== visible) {
-              line.setMap(targetMap);
-            }
-          });
+        const stack = getRoadLayerStack(road.styleKey);
+        const lines = getRoadVisualLines(road);
+        const statusHidden = isRoadStatusHidden(road.statusKey);
+
+        lines.forEach(function(line, index) {
+          if (!line) return;
+
+          const config = stack[index];
+          const enabled = !config || config.visible !== false;
+          const shouldShow = visible && enabled && !statusHidden;
+
+          if (!!line.getMap() !== shouldShow) {
+            line.setMap(shouldShow ? map : null);
+          }
+        });
+
+        if (road.hitLine) {
+          const hitShouldShow = visible && !statusHidden;
+          if (!!road.hitLine.getMap() !== hitShouldShow) {
+            road.hitLine.setMap(hitShouldShow ? map : null);
+          }
+        }
       }
 
       function applyRoadVisibility() {
@@ -6164,7 +7565,15 @@
             fillOpacity: 0,
             zIndex: 29
           });
-          skyBackPolygon.setMap(isSkyViewMode ? map : null);
+          skyBackPolygon.setMap(
+            (
+              shouldAutoShowTownshipBoundary() ||
+              BOUNDARY_LAYERS.townshipBoundary.visible
+            ) &&
+            isSkyViewMode
+              ? map
+              : null
+          );
           group.skyBackPolygons.push(skyBackPolygon);
 
           // 화면에 보이는 읍면동 경계/면 표현용 폴리곤
@@ -6178,7 +7587,14 @@
             fillOpacity: .10,
             zIndex: 30
           });
-          polygon.setMap(map);
+          polygon.setMap(
+            (
+              shouldAutoShowTownshipBoundary() ||
+              BOUNDARY_LAYERS.townshipBoundary.visible
+            )
+              ? map
+              : null
+          );
           group.polygons.push(polygon);
 
           // 클릭 전용 투명 폴리곤.
@@ -6191,7 +7607,7 @@
             fillOpacity: 0.01,
             zIndex: 100
           });
-          hitPolygon.setMap(map);
+          hitPolygon.setMap(townshipStartMode ? map : null);
           group.hitPolygons.push(hitPolygon);
 
           kakao.maps.event.addListener(hitPolygon, "mouseover", function() {
@@ -6377,6 +7793,7 @@
           if (!townshipAllBounds.isEmpty()) showTownshipOverview();
         }
         updateBoundaryVisibility();
+        syncTownshipBoundaryDisplay();
         updateRiLabelVisibility();
         return loaded.file;
       }
@@ -6639,7 +8056,8 @@
         const path = roadPathForTier(road, tier);
         if (!path) return;
 
-        [road.roadLine, road.hitLine]
+        getRoadVisualLines(road)
+          .concat(road.hitLine ? [road.hitLine] : [])
           .forEach(function(line) {
             if (line) line.setPath(path);
           });
@@ -6679,7 +8097,21 @@
           maxLng: -Infinity
         });
 
-        // 실제 화면에 보이는 도로는 단선 1개만 생성
+        // 시도만 이중선형: 바깥 연한 청록 + 안쪽 진한 청록
+        const baseLine =
+          styleKey === "CITY"
+            ? new kakao.maps.Polyline({
+                map: null,
+                path: displayPath,
+                strokeWeight: style.base,
+                strokeColor: style.baseColor,
+                strokeOpacity: style.baseOpacity / 100,
+                strokeStyle: getStatusStrokeStyle(statusKey),
+                zIndex: 29
+              })
+            : null;
+
+        // 실제 본선
         const roadLine = new kakao.maps.Polyline({
           map: null,
           path: displayPath,
@@ -6704,10 +8136,13 @@
           zIndex: 50
         });
 
+        if (baseLine) {
+          LAYERS[layerId].shapes.push(baseLine);
+        }
         LAYERS[layerId].shapes.push(roadLine, hitLine);
 
         const road = {
-          baseLine: null,
+          baseLine: baseLine,
           roadLine,
           hitLine,
           selectionInnerLine: null,
@@ -6723,10 +8158,12 @@
           pathCoarse: coarsePath,
           _pathTier: "fine",
           _visible: false,
-          _visualTier: null
+          _visualTier: null,
+          visualLines: [roadLine].concat(baseLine ? [baseLine] : [])
         };
 
         allRoads.push(road);
+        syncRoadLayerStackForRoad(road);
 
         kakao.maps.event.addListener(
           hitLine,
@@ -6759,7 +8196,7 @@
               selectedRoadGroupKey !== groupKey
             ) {
               roadLine.setOptions({
-                strokeColor: "#FFFF00",
+                strokeColor: isSkyViewMode ? "#FFFFFF" : "#FFFF00",
                 strokeWeight: getRoadStrokeWeight(road) + 2
               });
             }
@@ -6855,51 +8292,123 @@
           const labelPosition = midpointAcrossPaths(group.paths || []);
           if (!labelPosition || group.number === "-") return;
           const className = group.layerId === "city" ? "road-label city" : "road-label";
+          // 문자열 HTML이 아니라 실제 DOM 요소를 CustomOverlay에 넘김.
+          // 확대/축소 중 overlay가 setMap(null) -> setMap(map)으로 재부착되어도
+          // 사용자가 변경한 도형 표시/숨김, 색상, 테두리 스타일이 그대로 유지됨.
+          const labelElement = document.createElement("div");
+          labelElement.className = className;
+          labelElement.textContent = String(group.number);
           const overlay = new kakao.maps.CustomOverlay({
             position: labelPosition,
-            content:'<div class="' + className + '">' + escapeHTML(group.number) + '</div>',
+            content: labelElement,
             xAnchor:0.5, yAnchor:0.5, zIndex:3
           });
           const statusKeys = Array.from(new Set(group.roads.map(function(road) { return road.statusKey; })));
           LAYERS[group.layerId].labels.push({
             overlay,
+            basePosition: labelPosition,
             position: labelPosition,
             groupKey: group.key,
             statusKeys: statusKeys,
             _visible: false
           });
         });
+        applyLabelScale();
+        applyLabelAppearance();
+      }
+
+      // 화면 중심에서 각 선분에 가장 가까운 점을 구해, 긴 노선의 중앙점이 화면 밖이어도
+      // 현재 화면에 보이는 노선 구간 위에 노선번호가 계속 표시되도록 함.
+      function nearestPointOnSegmentForLabel(center, start, end) {
+        const lat0 = center.getLat() * Math.PI / 180;
+        const cosLat = Math.max(0.2, Math.cos(lat0));
+        const cx = center.getLng() * cosLat, cy = center.getLat();
+        const ax = start.getLng() * cosLat, ay = start.getLat();
+        const bx = end.getLng() * cosLat, by = end.getLat();
+        const dx = bx - ax, dy = by - ay;
+        const denom = dx * dx + dy * dy;
+        let t = denom ? ((cx - ax) * dx + (cy - ay) * dy) / denom : 0;
+        t = Math.max(0, Math.min(1, t));
+        return new kakao.maps.LatLng(
+          start.getLat() + (end.getLat() - start.getLat()) * t,
+          start.getLng() + (end.getLng() - start.getLng()) * t
+        );
+      }
+
+      function getVisibleLabelPosition(labelItem, bounds) {
+        if (!bounds) return labelItem.basePosition || labelItem.position || null;
+        const base = labelItem.basePosition || labelItem.position;
+        if (base && bounds.contain(base)) return base;
+
+        const group = groups.get(labelItem.groupKey);
+        if (!group) return null;
+        const center = map.getCenter();
+        let best = null;
+        let bestDistance = Infinity;
+
+        (group.paths || []).forEach(function(path) {
+          if (!path || !path.length) return;
+          if (path.length === 1) {
+            if (bounds.contain(path[0])) {
+              const d = distanceMeters(center, path[0]);
+              if (d < bestDistance) { bestDistance = d; best = path[0]; }
+            }
+            return;
+          }
+          for (let i = 1; i < path.length; i++) {
+            const candidate = nearestPointOnSegmentForLabel(center, path[i - 1], path[i]);
+            if (!bounds.contain(candidate)) continue;
+            const d = distanceMeters(center, candidate);
+            if (d < bestDistance) { bestDistance = d; best = candidate; }
+          }
+        });
+        return best;
       }
 
       function updateLabels() {
         if (windowsZoomFastMode || windowsDragFastMode) return;
 
         const bounds = map.getBounds();
+        const labelsEnabled = LABEL_STYLES.VISIBLE !== false;
 
         Object.entries(LAYERS).forEach(function([layerId, layer]) {
           const scaleVisible = isRoadLayerVisibleAtScale(layerId);
 
           layer.labels.forEach(function(labelItem) {
             let visible = false;
+            let displayPosition = null;
 
-            if (layer.visible && scaleVisible) {
-              const inViewport =
-                !bounds ||
-                !labelItem.position ||
-                bounds.contain(labelItem.position);
-
+            if (labelsEnabled && layer.visible && scaleVisible) {
+              displayPosition = getVisibleLabelPosition(labelItem, bounds);
               visible =
-                inViewport &&
+                !!displayPosition &&
                 labelItem.statusKeys.some(function(key) {
                   return roadStatusFilters[key];
                 });
             }
 
-            if (labelItem._visible !== visible) {
-              labelItem.overlay.setMap(visible ? map : null);
-              labelItem._visible = visible;
+            if (visible && displayPosition) {
+              labelItem.position = displayPosition;
+              labelItem.overlay.setPosition(displayPosition);
             }
+
+            // 지도 조작 중 setMap(null) 된 경우 _visible 값과 실제 map 상태가 달라질 수 있으므로
+            // 실제 오버레이 상태까지 함께 확인해 반드시 복원함.
+            const actuallyVisible = !!labelItem.overlay.getMap();
+            if (visible) {
+              if (!actuallyVisible) labelItem.overlay.setMap(map);
+            } else if (actuallyVisible) {
+              labelItem.overlay.setMap(null);
+            }
+            labelItem._visible = visible;
           });
+        });
+
+        // 지도 이동/확대축소 과정에서 CustomOverlay가 다시 DOM에 붙은 직후에도
+        // 현재 저장된 노선번호 도형/색상 설정을 재적용해 표시 상태가 되살아나지 않도록 함.
+        requestAnimationFrame(function() {
+          applyLabelScale();
+          applyLabelAppearance();
         });
       }
 
@@ -7053,117 +8562,54 @@
 
 
       function enableRoadPopupDrag() {
-        if (!roadPopupOverlay) return;
-
-        const mapContainer = document.getElementById("map");
-        if (!mapContainer) return;
-
-        const popup = mapContainer.querySelector(".road-popup");
+        const popup = document.querySelector("body > .road-popup");
         if (!popup) return;
 
-        // 팝업 안에서 텍스트를 선택하거나 드래그할 때
-        // 이벤트가 지도까지 전달되어 지도가 같이 움직이지 않도록 차단.
         if (!popup.dataset.mapInteractionBlocked) {
           const blockMapInteraction = function(event) {
-            try {
-              if (window.kakao && kakao.maps && kakao.maps.event &&
-                  typeof kakao.maps.event.preventMap === "function") {
-                kakao.maps.event.preventMap();
-              }
-            } catch (e) {}
-
             event.stopPropagation();
           };
 
-          popup.addEventListener("pointerdown", blockMapInteraction, true);
-          popup.addEventListener("pointermove", blockMapInteraction, true);
-          popup.addEventListener("mousedown", blockMapInteraction, true);
-          popup.addEventListener("mousemove", blockMapInteraction, true);
-          popup.addEventListener("touchstart", blockMapInteraction, { capture: true, passive: true });
-          popup.addEventListener("touchmove", blockMapInteraction, { capture: true, passive: true });
+          [
+            "pointerdown",
+            "pointermove",
+            "mousedown",
+            "mousemove",
+            "click",
+            "dblclick"
+          ].forEach(function(type) {
+            popup.addEventListener(type, blockMapInteraction, true);
+          });
+
+          popup.addEventListener(
+            "touchstart",
+            blockMapInteraction,
+            { capture: true, passive: true }
+          );
+          popup.addEventListener(
+            "touchmove",
+            blockMapInteraction,
+            { capture: true, passive: true }
+          );
 
           popup.dataset.mapInteractionBlocked = "1";
         }
-
-        const handle = popup.querySelector(".popup-drag-handle");
-        if (!handle) return;
-
-        let dragging = false;
-        let startClientX = 0;
-        let startClientY = 0;
-        let startPoint = null;
-
-        function getContainerPointFromLatLng(latLng) {
-          const projection = map.getProjection();
-          if (!projection || typeof projection.containerPointFromCoords !== "function") return null;
-          return projection.containerPointFromCoords(latLng);
-        }
-
-        function getLatLngFromContainerPoint(point) {
-          const projection = map.getProjection();
-          if (!projection || typeof projection.coordsFromContainerPoint !== "function") return null;
-          return projection.coordsFromContainerPoint(point);
-        }
-
-        function onPointerDown(event) {
-          if (event.target.closest(".popup-close")) return;
-          if (!roadPopupOverlay) return;
-
-          const currentPosition = roadPopupOverlay.getPosition();
-          const cp = getContainerPointFromLatLng(currentPosition);
-          if (!cp) return;
-
-          dragging = true;
-          startClientX = event.clientX;
-          startClientY = event.clientY;
-          startPoint = cp;
-
-          handle.setPointerCapture?.(event.pointerId);
-          event.preventDefault();
-          event.stopPropagation();
-        }
-
-        function onPointerMove(event) {
-          if (!dragging || !roadPopupOverlay || !startPoint) return;
-
-          const dx = event.clientX - startClientX;
-          const dy = event.clientY - startClientY;
-          const nextPoint = new kakao.maps.Point(startPoint.x + dx, startPoint.y + dy);
-          const nextLatLng = getLatLngFromContainerPoint(nextPoint);
-
-          if (nextLatLng) {
-            roadPopupOverlay.setPosition(nextLatLng);
-          }
-
-          event.preventDefault();
-          event.stopPropagation();
-        }
-
-        function onPointerUp(event) {
-          if (!dragging) return;
-          dragging = false;
-          startPoint = null;
-
-          try {
-            handle.releasePointerCapture?.(event.pointerId);
-          } catch (e) {}
-
-          scheduleRoadPopupSafeViewportCheck();
-          event.preventDefault();
-          event.stopPropagation();
-        }
-
-        handle.addEventListener("pointerdown", onPointerDown);
-        window.addEventListener("pointermove", onPointerMove, true);
-        window.addEventListener("pointerup", onPointerUp, true);
-        window.addEventListener("pointercancel", onPointerUp, true);
       }
 
       function closeRoadPopup() {
         if (roadPopupOverlay) {
-          roadPopupOverlay.setMap(null);
+          try {
+            if (roadPopupOverlay.remove) {
+              roadPopupOverlay.remove();
+            } else if (roadPopupOverlay.parentNode) {
+              roadPopupOverlay.parentNode.removeChild(roadPopupOverlay);
+            }
+          } catch (e) {}
           roadPopupOverlay = null;
         }
+
+        const orphanPopup = document.querySelector("body > .road-popup");
+        if (orphanPopup) orphanPopup.remove();
 
         if (typeof infoWindow !== "undefined" && infoWindow) {
           infoWindow.close();
@@ -7180,32 +8626,69 @@
         group.roads.forEach(function(road) {
           if (!road) return;
 
-          const style = ROAD_STYLES[road.styleKey];
-          const isSelectedSegment = enabled && selectedRoadObject === road;
-          const highlightColor = isSelectedSegment ? "#E60012" : "#0800ec";
+          const stack = getRoadLayerStack(road.styleKey);
+          const lines = getRoadVisualLines(road);
+          const isSelectedSegment =
+            enabled && selectedRoadObject === road;
+          const highlightColor =
+            isSelectedSegment ? "#E60012" : "#0800ec";
 
-          if (road.roadLine) {
-            road.roadLine.setOptions({
-              strokeColor: enabled ? highlightColor : style.color,
+          const statusHidden = isRoadStatusHidden(road.statusKey);
+
+          lines.forEach(function(line, index) {
+            const config = stack[index] || stack[0];
+            const layerEnabled = !config || config.visible !== false;
+
+            if (!layerEnabled || statusHidden) {
+              if (line && line.getMap()) line.setMap(null);
+              return;
+            }
+
+            if (road._visible && line && !line.getMap()) {
+              line.setMap(map);
+            }
+
+            line.setOptions({
+              strokeColor: enabled
+                ? highlightColor
+                : getRoadLayerDisplayColor(road.styleKey, config),
               strokeWeight: enabled
-                ? (isSelectedSegment ? 8 : 6.5)
+                ? (Number(config.width) || 3) +
+                  (isSelectedSegment ? 3 : 1.5)
                 : (
                     road.statusKey === "UNOPENED"
-                      ? STATUS_STYLES.UNOPENED_SIZE
-                      : style.mid
+                      ? Math.max(
+                          Number(config.width) || 3,
+                          STATUS_STYLES.UNOPENED_SIZE
+                        )
+                      : Number(config.width) || 3
                   ),
-              strokeOpacity: enabled ? 1 : style.topOpacity / 100,
+              strokeOpacity: enabled
+                ? 1
+                : Math.max(
+                    0,
+                    Math.min(100, Number(config.opacity) || 0)
+                  ) / 100,
               strokeStyle: enabled
                 ? "solid"
-                : getStatusStrokeStyle(road.statusKey),
-              zIndex: enabled ? 85 : 30
+                : getRoadLayerStrokeStyle(road, config, index),
+              zIndex: enabled ? 90 - index : 40 - index
             });
-          }
+          });
 
           if (road.hitLine) {
-            road.hitLine.setOptions({
-              zIndex: enabled ? 100 : 50
-            });
+            if (statusHidden) {
+              if (road.hitLine.getMap()) {
+                road.hitLine.setMap(null);
+              }
+            } else {
+              if (road._visible && !road.hitLine.getMap()) {
+                road.hitLine.setMap(map);
+              }
+              road.hitLine.setOptions({
+                zIndex: enabled ? 110 : 60
+              });
+            }
           }
         });
       }
@@ -7267,157 +8750,46 @@
 
 
       function watchPopupSafeAreaChanges() {
-        const listPanel = document.getElementById("listPanel");
-        const listOpen = document.getElementById("listOpen");
-        const listClose = document.getElementById("listClose");
-        const resizeHandle = document.getElementById("listResizeHandle");
-
-        [listOpen, listClose, resizeHandle].forEach(function(el) {
-          if (!el) return;
-          el.addEventListener("click", function() {
-            setTimeout(scheduleRoadPopupSafeViewportCheck, 0);
-            setTimeout(scheduleRoadPopupSafeViewportCheck, 180);
-          });
+        // 지도/좌측 패널 변화로는 도로노선 정보 위치를 바꾸지 않음.
+        // 브라우저 창 크기 변경 때만 현재 고정 위치의 높이 제한을 갱신함.
+        window.addEventListener("resize", function() {
+          const popup = document.querySelector("body > .road-popup");
+          if (!popup) return;
+          placeRoadPopupTopRight();
+          keepRoadPopupInSafeViewport();
         });
-
-        if (window.ResizeObserver && listPanel) {
-          const ro = new ResizeObserver(function() {
-            scheduleRoadPopupSafeViewportCheck();
-          });
-          ro.observe(listPanel);
-        }
-
-        window.addEventListener("resize", scheduleRoadPopupSafeViewportCheck);
       }
 
       function placeRoadPopupTopRight() {
-        if (!roadPopupOverlay) return;
-
-        const mapContainer = document.getElementById("map");
-        if (!mapContainer) return;
-
-        const popup = mapContainer.querySelector(".road-popup");
+        const popup = document.querySelector("body > .road-popup");
         if (!popup) return;
 
-        const mapRect = mapContainer.getBoundingClientRect();
-        const popupRect = popup.getBoundingClientRect();
+        // 지도 좌표와 완전히 분리된 고정 화면 패널.
+        // 지도 이동/확대/축소 중에는 절대 위치를 변경하지 않음.
+        popup.style.position = "fixed";
+        popup.style.right = "15px";
+        popup.style.left = "auto";
+
+        // 현재 기본 위치: 상단 도구막대 바로 아래.
+        // 최초 생성/창 크기 변경 때만 계산하며 지도 이벤트와는 무관함.
         const toolbar = document.querySelector(".top-toolbar");
-        const toolbarRect = toolbar ? toolbar.getBoundingClientRect() : null;
+        const top = toolbar
+          ? Math.round(toolbar.getBoundingClientRect().bottom + 10)
+          : 72;
 
-        const rightMargin = 15;
-        const gapBelowToolbar = 10;
-
-        const targetLeft = mapRect.right - rightMargin - popupRect.width;
-        const targetTop = toolbarRect
-          ? Math.max(mapRect.top + 14, toolbarRect.bottom + gapBelowToolbar)
-          : mapRect.top + 70;
-
-        const dx = targetLeft - popupRect.left;
-        const dy = targetTop - popupRect.top;
-
-        try {
-          const projection = map.getProjection();
-          if (!projection) return;
-
-          const currentPosition = roadPopupOverlay.getPosition();
-          const currentPoint = projection.containerPointFromCoords(currentPosition);
-          if (!currentPoint) return;
-
-          const nextPoint = new kakao.maps.Point(
-            currentPoint.x + dx,
-            currentPoint.y + dy
-          );
-
-          const nextPosition = projection.coordsFromContainerPoint(nextPoint);
-          if (nextPosition) {
-            roadPopupOverlay.setPosition(nextPosition);
-          }
-        } catch (e) {
-          console.warn("팝업 우상단 배치 실패:", e);
-        }
+        popup.style.top = top + "px";
+        popup.style.bottom = "auto";
+        popup.style.transform = "none";
       }
 
       function keepRoadPopupInSafeViewport() {
-        if (!roadPopupOverlay) return;
-
-        const mapContainer = document.getElementById("map");
-        if (!mapContainer) return;
-
-        const popup = mapContainer.querySelector(".road-popup");
+        const popup = document.querySelector("body > .road-popup");
         if (!popup) return;
 
-        const mapRect = mapContainer.getBoundingClientRect();
-        const popupRect = popup.getBoundingClientRect();
-        const margin = 14;
-
-        // 기본 안전영역은 지도 내부.
-        let safeLeft = mapRect.left + margin;
-        let safeRight = mapRect.right - margin;
-        let safeTop = mapRect.top + margin;
-        let safeBottom = mapRect.bottom - margin;
-
-        // 왼쪽 노선목록 패널이 실제로 열려 있으면 그 오른쪽부터 팝업 허용.
-        const listPanel = document.getElementById("listPanel");
-        if (listPanel) {
-          const panelStyle = window.getComputedStyle(listPanel);
-          const panelRect = listPanel.getBoundingClientRect();
-
-          const panelVisible =
-            panelStyle.display !== "none" &&
-            panelStyle.visibility !== "hidden" &&
-            panelRect.width > 10 &&
-            panelRect.height > 10 &&
-            panelRect.right > mapRect.left &&
-            panelRect.left < mapRect.right;
-
-          // 데스크톱/가로형에서 좌측 패널이 지도와 중첩되는 경우.
-          if (panelVisible && panelRect.left <= mapRect.left + 40) {
-            safeLeft = Math.max(safeLeft, panelRect.right + margin);
-          }
-        }
-
-        // 패널 때문에 usable width가 너무 좁으면 최소한 지도 우측 내부를 사용.
-        if (safeRight - safeLeft < 220) {
-          safeLeft = mapRect.left + margin;
-        }
-
-        let dx = 0;
-        let dy = 0;
-
-        if (popupRect.left < safeLeft) {
-          dx += safeLeft - popupRect.left;
-        } else if (popupRect.right > safeRight) {
-          dx -= popupRect.right - safeRight;
-        }
-
-        if (popupRect.top < safeTop) {
-          dy += safeTop - popupRect.top;
-        } else if (popupRect.bottom > safeBottom) {
-          dy -= popupRect.bottom - safeBottom;
-        }
-
-        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-
-        try {
-          const projection = map.getProjection();
-          if (!projection) return;
-
-          const currentPosition = roadPopupOverlay.getPosition();
-          const currentPoint = projection.containerPointFromCoords(currentPosition);
-          if (!currentPoint) return;
-
-          const nextPoint = new kakao.maps.Point(
-            currentPoint.x + dx,
-            currentPoint.y + dy
-          );
-
-          const nextPosition = projection.coordsFromContainerPoint(nextPoint);
-          if (nextPosition) {
-            roadPopupOverlay.setPosition(nextPosition);
-          }
-        } catch (e) {
-          console.warn("팝업 화면 위치 보정 실패:", e);
-        }
+        // 화면 패널 자체가 viewport 기준이므로 지도 중심/투영 좌표 보정은 하지 않음.
+        const maxHeight = Math.max(160, window.innerHeight - 90);
+        popup.style.maxHeight = maxHeight + "px";
+        popup.style.overflowY = "auto";
       }
 
       let roadPopupViewportCheckPending = false;
@@ -7427,16 +8799,32 @@
         roadPopupViewportCheckPending = true;
 
         requestAnimationFrame(function() {
-          // 지도 이동/확대축소/창 크기 변경 후에도 항상 우상단 위치로 복귀
+          // 지도 이동과 무관하게 동일 화면 위치만 유지.
           placeRoadPopupTopRight();
           keepRoadPopupInSafeViewport();
-
-          requestAnimationFrame(function() {
-            placeRoadPopupTopRight();
-            keepRoadPopupInSafeViewport();
-            roadPopupViewportCheckPending = false;
-          });
+          roadPopupViewportCheckPending = false;
         });
+      }
+
+      function createFixedRoadPopup(html) {
+        const holder = document.createElement("div");
+        holder.innerHTML = html.trim();
+
+        const popup = holder.firstElementChild;
+        if (!popup) return null;
+
+        // 혹시 남아 있는 이전 팝업 제거
+        const oldPopup = document.querySelector("body > .road-popup");
+        if (oldPopup) oldPopup.remove();
+
+        document.body.appendChild(popup);
+        roadPopupOverlay = popup;
+
+        placeRoadPopupTopRight();
+        keepRoadPopupInSafeViewport();
+        enableRoadPopupDrag();
+
+        return popup;
       }
 
       function restoreSelectedRoadPopup() {
@@ -7445,50 +8833,16 @@
         const group = groups.get(selectedRoadPopupState.groupKey);
         if (!group) return;
 
-        // 확대·축소 중 CustomOverlay 객체는 남아 있어도
-        // 실제 팝업 DOM이 사라지는 경우가 있으므로 DOM 존재 여부까지 확인.
-        if (roadPopupOverlay) {
-          const mapContainer = document.getElementById("map");
-          const popupElement = mapContainer
-            ? mapContainer.querySelector(".road-popup")
-            : null;
-
-          if (popupElement) {
-            scheduleRoadPopupSafeViewportCheck();
-            return;
-          }
-
-          // 객체만 남고 화면 요소가 사라졌다면 완전히 정리 후 재생성.
-          try {
-            roadPopupOverlay.setMap(null);
-          } catch (e) {}
-          roadPopupOverlay = null;
+        // 화면 고정 패널이 이미 존재하면 아무 것도 하지 않음.
+        // 지도 이동/확대/축소 때문에 재생성하거나 재배치하지 않음.
+        const existing = document.querySelector("body > .road-popup");
+        if (existing) {
+          roadPopupOverlay = existing;
+          return;
         }
 
         const html = groupPopup(group, selectedRoadPopupState.road);
-        const popupPosition = offsetPopupPosition(
-          selectedRoadPopupState.anchorPosition,
-          185,
-          -24
-        );
-
-        roadPopupOverlay = new kakao.maps.CustomOverlay({
-          position: popupPosition,
-          content: html,
-          xAnchor: 0.5,
-          yAnchor: 1.0,
-          zIndex: 200
-        });
-
-        roadPopupOverlay.setMap(map);
-
-        setTimeout(function() {
-          placeRoadPopupTopRight();
-          requestAnimationFrame(function() {
-            enableRoadPopupDrag();
-            scheduleRoadPopupSafeViewportCheck();
-          });
-        }, 0);
+        createFixedRoadPopup(html);
       }
 
       function showInfo(position, groupKey, road) {
@@ -7510,26 +8864,9 @@
 
         const html = groupPopup(group, road);
 
-        // 최초 생성 후 화면 우상단의 상단 메뉴 바로 아래로 배치함.
-        const popupPosition = offsetPopupPosition(position, 185, -24);
-
-        roadPopupOverlay = new kakao.maps.CustomOverlay({
-          position: popupPosition,
-          content: html,
-          xAnchor: 0.5,
-          yAnchor: 1.0,
-          zIndex: 200
-        });
-
-        roadPopupOverlay.setMap(map);
-
-        setTimeout(function() {
-          placeRoadPopupTopRight();
-          requestAnimationFrame(function() {
-            enableRoadPopupDrag();
-            scheduleRoadPopupSafeViewportCheck();
-          });
-        }, 0);
+        // 도로노선 정보는 지도 좌표에 연결하지 않고
+        // 화면 우측 상단의 고정 HTML 패널로 생성.
+        createFixedRoadPopup(html);
       }
 
       function row(title, value, unit = "", extraClass = "") {
@@ -7909,13 +9246,17 @@
       }
 
       function getStatusStrokeStyle(statusKey) {
+        let style = "solid";
+
         if (statusKey === "UNOPENED") {
-          return STATUS_STYLES.UNOPENED_GAP;
+          style = STATUS_STYLES.UNOPENED_GAP;
+        } else if (statusKey === "UNEXPANDED") {
+          style = STATUS_STYLES.UNEXPANDED;
         }
-        if (statusKey === "UNEXPANDED") {
-          return STATUS_STYLES.UNEXPANDED;
-        }
-        return "solid";
+
+        // "none"은 표시 여부에서 처리하고,
+        // Kakao Polyline에는 유효한 strokeStyle만 전달함.
+        return style === "none" ? "solid" : style;
       }
 
       function getRoadStrokeWeight(road, selected = false) {
@@ -7957,6 +9298,9 @@
           .replaceAll('"', "&quot;")
           .replaceAll("'", "&#039;");
       }
+
+      // 노선 레이어 메뉴 이벤트 최종 연결
+      initRoadLayerEditor();
     });
   </script>
   <div id="coordCopyToast" class="coord-copy-toast"></div>
