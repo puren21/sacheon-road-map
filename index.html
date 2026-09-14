@@ -2479,6 +2479,13 @@
 
 
 
+  
+    /* Chrome/Safari 공통: 지도 라벨 서브픽셀 렌더링 차이 완화 */
+    .road-label, .township-select-label, .ri-select-label {
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+
   </style>
 </head>
 
@@ -2892,7 +2899,20 @@
       function mapVisualPx(value, minimum) {
         const n = Number(value);
         const scaled = (Number.isFinite(n) ? n : 0) * getMapResolutionScale();
-        return Math.max(minimum == null ? 0.5 : minimum, scaled);
+        const minValue = minimum == null ? 0.5 : Number(minimum);
+        // 텍스트/DOM 크기는 0.5px 단위로 스냅해 브라우저별 서브픽셀 차이를 줄임.
+        const snapped = Math.round(scaled * 2) / 2;
+        return Math.max(Number.isFinite(minValue) ? minValue : 0.5, snapped);
+      }
+
+      function mapStrokePx(value, minimum) {
+        const n = Number(value);
+        const scaled = (Number.isFinite(n) ? n : 0) * getMapResolutionScale();
+        const minValue = minimum == null ? 1 : Number(minimum);
+        // Kakao Polyline은 Chrome/Safari에서 소수 strokeWeight의 dash 간격이 달라질 수 있으므로
+        // 지도 선형은 정수 픽셀로 고정함. 4K 기준값은 그대로 유지됨.
+        const snapped = Math.round(scaled);
+        return Math.max(Number.isFinite(minValue) ? minValue : 1, snapped);
       }
 
       const COLORS = {
@@ -3090,7 +3110,7 @@
           visible: false,
           maxScale: Infinity,
           strokeColor: "#4C5863",
-          strokeWeight: mapVisualPx(1.0, 0.5),
+          strokeWeight: mapStrokePx(1.0, 1),
           strokeOpacity: 0.88,
           strokeStyle: "shortdash",
           zIndex: 2,
@@ -3176,7 +3196,7 @@
 
           if (isSkyViewMode) {
             poly.setOptions({
-              strokeWeight: mapVisualPx(selected ? 3.4 : hover ? 3.0 : 2.6, 0.6),
+              strokeWeight: mapStrokePx(selected ? 3.4 : hover ? 3.0 : 2.6, 1),
               strokeColor: selected ? "#3DB2FF" : hover ? "#FFE066" : "#FFFFFF",
               strokeOpacity: 1,
               strokeStyle: "shortdash",
@@ -3185,7 +3205,7 @@
             });
           } else {
             poly.setOptions({
-              strokeWeight: mapVisualPx(selected ? 2.2 : hover ? 2.0 : 1.6, 0.6),
+              strokeWeight: mapStrokePx(selected ? 2.2 : hover ? 2.0 : 1.6, 1),
               strokeColor: selected ? "#258FFF" : hover ? "#3D7194" : "#59636D",
               strokeOpacity: selected ? 1 : hover ? 1 : 0.92,
               strokeStyle: "shortdash",
@@ -3201,7 +3221,7 @@
             shouldAutoShowTownshipBoundary();
           poly.setMap(isSkyViewMode && boundaryVisible ? map : null);
           poly.setOptions({
-            strokeWeight: mapVisualPx(selected ? 6.2 : hover ? 5.8 : 5.0, 1),
+            strokeWeight: mapStrokePx(selected ? 6.2 : hover ? 5.8 : 5.0, 1),
             strokeColor: "#111111",
             strokeOpacity: selected ? 0.82 : hover ? 0.78 : 0.72,
             strokeStyle: "solid"
@@ -6432,11 +6452,11 @@
           line.setPath(path);
           line.setOptions({
             strokeColor: getRoadLayerDisplayColor(road.styleKey, config),
-            strokeWeight: mapVisualPx(
+            strokeWeight: mapStrokePx(
               road.statusKey === "UNOPENED"
                 ? Math.max(config.width, STATUS_STYLES.UNOPENED_SIZE)
                 : config.width,
-              0.75
+              1
             ),
             strokeOpacity:
               Math.max(0, Math.min(100, Number(config.opacity) || 0)) / 100,
@@ -7767,7 +7787,7 @@
 
             const line = new kakao.maps.Polyline({
               path: path,
-              strokeWeight: mapVisualPx(layer.strokeWeight, 0.5),
+              strokeWeight: mapStrokePx(layer.strokeWeight, 1),
               strokeColor: layer.strokeColor,
               strokeOpacity: layer.strokeOpacity,
               strokeStyle: layer.strokeStyle,
@@ -7803,7 +7823,7 @@
           // 그 아래에 어두운 바깥선을 한 겹 더 둠.
           const skyBackPolygon = new kakao.maps.Polygon({
             path: path,
-            strokeWeight: mapVisualPx(5.0, 1),
+            strokeWeight: mapStrokePx(5.0, 1),
             strokeColor: "#111111",
             strokeOpacity: 0.72,
             strokeStyle: "solid",
@@ -7824,7 +7844,7 @@
           // 화면에 보이는 읍면동 경계/면 표현용 폴리곤
           const polygon = new kakao.maps.Polygon({
             path: path,
-            strokeWeight: mapVisualPx(1.0, 0.5),
+            strokeWeight: mapStrokePx(1.0, 1),
             strokeColor: "#59636D",
             strokeOpacity: .92,
             strokeStyle: "shortdash",
@@ -8364,7 +8384,7 @@
             ? new kakao.maps.Polyline({
                 map: null,
                 path: displayPath,
-                strokeWeight: mapVisualPx(style.base, 0.75),
+                strokeWeight: mapStrokePx(style.base, 1),
                 strokeColor: style.baseColor,
                 strokeOpacity: style.baseOpacity / 100,
                 strokeStyle: getStatusStrokeStyle(statusKey),
@@ -8376,11 +8396,11 @@
         const roadLine = new kakao.maps.Polyline({
           map: null,
           path: displayPath,
-          strokeWeight: mapVisualPx(
+          strokeWeight: mapStrokePx(
             statusKey === "UNOPENED"
               ? STATUS_STYLES.UNOPENED_SIZE
               : style.mid,
-            0.75
+            1
           ),
           strokeColor: style.color,
           strokeOpacity: style.topOpacity / 100,
@@ -8460,7 +8480,7 @@
             ) {
               roadLine.setOptions({
                 strokeColor: isSkyViewMode ? "#FFFFFF" : "#FFFF00",
-                strokeWeight: getRoadStrokeWeight(road) + mapVisualPx(2, 0.5)
+                strokeWeight: getRoadStrokeWeight(road) + mapStrokePx(2, 1)
               });
             }
           }
@@ -8962,7 +8982,7 @@
               strokeColor: enabled
                 ? highlightColor
                 : getRoadLayerDisplayColor(road.styleKey, config),
-              strokeWeight: mapVisualPx(
+              strokeWeight: mapStrokePx(
                 enabled
                   ? (Number(config.width) || 3) +
                     (isSelectedSegment ? 3 : 2.5)
@@ -8974,7 +8994,7 @@
                           )
                         : Number(config.width) || 3
                     ),
-                0.75
+                1
               ),
               strokeOpacity: enabled
                 ? 1
@@ -9016,7 +9036,7 @@
           const layer = BOUNDARY_LAYERS[key];
           (layer.shapes || []).forEach(function(shape) {
             if (shape && typeof shape.setOptions === "function") {
-              shape.setOptions({ strokeWeight: mapVisualPx(layer.strokeWeight, 0.5) });
+              shape.setOptions({ strokeWeight: mapStrokePx(layer.strokeWeight, 1) });
             }
           });
         });
@@ -9617,7 +9637,7 @@
             ? STATUS_STYLES.UNOPENED_SIZE
             : ROAD_STYLES[road.styleKey].mid;
 
-        return mapVisualPx(weight + (selected ? 2 : 0), 0.75);
+        return mapStrokePx(weight + (selected ? 2 : 0), 1);
       }
 
       function parseRoadLength(value) {
