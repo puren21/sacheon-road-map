@@ -8889,7 +8889,7 @@
           const isSelectedSegment =
             enabled && selectedRoadObject === road;
           const highlightColor =
-            isSelectedSegment ? "#E60012" : "#0800ec";
+            isSelectedSegment ? "#E60012" : "#0057FF";
 
           const statusHidden = isRoadStatusHidden(road.statusKey);
 
@@ -8912,7 +8912,7 @@
                 : getRoadLayerDisplayColor(road.styleKey, config),
               strokeWeight: enabled
                 ? (Number(config.width) || 3) +
-                  (isSelectedSegment ? 3 : 1.5)
+                  (isSelectedSegment ? 3 : 2.5)
                 : (
                     road.statusKey === "UNOPENED"
                       ? Math.max(
