@@ -710,12 +710,13 @@
 
     #mapTools {
       position: absolute;
-      top: 50%;
+      top: auto;
+      bottom: 78px;
       right: 15px;
       z-index: 20;
       display: flex;
       flex-direction: column;
-      transform: translateY(-50%);
+      transform: none;
       border-radius: 6px;
       background: white;
       box-shadow: 0 2px 8px #0004;
@@ -1489,7 +1490,7 @@
         pointer-events: none;
       }
 
-      #mapTools { right: 8px; top: 59%; }
+      #mapTools { right: 8px; top: auto; bottom: 74px; }
       #scaleControl { right: 8px; bottom: 8px; }
       .road-popup {
         width: min(275px, calc(100vw - 24px));
@@ -2451,6 +2452,31 @@
 
     #roadLayerEditorBtn { width:72px; pointer-events:auto !important; cursor:pointer; font-size:13px; font-weight:800; }
     #legacyStyleWrap { display:none !important; }
+    #layerBtn, #layerPanel { display:none !important; }
+
+    .layer-map-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:7px;
+      padding:0 10px 10px;
+    }
+    .layer-map-toggle {
+      display:flex;
+      align-items:center;
+      gap:7px;
+      min-height:38px;
+      padding:7px 9px;
+      border:1px solid #e1e6ec;
+      border-radius:8px;
+      background:#fff;
+      color:#444b52;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .layer-map-toggle input { width:17px; height:17px; accent-color:#258fff; }
+    .township-label-preview { font-size:11px; color:#7b838c; white-space:nowrap; }
+
 
 
   </style>
@@ -2641,7 +2667,7 @@
           <div class="layer-section-label" style="margin-top:0;padding-top:0;border-top:0;">배경지도</div>
 
           <div class="layer-item">
-            <input id="hybridCheck" type="checkbox">
+            <input id="hybridCheck" type="checkbox" checked>
             <label for="hybridCheck">하이브리드</label>
           </div>
 
@@ -2918,6 +2944,19 @@
         ]
       };
 
+      const DEFAULT_TOWNSHIP_LABEL_STYLES = {
+        SCALE: 100,
+        VISIBLE: true,
+        SHAPE_VISIBLE: true,
+        SHAPE: "rounded",
+        SHAPE_FILL_COLOR: "#FFFFFF",
+        SHAPE_LINE_COLOR: "#59636D",
+        SHAPE_LINE_WIDTH: 1,
+        TEXT_COLORS: [
+          { color: "#2F3740", visible: true }
+        ]
+      };
+
       const STYLE_DEFAULTS_VERSION = "2026-09-14-unified-layer-1";
 
       if (
@@ -2975,6 +3014,16 @@
         LABEL_STYLES = { ...DEFAULT_LABEL_STYLES };
       }
 
+      let TOWNSHIP_LABEL_STYLES;
+      try {
+        TOWNSHIP_LABEL_STYLES = {
+          ...DEFAULT_TOWNSHIP_LABEL_STYLES,
+          ...JSON.parse(localStorage.getItem("townshipLabelStyles") || "{}")
+        };
+      } catch (error) {
+        TOWNSHIP_LABEL_STYLES = JSON.parse(JSON.stringify(DEFAULT_TOWNSHIP_LABEL_STYLES));
+      }
+
       applyLabelScale();
       // 라벨 DOM 생성 전에도 기본값을 확정하고, 생성 후 buildGroupLabels에서 다시 적용함.
 
@@ -3007,7 +3056,7 @@
           shapes: []
         },
         townshipBoundary: {
-          files: ["township_boundary.geojson", "Township Boundary.geojson"],
+          files: ["township_boundary.geojson", "Township Boundary.geojson", "Township Boundary(1).geojson"],
           visible: false,
           maxScale: Infinity,
           strokeColor: "#4C5863",
@@ -3018,7 +3067,7 @@
           shapes: []
         },
         riBoundary: {
-          files: ["ri_boundary.geojson", "Ri Boundary.geojson"],
+          files: ["ri_boundary.geojson", "Ri Boundary.geojson", "Ri Boundary(1).geojson"],
           visible: false,
           maxScale: 75000,
           strokeColor: "#7D8790",
@@ -5389,17 +5438,25 @@
         resetTownshipStyles();
       };
 
+      // 하이브리드는 기본 ON. 스카이뷰에서 끄면 순수 위성영상(SKYVIEW)으로 전환함.
+      hybridCheck.checked = true;
+
       hybridCheck.onchange = function () {
         if (skyBtn.classList.contains("active")) {
           setSkyMap();
           refreshRoadColorsForMapType();
           updateBoundaryVisibility();
+          resetTownshipStyles();
         }
       };
 
       function setSkyMap() {
-        // 카카오맵의 하이브리드처럼 위성영상 위에 도로/지명 정보를 함께 표시
-        map.setMapTypeId(kakao.maps.MapTypeId.HYBRID);
+        const hybridOn = !hybridCheck || hybridCheck.checked;
+        map.setMapTypeId(
+          hybridOn
+            ? kakao.maps.MapTypeId.HYBRID
+            : kakao.maps.MapTypeId.SKYVIEW
+        );
       }
 
       /*
@@ -5964,15 +6021,18 @@
           ROAD_LAYER_STACKS = JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS));
           STATUS_STYLES = { ...DEFAULT_STATUS_STYLES };
           LABEL_STYLES = JSON.parse(JSON.stringify(DEFAULT_LABEL_STYLES));
+          TOWNSHIP_LABEL_STYLES = JSON.parse(JSON.stringify(DEFAULT_TOWNSHIP_LABEL_STYLES));
           localStorage.removeItem("roadStyles");
           localStorage.removeItem("roadLayerStacks");
           localStorage.removeItem("statusStyles");
           localStorage.removeItem("labelStyles");
+          localStorage.removeItem("townshipLabelStyles");
           syncStyleInputs();
           ["CITY", "MYEON", "RI", "FARM"].forEach(syncRoadLayerStackForStyle);
           applyStatusStyles();
           applyLabelScale();
           applyLabelAppearance();
+          applyTownshipLabelAppearance();
           renderRoadLayerEditor();
         };
       }
@@ -6064,6 +6124,66 @@
           }
           label.style.textShadow = shadows.join(', ');
         });
+      }
+
+      function ensureTownshipLabelStyleModel() {
+        if (!TOWNSHIP_LABEL_STYLES || typeof TOWNSHIP_LABEL_STYLES !== "object") {
+          TOWNSHIP_LABEL_STYLES = JSON.parse(JSON.stringify(DEFAULT_TOWNSHIP_LABEL_STYLES));
+        }
+        if (!Array.isArray(TOWNSHIP_LABEL_STYLES.TEXT_COLORS) || !TOWNSHIP_LABEL_STYLES.TEXT_COLORS.length) {
+          TOWNSHIP_LABEL_STYLES.TEXT_COLORS = [{ color: "#2F3740", visible: true }];
+        }
+        TOWNSHIP_LABEL_STYLES.TEXT_COLORS = TOWNSHIP_LABEL_STYLES.TEXT_COLORS.map(function(item) {
+          return { color: normalizeLabelHex(item && item.color, "#2F3740"), visible: !item || item.visible !== false };
+        });
+        TOWNSHIP_LABEL_STYLES.SHAPE_FILL_COLOR = normalizeLabelHex(TOWNSHIP_LABEL_STYLES.SHAPE_FILL_COLOR, "#FFFFFF");
+        TOWNSHIP_LABEL_STYLES.SHAPE_LINE_COLOR = normalizeLabelHex(TOWNSHIP_LABEL_STYLES.SHAPE_LINE_COLOR, "#59636D");
+        TOWNSHIP_LABEL_STYLES.SHAPE_LINE_WIDTH = Math.min(10, Math.max(0, Number(TOWNSHIP_LABEL_STYLES.SHAPE_LINE_WIDTH) || 0));
+        TOWNSHIP_LABEL_STYLES.SCALE = Math.min(180, Math.max(50, Number(TOWNSHIP_LABEL_STYLES.SCALE) || 100));
+      }
+
+      function townshipTextShadow(colors) {
+        const shadows = [];
+        for (let i = colors.length - 1; i >= 1; i--) {
+          const radius = i;
+          const color = colors[i];
+          for (let dx = -radius; dx <= radius; dx++) {
+            for (let dy = -radius; dy <= radius; dy++) {
+              if (dx === 0 && dy === 0) continue;
+              if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+              shadows.push(dx + "px " + dy + "px 0 " + color);
+            }
+          }
+        }
+        return shadows.join(", ");
+      }
+
+      function applyTownshipLabelAppearance() {
+        ensureTownshipLabelStyleModel();
+        const activeColors = TOWNSHIP_LABEL_STYLES.TEXT_COLORS.filter(function(item){ return item && item.visible !== false; }).map(function(item){ return normalizeLabelHex(item.color, "#2F3740"); });
+        const textColor = activeColors[0] || "transparent";
+        const scale = TOWNSHIP_LABEL_STYLES.SCALE / 100;
+        const shapeVisible = TOWNSHIP_LABEL_STYLES.SHAPE_VISIBLE !== false && TOWNSHIP_LABEL_STYLES.SHAPE !== "none";
+        const shape = TOWNSHIP_LABEL_STYLES.SHAPE || "rounded";
+        document.querySelectorAll(".township-select-label").forEach(function(el) {
+          el.style.fontSize = (13 * scale) + "px";
+          el.style.color = textColor;
+          el.style.textShadow = townshipTextShadow(activeColors);
+          el.style.padding = shapeVisible ? ((4 * scale) + "px " + (8 * scale) + "px") : "0";
+          el.style.background = shapeVisible ? TOWNSHIP_LABEL_STYLES.SHAPE_FILL_COLOR : "transparent";
+          el.style.border = shapeVisible && TOWNSHIP_LABEL_STYLES.SHAPE_LINE_WIDTH > 0
+            ? (TOWNSHIP_LABEL_STYLES.SHAPE_LINE_WIDTH + "px solid " + TOWNSHIP_LABEL_STYLES.SHAPE_LINE_COLOR)
+            : "0";
+          el.style.borderRadius = !shapeVisible ? "0" : (shape === "box" ? "0" : (shape === "pill" ? "999px" : (8 * scale) + "px"));
+          el.style.boxShadow = shapeVisible ? "0 1px 4px rgba(0,0,0,.16)" : "none";
+        });
+        updateTownshipLabelVisibility();
+      }
+
+      function saveAndApplyTownshipLabelStyles() {
+        ensureTownshipLabelStyleModel();
+        localStorage.setItem("townshipLabelStyles", JSON.stringify(TOWNSHIP_LABEL_STYLES));
+        applyTownshipLabelAppearance();
       }
 
       function updateStatusStyles() {
@@ -6367,6 +6487,31 @@
       }
 
       function renderRoadLayerMain(body) {
+        const mapSection = document.createElement("section");
+        mapSection.className = "layer-simple-section";
+        mapSection.innerHTML = '<div class="layer-simple-title">지도 설정</div><div class="layer-map-grid">' +
+          '<label class="layer-map-toggle"><input id="editorHybridCheck" type="checkbox">하이브리드</label>' +
+          '<label class="layer-map-toggle"><input id="editorDistrictCheck" type="checkbox">지적편집도</label>' +
+          '<label class="layer-map-toggle"><input id="editorTownshipBoundaryCheck" type="checkbox">읍면동 경계</label>' +
+          '<label class="layer-map-toggle"><input id="editorRiBoundaryCheck" type="checkbox">리 경계</label>' +
+          '</div>';
+        body.appendChild(mapSection);
+        [
+          ["editorHybridCheck", "hybridCheck"],
+          ["editorDistrictCheck", "districtCheck"],
+          ["editorTownshipBoundaryCheck", "townshipBoundaryCheck"],
+          ["editorRiBoundaryCheck", "riBoundaryCheck"]
+        ].forEach(function(pair) {
+          const editor = mapSection.querySelector('#' + pair[0]);
+          const original = document.getElementById(pair[1]);
+          if (!editor || !original) return;
+          editor.checked = !!original.checked;
+          editor.addEventListener('change', function() {
+            original.checked = editor.checked;
+            original.dispatchEvent(new Event('change', { bubbles:true }));
+          });
+        });
+
         const roadsSection = document.createElement("section");
         roadsSection.className = "layer-simple-section";
         roadsSection.innerHTML = '<div class="layer-simple-title">도로 표현</div>';
@@ -6413,6 +6558,12 @@
         labelRow.innerHTML = '<span class="layer-action-name">노선번호</span><span class="layer-action-summary">' + (LABEL_STYLES.VISIBLE === false ? '숨김' : (LABEL_STYLES.SCALE + '%')) + '</span><span class="layer-action-arrow">›</span>';
         labelRow.addEventListener('click', function() { roadLayerEditorView = { type:'label', styleKey:null }; renderRoadLayerEditor(); });
         settingsSection.appendChild(labelRow);
+
+        const townshipLabelRow = document.createElement('div');
+        townshipLabelRow.className = 'layer-action-row';
+        townshipLabelRow.innerHTML = '<span class="layer-action-name">읍면 명칭</span><span class="layer-action-summary">' + (TOWNSHIP_LABEL_STYLES.VISIBLE === false ? '숨김' : (TOWNSHIP_LABEL_STYLES.SCALE + '%')) + '</span><span class="layer-action-arrow">›</span>';
+        townshipLabelRow.addEventListener('click', function() { roadLayerEditorView = { type:'townshipLabel', styleKey:null }; renderRoadLayerEditor(); });
+        settingsSection.appendChild(townshipLabelRow);
 
         const statusRow = document.createElement('div');
         statusRow.className = 'layer-action-row';
@@ -6651,6 +6802,54 @@
         body.appendChild(card);
       }
 
+      function renderTownshipLabelDetail(body) {
+        ensureTownshipLabelStyleModel();
+        renderEditorBackbar(body, '읍면 명칭', '읍·면·동 명칭의 박스와 글자 표현을 조정합니다.');
+        const card = document.createElement('section');
+        card.className = 'layer-detail-card';
+        card.innerHTML =
+          '<div class="layer-detail-row"><span>표시</span><label class="layer-toggle-line"><input id="editorTownshipLabelVisible" type="checkbox" ' + (TOWNSHIP_LABEL_STYLES.VISIBLE !== false ? 'checked' : '') + '> 읍면 명칭 표시</label></div>' +
+          '<div class="layer-detail-row"><span>박스 표시</span><label class="layer-toggle-line"><input id="editorTownshipShapeVisible" type="checkbox" ' + (TOWNSHIP_LABEL_STYLES.SHAPE_VISIBLE !== false ? 'checked' : '') + '> 박스 표시</label></div>' +
+          '<div class="layer-detail-row"><span>박스 모양</span><select id="editorTownshipShape"><option value="box">사각형</option><option value="rounded">둥근 사각형</option><option value="pill">캡슐형</option><option value="none">없음</option></select></div>' +
+          '<div class="layer-detail-row"><span>글자 크기</span><div class="layer-detail-inline"><input id="editorTownshipScale" type="range" min="50" max="180" step="5" value="' + TOWNSHIP_LABEL_STYLES.SCALE + '"><strong id="editorTownshipScaleValue" style="font-size:11px;text-align:right">' + TOWNSHIP_LABEL_STYLES.SCALE + '%</strong></div></div>' +
+          '<div class="layer-detail-row"><span>박스 면색</span><div class="road-layer-color-wrap"><input id="editorTownshipFillColor" type="color" value="' + TOWNSHIP_LABEL_STYLES.SHAPE_FILL_COLOR + '"><input id="editorTownshipFillColorCode" class="road-layer-color-code" type="text" maxlength="7" spellcheck="false" value="' + TOWNSHIP_LABEL_STYLES.SHAPE_FILL_COLOR + '"></div></div>' +
+          '<div class="layer-detail-row"><span>박스 라인색</span><div class="road-layer-color-wrap"><input id="editorTownshipLineColor" type="color" value="' + TOWNSHIP_LABEL_STYLES.SHAPE_LINE_COLOR + '"><input id="editorTownshipLineColorCode" class="road-layer-color-code" type="text" maxlength="7" spellcheck="false" value="' + TOWNSHIP_LABEL_STYLES.SHAPE_LINE_COLOR + '"></div></div>' +
+          '<div class="layer-detail-row"><span>라인 두께</span><input id="editorTownshipLineWidth" type="number" min="0" max="10" step="0.5" value="' + TOWNSHIP_LABEL_STYLES.SHAPE_LINE_WIDTH + '"></div>' +
+          '<div class="layer-detail-row" style="align-items:start"><span>텍스트 색상</span><div><div id="editorTownshipTextColorList" class="label-color-list"></div><button id="editorTownshipTextColorAdd" class="label-color-add" type="button">+ 색상 추가</button><div style="margin-top:5px;color:#8a9098;font-size:10px;line-height:1.4">맨 위 색상은 글자색이며 아래 색상은 외곽색입니다. ▲▼로 순서를 바꿀 수 있습니다.</div></div></div>';
+        card.querySelector('#editorTownshipShape').value = TOWNSHIP_LABEL_STYLES.SHAPE || 'rounded';
+        card.querySelector('#editorTownshipLabelVisible').addEventListener('change', function(){ TOWNSHIP_LABEL_STYLES.VISIBLE=this.checked; saveAndApplyTownshipLabelStyles(); });
+        card.querySelector('#editorTownshipShapeVisible').addEventListener('change', function(){ TOWNSHIP_LABEL_STYLES.SHAPE_VISIBLE=this.checked; saveAndApplyTownshipLabelStyles(); });
+        card.querySelector('#editorTownshipShape').addEventListener('change', function(){ TOWNSHIP_LABEL_STYLES.SHAPE=this.value; TOWNSHIP_LABEL_STYLES.SHAPE_VISIBLE=this.value!=='none'; card.querySelector('#editorTownshipShapeVisible').checked=TOWNSHIP_LABEL_STYLES.SHAPE_VISIBLE; saveAndApplyTownshipLabelStyles(); });
+        card.querySelector('#editorTownshipScale').addEventListener('input', function(){ TOWNSHIP_LABEL_STYLES.SCALE=Math.min(180,Math.max(50,Number(this.value)||100)); card.querySelector('#editorTownshipScaleValue').textContent=TOWNSHIP_LABEL_STYLES.SCALE+'%'; saveAndApplyTownshipLabelStyles(); });
+        function bindPair(pickerId, codeId, prop, fallback) {
+          const picker=card.querySelector('#'+pickerId), code=card.querySelector('#'+codeId);
+          function commit(raw){ const value=normalizeLabelHex(raw, TOWNSHIP_LABEL_STYLES[prop]||fallback); TOWNSHIP_LABEL_STYLES[prop]=value; picker.value=value; code.value=value; saveAndApplyTownshipLabelStyles(); }
+          picker.addEventListener('input', function(){commit(this.value);}); code.addEventListener('change', function(){commit(this.value);}); code.addEventListener('keydown', function(e){if(e.key==='Enter'){commit(this.value);this.blur();}});
+        }
+        bindPair('editorTownshipFillColor','editorTownshipFillColorCode','SHAPE_FILL_COLOR','#FFFFFF');
+        bindPair('editorTownshipLineColor','editorTownshipLineColorCode','SHAPE_LINE_COLOR','#59636D');
+        card.querySelector('#editorTownshipLineWidth').addEventListener('change', function(){ TOWNSHIP_LABEL_STYLES.SHAPE_LINE_WIDTH=Math.min(10,Math.max(0,Number(this.value)||0)); this.value=TOWNSHIP_LABEL_STYLES.SHAPE_LINE_WIDTH; saveAndApplyTownshipLabelStyles(); });
+        const list=card.querySelector('#editorTownshipTextColorList');
+        function renderColors(){
+          ensureTownshipLabelStyleModel(); list.innerHTML='';
+          TOWNSHIP_LABEL_STYLES.TEXT_COLORS.forEach(function(item,index){
+            const row=document.createElement('div'); row.className='label-color-item'; row.style.gridTemplateColumns='18px 34px minmax(72px,1fr) 26px 26px 26px';
+            row.innerHTML='<input class="township-text-visible" type="checkbox" '+(item.visible!==false?'checked':'')+'><input class="township-text-color" type="color" value="'+item.color+'"><input class="label-color-code" type="text" maxlength="7" spellcheck="false" value="'+item.color+'"><button class="township-color-up label-color-remove" type="button">▲</button><button class="township-color-down label-color-remove" type="button">▼</button><button class="township-color-delete label-color-remove" type="button">×</button>';
+            const vis=row.querySelector('.township-text-visible'), pick=row.querySelector('.township-text-color'), code=row.querySelector('.label-color-code'), up=row.querySelector('.township-color-up'), down=row.querySelector('.township-color-down'), del=row.querySelector('.township-color-delete');
+            up.disabled=index===0; down.disabled=index===TOWNSHIP_LABEL_STYLES.TEXT_COLORS.length-1;
+            function commit(raw){ const value=normalizeLabelHex(raw,item.color); item.color=value; pick.value=value; code.value=value; saveAndApplyTownshipLabelStyles(); }
+            vis.addEventListener('change',function(){item.visible=this.checked;saveAndApplyTownshipLabelStyles();}); pick.addEventListener('input',function(){commit(this.value);}); code.addEventListener('change',function(){commit(this.value);});
+            up.addEventListener('click',function(){if(index<=0)return;const moved=TOWNSHIP_LABEL_STYLES.TEXT_COLORS.splice(index,1)[0];TOWNSHIP_LABEL_STYLES.TEXT_COLORS.splice(index-1,0,moved);renderColors();saveAndApplyTownshipLabelStyles();});
+            down.addEventListener('click',function(){if(index>=TOWNSHIP_LABEL_STYLES.TEXT_COLORS.length-1)return;const moved=TOWNSHIP_LABEL_STYLES.TEXT_COLORS.splice(index,1)[0];TOWNSHIP_LABEL_STYLES.TEXT_COLORS.splice(index+1,0,moved);renderColors();saveAndApplyTownshipLabelStyles();});
+            del.addEventListener('click',function(){if(TOWNSHIP_LABEL_STYLES.TEXT_COLORS.length<=1){item.visible=false;}else{TOWNSHIP_LABEL_STYLES.TEXT_COLORS.splice(index,1);}renderColors();saveAndApplyTownshipLabelStyles();});
+            list.appendChild(row);
+          });
+        }
+        card.querySelector('#editorTownshipTextColorAdd').addEventListener('click',function(){TOWNSHIP_LABEL_STYLES.TEXT_COLORS.push({color:'#FFFFFF',visible:true});renderColors();saveAndApplyTownshipLabelStyles();});
+        renderColors();
+        body.appendChild(card);
+      }
+
       function renderStatusDetail(body) {
         renderEditorBackbar(body, '개설상태 표현', '미확장·미개설 노선의 선 모양을 조정합니다.');
         const card = document.createElement('section');
@@ -6682,6 +6881,8 @@
           renderRoadStyleDetail(body, roadLayerEditorView.styleKey);
         } else if (roadLayerEditorView.type === 'label') {
           renderLabelDetail(body);
+        } else if (roadLayerEditorView.type === 'townshipLabel') {
+          renderTownshipLabelDetail(body);
         } else if (roadLayerEditorView.type === 'status') {
           renderStatusDetail(body);
         } else {
@@ -6792,6 +6993,7 @@
       }
 
       updateLegendStyles();
+      applyTownshipLabelAppearance();
       initRoadLayerEditor();
 
       /*
@@ -7510,6 +7712,15 @@
         }).filter(Boolean);
       }
 
+      // 읍면동/리 경계는 미리 위상(topology)을 보존하여 단순화한
+      // township_boundary.geojson / ri_boundary.geojson을 우선 사용함.
+      // 인접 행정구역별로 정점을 따로 건너뛰면 공통 경계가 서로 달라져 틈/겹침이 생기므로
+      // 모든 화면에서 브라우저 추가 단순화 없이 파일에 저장된 좌표를 그대로 사용함.
+      // 최적화 파일이 없을 때만 원본 파일로 폴백하여 경계 정확도를 우선함.
+      function simplifyBoundaryRingForOverview(ring, maxPoints) {
+        return Array.isArray(ring) ? ring : [];
+      }
+
       function addBoundaryFeature(feature, layerId) {
         const layer = BOUNDARY_LAYERS[layerId];
         const polygonParts = boundaryPolygonParts(feature && feature.geometry);
@@ -7550,10 +7761,12 @@
           // 읍면동 선택 영역은 각 MultiPolygon 조각의 외곽링만 사용한다.
           // Kakao Polygon에 복잡한 내부링 배열을 넘길 때 생길 수 있는 브라우저별 표시 문제를 피함.
           const outerRing = polygonCoordinates && polygonCoordinates[0];
-          const path = boundaryRingToPath(outerRing);
+          const overviewRing = simplifyBoundaryRingForOverview(outerRing);
+          const path = boundaryRingToPath(overviewRing);
           if (path.length < 3) return;
           extendBoundsWithPath(group.bounds, path);
           extendBoundsWithPath(townshipAllBounds, path);
+          group.labelRings.push(overviewRing);
           // 스카이뷰에서 밝은 경계선이 위성영상에 묻히지 않도록
           // 그 아래에 어두운 바깥선을 한 겹 더 둠.
           const skyBackPolygon = new kakao.maps.Polygon({
@@ -7666,9 +7879,10 @@
       }
 
       function updateTownshipLabelVisibility() {
+        const labelEnabled = !TOWNSHIP_LABEL_STYLES || TOWNSHIP_LABEL_STYLES.VISIBLE !== false;
         townshipSelectGroups.forEach(function(group) {
           if (!group.label) return;
-          group.label.setMap(shouldShowTownshipLabel(group.name) ? map : null);
+          group.label.setMap(labelEnabled && shouldShowTownshipLabel(group.name) ? map : null);
         });
       }
 
@@ -7725,6 +7939,7 @@
           group.labelEl = el;
           townshipSelectLabels.push(overlay);
         });
+        applyTownshipLabelAppearance();
       }
 
       function riName(feature) {
@@ -7784,8 +7999,13 @@
         const candidates = layer.files || (layer.file ? [layer.file] : []);
         const loaded = await fetchFirstAvailableGeoJSON(candidates);
         loaded.data.features.forEach(function(feature) {
-          addBoundaryFeature(feature, layerId);
-          if (layerId === "townshipBoundary") addTownshipSelectorFeature(feature);
+          if (layerId === "townshipBoundary") {
+            // 초기 화면에서는 단순화된 선택 Polygon 자체를 읍면동 경계로 사용함.
+            // 동일 경계를 정밀 Polyline으로 한 번 더 만드는 중복 작업을 생략해 로딩 속도를 개선함.
+            addTownshipSelectorFeature(feature);
+          } else {
+            addBoundaryFeature(feature, layerId);
+          }
           // 리 명칭은 생성하지 않음.
         });
         if (layerId === "townshipBoundary") {
@@ -7798,42 +8018,51 @@
         return loaded.file;
       }
 
-      // 한 경계 파일이 없어도 다른 경계까지 함께 실패하지 않도록 독립 로딩
-      const boundaryReadyPromise = Promise.allSettled([
-        loadBoundaryGeoJSON("cityBoundary"),
-        loadBoundaryGeoJSON("townshipBoundary"),
-        loadBoundaryGeoJSON("riBoundary")
-      ]).then(function(results) {
-        const townshipResult = results[1];
-        if (townshipResult.status === "fulfilled" && !townshipAllBounds.isEmpty()) {
-          showTownshipOverview();
-        } else {
-          console.error("읍면동 경계를 불러오지 못했습니다.", townshipResult.reason);
-        }
+      // 초기 화면에서는 읍면동 선택이 가장 먼저 보여야 하므로 읍면동 경계를 최우선 로드함.
+      // 도로/리 경계 처리는 첫 화면이 그려진 뒤로 미뤄 초기 체감 속도를 개선함.
+      // 리 경계도 위상 보존 단순화 파일을 사용하므로 읍면 선택 후 화면과 확대/축소 화면에서도
+      // 인접 리 경계가 서로 어긋나지 않는 동일한 경계를 사용함.
+      const townshipBoundaryReadyPromise = loadBoundaryGeoJSON("townshipBoundary")
+        .then(function() {
+          if (!townshipAllBounds.isEmpty()) showTownshipOverview();
+        })
+        .catch(function(error) {
+          console.error("읍면동 경계를 불러오지 못했습니다.", error);
+        });
+
+      function runAfterFirstPaint(task, timeout) {
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            if ("requestIdleCallback" in window) {
+              window.requestIdleCallback(task, { timeout: timeout || 700 });
+            } else {
+              setTimeout(task, 40);
+            }
+          });
+        });
+      }
+
+      const roadsReadyPromise = new Promise(function(resolve, reject) {
+        runAfterFirstPaint(function() {
+          Promise.all([loadGeoJSON("city"), loadGeoJSON("rural")]).then(resolve, reject);
+        }, 500);
       });
 
-      /*
-       * 도로 GeoJSON 불러오기
-       */
-      Promise.all([
-        loadGeoJSON("city"),
-        loadGeoJSON("rural")
-      ])
+      townshipBoundaryReadyPromise.then(function() {
+        // 읍면동 선택화면을 먼저 보여준 뒤 리 경계를 후순위로 읽음.
+        runAfterFirstPaint(function() {
+          loadBoundaryGeoJSON("riBoundary").catch(function(error) { console.warn("리 경계 로드 생략:", error); });
+        }, 1200);
+      });
+
+      roadsReadyPromise
       .then(function () {
         buildGroupLabels();
         makeLists();
         applyRoadVisibility();
-
-        // 첫 실행 화면은 읍면동 선택 화면이 우선임.
-        // 행정경계가 아직 준비되지 않은 경우에만 도로 전체 영역으로 맞춤.
-        if (townshipAllBounds.isEmpty() && !allBounds.isEmpty()) {
-          map.setBounds(allBounds);
-        }
-
+        if (townshipAllBounds.isEmpty() && !allBounds.isEmpty()) map.setBounds(allBounds);
         updateLabels();
-        boundaryReadyPromise.then(function() {
-          if (townshipStartMode && !townshipAllBounds.isEmpty()) showTownshipOverview();
-        });
+        if (townshipStartMode && !townshipAllBounds.isEmpty()) showTownshipOverview();
       })
       .catch(function (error) {
         console.error(error);
@@ -8563,40 +8792,69 @@
 
       function enableRoadPopupDrag() {
         const popup = document.querySelector("body > .road-popup");
-        if (!popup) return;
+        if (!popup || popup.dataset.dragBound === "1") return;
+        const handle = popup.querySelector(".popup-drag-handle") || popup.querySelector(".popup-header") || popup;
+        const closeButton = popup.querySelector(".popup-close");
+        let dragging = false;
+        let pointerId = null;
+        let startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
-        if (!popup.dataset.mapInteractionBlocked) {
-          const blockMapInteraction = function(event) {
-            event.stopPropagation();
-          };
-
-          [
-            "pointerdown",
-            "pointermove",
-            "mousedown",
-            "mousemove",
-            "click",
-            "dblclick"
-          ].forEach(function(type) {
-            popup.addEventListener(type, blockMapInteraction, true);
-          });
-
-          popup.addEventListener(
-            "touchstart",
-            blockMapInteraction,
-            { capture: true, passive: true }
-          );
-          popup.addEventListener(
-            "touchmove",
-            blockMapInteraction,
-            { capture: true, passive: true }
-          );
-
-          popup.dataset.mapInteractionBlocked = "1";
+        function clampPosition(left, top) {
+          const rect = popup.getBoundingClientRect();
+          const maxLeft = Math.max(6, window.innerWidth - rect.width - 6);
+          const maxTop = Math.max(6, window.innerHeight - Math.min(rect.height, window.innerHeight - 12) - 6);
+          return { left: Math.max(6, Math.min(maxLeft, left)), top: Math.max(6, Math.min(maxTop, top)) };
         }
+
+        handle.style.cursor = "move";
+        handle.style.touchAction = "none";
+        handle.addEventListener("pointerdown", function(event) {
+          if (event.button !== undefined && event.button !== 0) return;
+          if (event.target.closest("button, input, select, textarea, a")) return;
+          const rect = popup.getBoundingClientRect();
+          dragging = true;
+          pointerId = event.pointerId;
+          startX = event.clientX; startY = event.clientY;
+          startLeft = rect.left; startTop = rect.top;
+          popup.style.left = rect.left + "px";
+          popup.style.top = rect.top + "px";
+          popup.style.right = "auto";
+          popup.style.bottom = "auto";
+          popup.dataset.userMoved = "1";
+          try { handle.setPointerCapture(pointerId); } catch (e) {}
+          event.preventDefault();
+          event.stopPropagation();
+        });
+        handle.addEventListener("pointermove", function(event) {
+          if (!dragging || event.pointerId !== pointerId) return;
+          const next = clampPosition(startLeft + event.clientX - startX, startTop + event.clientY - startY);
+          popup.style.left = next.left + "px";
+          popup.style.top = next.top + "px";
+          event.preventDefault();
+          event.stopPropagation();
+        });
+        function finish(event) {
+          if (!dragging || (event && event.pointerId !== pointerId)) return;
+          dragging = false;
+          try { if (handle.hasPointerCapture(pointerId)) handle.releasePointerCapture(pointerId); } catch (e) {}
+          pointerId = null;
+        }
+        handle.addEventListener("pointerup", finish);
+        handle.addEventListener("pointercancel", finish);
+        if (closeButton) {
+          closeButton.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeRoadPopup();
+          });
+        }
+        popup.addEventListener("click", function(event){ event.stopPropagation(); });
+        popup.dataset.dragBound = "1";
       }
 
       function closeRoadPopup() {
+        // 사용자가 X로 닫은 뒤 지도 이동/확대축소에서 자동으로 다시 열리지 않도록 상태도 함께 해제
+        selectedRoadPopupState = null;
         if (roadPopupOverlay) {
           try {
             if (roadPopupOverlay.remove) {
@@ -8763,6 +9021,7 @@
       function placeRoadPopupTopRight() {
         const popup = document.querySelector("body > .road-popup");
         if (!popup) return;
+        if (popup.dataset.userMoved === "1") return;
 
         // 지도 좌표와 완전히 분리된 고정 화면 패널.
         // 지도 이동/확대/축소 중에는 절대 위치를 변경하지 않음.
@@ -8790,6 +9049,14 @@
         const maxHeight = Math.max(160, window.innerHeight - 90);
         popup.style.maxHeight = maxHeight + "px";
         popup.style.overflowY = "auto";
+        if (popup.dataset.userMoved === "1") {
+          const rect = popup.getBoundingClientRect();
+          const left = Math.max(6, Math.min(window.innerWidth - rect.width - 6, rect.left));
+          const top = Math.max(6, Math.min(window.innerHeight - Math.min(rect.height, window.innerHeight - 12) - 6, rect.top));
+          popup.style.left = left + "px";
+          popup.style.top = top + "px";
+          popup.style.right = "auto";
+        }
       }
 
       let roadPopupViewportCheckPending = false;
