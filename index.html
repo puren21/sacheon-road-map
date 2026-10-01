@@ -6332,11 +6332,20 @@
     padding-left: 4px !important;
   }
 
+  .road-layer-width-wrap {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
   .road-layer-width {
     appearance: auto !important;
-    -webkit-appearance: menulist !important;
-    cursor: pointer !important;
-    padding: 0 28px 0 10px !important;
+    -webkit-appearance: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 8px !important;
+    cursor: text !important;
   }
 
   /* ===== 2026-10-01: 메모 저장 버튼 강조 ===== */
@@ -10775,17 +10784,10 @@
         body.appendChild(bar);
       }
 
-      function roadWidthOptions(currentValue) {
+      function roadWidthOptions() {
         const presets = [0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,24,30];
-        const current = Number(currentValue);
-        const values = presets.slice();
-        if (Number.isFinite(current) && !values.some(function(v) { return Math.abs(v - current) < 0.001; })) {
-          values.push(current);
-          values.sort(function(a,b) { return a-b; });
-        }
-        return values.map(function(value) {
-          const selected = Number.isFinite(current) && Math.abs(value - current) < 0.001 ? ' selected' : '';
-          return '<option value="' + value + '"' + selected + '>' + value + ' px</option>';
+        return presets.map(function(value) {
+          return '<option value="' + value + '"></option>';
         }).join('');
       }
 
@@ -10812,7 +10814,10 @@
             '<div class="road-layer-control-grid">' +
               '<span class="road-layer-field-label">색상</span><span class="road-layer-field-label">두께(px)</span>' +
               '<span class="road-layer-color-wrap"><input class="road-layer-color" type="color" value="' + layerConfig.color + '"><input class="road-layer-color-code" type="text" maxlength="7" spellcheck="false" value="' + String(layerConfig.color || '').toUpperCase() + '"></span>' +
-              '<select class="road-layer-width" aria-label="라인 두께">' + roadWidthOptions(layerConfig.width) + '</select>' +
+              '<span class="road-layer-width-wrap">' +
+                '<input class="road-layer-width" type="number" inputmode="decimal" min="0.5" max="30" step="0.1" list="roadWidthPresets-' + styleKey + '-' + index + '" value="' + layerConfig.width + '" aria-label="라인 두께">' +
+                '<datalist id="roadWidthPresets-' + styleKey + '-' + index + '">' + roadWidthOptions() + '</datalist>' +
+              '</span>' +
               '<span class="road-layer-field-label" style="grid-column:1/-1">투명도</span>' +
               '<span class="road-layer-opacity-wrap"><input class="road-layer-opacity" type="range" min="0" max="100" step="1" value="' + (Number.isFinite(Number(layerConfig.opacity)) ? layerConfig.opacity : 100) + '"><input class="road-layer-opacity-number" type="number" min="0" max="100" step="1" value="' + (Number.isFinite(Number(layerConfig.opacity)) ? layerConfig.opacity : 100) + '"></span>' +
             '</div>' +
