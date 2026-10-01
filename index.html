@@ -4906,6 +4906,99 @@
     touch-action: manipulation !important;
   }
 
+
+  /* ===== 2026-10-01: 공용 노선 메모 ===== */
+  .road-memo-section {
+    margin: 8px 0 6px;
+    border-radius: 12px;
+    background: #f7f7f9;
+    overflow: hidden;
+  }
+
+  .road-memo-open {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: transparent;
+    color: #202124;
+    font-size: 14px;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .road-memo-chevron {
+    color: #b0b3b8;
+    font-size: 22px;
+    font-weight: 400;
+  }
+
+  .road-memo-preview {
+    padding: 0 14px 12px;
+    color: #5f6368;
+    font-size: 12.5px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .road-memo-editor {
+    padding: 0 12px 12px;
+  }
+
+  .road-memo-textarea {
+    width: 100%;
+    min-height: 86px;
+    padding: 10px;
+    box-sizing: border-box;
+    resize: vertical;
+    border: 1px solid #d9dde3;
+    border-radius: 9px;
+    outline: none;
+    background: #fff;
+    color: #202124;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .road-memo-textarea:focus {
+    border-color: #9dc8ef;
+    box-shadow: 0 0 0 2px rgba(47,145,242,.10);
+  }
+
+  .road-memo-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .road-memo-actions button {
+    height: 32px;
+    border: 1px solid #d1d7dd;
+    border-radius: 8px;
+    background: #fff;
+    color: #3e464f;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .road-memo-save {
+    color: #fff !important;
+    border-color: #2f91f2 !important;
+    background: #2f91f2 !important;
+  }
+
+  .road-memo-delete {
+    color: #d94a45 !important;
+  }
+
 </style>
 
 </head>
@@ -7736,6 +7829,14 @@
 
       const groups = new Map();
       const hiddenRoadGroups = new Set();
+      const SACHEON_MEMO_REST_URL = "https://zdjuksmhtvhetzblczqq.supabase.co/rest/v1";
+      const SACHEON_MEMO_PUBLISHABLE_KEY = "sb_publishable_Hlk_1ZOd_WF_Ijn6VM258w_3w8HFYN4";
+      const SACHEON_MEMO_HEADERS = {
+        "apikey": SACHEON_MEMO_PUBLISHABLE_KEY,
+        "Content-Type": "application/json"
+      };
+      const sacheonRouteMemos = new Map();
+      let sacheonMemoSyncTimer = null;
       const ruralTotalLengths = new Map();
       const allBounds = new kakao.maps.LatLngBounds();
       const allRoads = [];
@@ -11647,6 +11748,10 @@
           infoWindow.close();
         }
         syncMobileRoadInfoState(false);
+        if (sacheonMemoSyncTimer) {
+          clearInterval(sacheonMemoSyncTimer);
+          sacheonMemoSyncTimer = null;
+        }
       }
 
       window.closeRoadPopup = closeRoadPopup;
@@ -13393,6 +13498,8 @@
         keepRoadPopupInSafeViewport();
         enableRoadPopupDrag();
         bindRoadPopupEditActions(popup);
+        bindRoadMemoActions(popup);
+        startSacheonMemoSync();
 
         return popup;
       }
@@ -13497,6 +13604,208 @@
         }
       }
 
+      function sacheonMemoKey(group) {
+        if (!group) return "";
+        const kind = group.layerId === "city" ? "city" : "rural";
+        return "sacheon:" + kind + ":" + String(group.number || group.key || "");
+      }
+
+      function routeMemoBlock(group) {
+        const memoKey = sacheonMemoKey(group);
+        const memoItem = sacheonRouteMemos.get(memoKey);
+        const memoText = memoItem && memoItem.memo ? memoItem.memo : "";
+        return '<div class="road-memo-section" data-memo-key="' + escapeHTML(encodeURIComponent(memoKey)) + '">' +
+          '<button type="button" class="road-memo-open">' +
+            '<span class="road-memo-open-label">' + (memoText ? '메모' : '메모추가') + '</span>' +
+            '<span class="road-memo-chevron">›</span>' +
+          '</button>' +
+          '<div class="road-memo-preview"' + (memoText ? '' : ' hidden') + '>' + escapeHTML(memoText) + '</div>' +
+          '<div class="road-memo-editor" hidden>' +
+            '<textarea class="road-memo-textarea" placeholder="메모를 입력하세요">' + escapeHTML(memoText) + '</textarea>' +
+            '<div class="road-memo-actions">' +
+              '<button type="button" class="road-memo-cancel">취소</button>' +
+              '<button type="button" class="road-memo-delete">삭제</button>' +
+              '<button type="button" class="road-memo-save">저장</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      async function fetchSacheonMemo(memoKey) {
+        if (!memoKey) return null;
+        const response = await fetch(
+          SACHEON_MEMO_REST_URL + "/route_memos?route_number=eq." +
+          encodeURIComponent(memoKey) +
+          "&select=route_number,memo,updated_at",
+          { headers: SACHEON_MEMO_HEADERS, cache: "no-store" }
+        );
+        if (!response.ok) throw new Error("메모 불러오기 실패 (" + response.status + ")");
+        const rows = await response.json();
+        const item = rows && rows[0] ? {
+          memo: String(rows[0].memo || ""),
+          updated: rows[0].updated_at || ""
+        } : null;
+        if (item && item.memo) sacheonRouteMemos.set(memoKey, item);
+        else sacheonRouteMemos.delete(memoKey);
+        return item;
+      }
+
+      async function saveSacheonMemo(memoKey, memo) {
+        const updated = new Date().toISOString();
+        const response = await fetch(
+          SACHEON_MEMO_REST_URL + "/route_memos?on_conflict=route_number",
+          {
+            method: "POST",
+            headers: Object.assign({}, SACHEON_MEMO_HEADERS, {
+              "Prefer": "resolution=merge-duplicates,return=minimal"
+            }),
+            body: JSON.stringify({
+              route_number: memoKey,
+              memo: memo,
+              updated_at: updated
+            })
+          }
+        );
+        if (!response.ok) {
+          const detail = await response.text();
+          throw new Error("메모 저장 실패 (" + response.status + "): " + detail);
+        }
+        sacheonRouteMemos.set(memoKey, { memo: memo, updated: updated });
+      }
+
+      async function deleteSacheonMemo(memoKey) {
+        const response = await fetch(
+          SACHEON_MEMO_REST_URL + "/route_memos?route_number=eq." +
+          encodeURIComponent(memoKey),
+          {
+            method: "DELETE",
+            headers: Object.assign({}, SACHEON_MEMO_HEADERS, {
+              "Prefer": "return=minimal"
+            })
+          }
+        );
+        if (!response.ok) {
+          const detail = await response.text();
+          throw new Error("메모 삭제 실패 (" + response.status + "): " + detail);
+        }
+        sacheonRouteMemos.delete(memoKey);
+      }
+
+      function updateMemoSectionFromCache(section) {
+        if (!section) return;
+        const memoKey = decodeURIComponent(section.dataset.memoKey || "");
+        const item = sacheonRouteMemos.get(memoKey);
+        const memo = item && item.memo ? item.memo : "";
+        const label = section.querySelector(".road-memo-open-label");
+        const preview = section.querySelector(".road-memo-preview");
+        const textarea = section.querySelector(".road-memo-textarea");
+        if (label) label.textContent = memo ? "메모" : "메모추가";
+        if (preview) {
+          preview.textContent = memo;
+          preview.hidden = !memo;
+        }
+        if (textarea && document.activeElement !== textarea) textarea.value = memo;
+      }
+
+      async function refreshCurrentRoadMemo() {
+        const popup = document.querySelector("body > .road-popup");
+        const section = popup && popup.querySelector(".road-memo-section");
+        if (!section) return;
+        const memoKey = decodeURIComponent(section.dataset.memoKey || "");
+        if (!memoKey) return;
+        try {
+          await fetchSacheonMemo(memoKey);
+          updateMemoSectionFromCache(section);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      function startSacheonMemoSync() {
+        if (sacheonMemoSyncTimer) clearInterval(sacheonMemoSyncTimer);
+        sacheonMemoSyncTimer = setInterval(refreshCurrentRoadMemo, 5000);
+      }
+
+      function bindRoadMemoActions(popup) {
+        const section = popup && popup.querySelector(".road-memo-section");
+        if (!section) return;
+        const memoKey = decodeURIComponent(section.dataset.memoKey || "");
+        const openBtn = section.querySelector(".road-memo-open");
+        const editor = section.querySelector(".road-memo-editor");
+        const textarea = section.querySelector(".road-memo-textarea");
+        const cancelBtn = section.querySelector(".road-memo-cancel");
+        const deleteBtn = section.querySelector(".road-memo-delete");
+        const saveBtn = section.querySelector(".road-memo-save");
+
+        ["pointerdown","mousedown","touchstart"].forEach(function(type) {
+          section.addEventListener(type, function(event) {
+            event.stopPropagation();
+          });
+        });
+
+        function setOpen(open) {
+          if (editor) editor.hidden = !open;
+          if (openBtn) openBtn.classList.toggle("memo-open", open);
+          if (open && textarea) {
+            const cached = sacheonRouteMemos.get(memoKey);
+            textarea.value = cached && cached.memo ? cached.memo : textarea.value;
+            setTimeout(function() { textarea.focus(); }, 30);
+          }
+        }
+
+        if (openBtn) openBtn.onclick = function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen(editor ? editor.hidden : true);
+        };
+        if (cancelBtn) cancelBtn.onclick = function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen(false);
+        };
+        if (saveBtn) saveBtn.onclick = async function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          const memo = (textarea ? textarea.value : "").trim();
+          try {
+            saveBtn.disabled = true;
+            saveBtn.textContent = "저장 중";
+            if (memo) await saveSacheonMemo(memoKey, memo);
+            else await deleteSacheonMemo(memoKey);
+            updateMemoSectionFromCache(section);
+            setOpen(false);
+          } catch (error) {
+            console.error(error);
+            alert("온라인 메모 저장에 실패했습니다.\n\n" + error.message);
+          } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = "저장";
+          }
+        };
+        if (deleteBtn) deleteBtn.onclick = async function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          try {
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = "삭제 중";
+            await deleteSacheonMemo(memoKey);
+            if (textarea) textarea.value = "";
+            updateMemoSectionFromCache(section);
+            setOpen(false);
+          } catch (error) {
+            console.error(error);
+            alert("온라인 메모 삭제에 실패했습니다.\n\n" + error.message);
+          } finally {
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = "삭제";
+          }
+        };
+
+        fetchSacheonMemo(memoKey)
+          .then(function() { updateMemoSectionFromCache(section); })
+          .catch(function(error) { console.error(error); });
+      }
+
       function roadPopupActions(group) {
         const encodedKey = encodeURIComponent(group.key);
         return '<div class="road-popup-actions">' +
@@ -13518,6 +13827,7 @@
                 roadPopupVisibilityToggle(group) +
               '</div>' +
             '</div>' +
+            routeMemoBlock(group) +
             '<div class="road-attributes">' +
               row("도로구분", "시도") + row("노선번호", group.number) +
               row("구간상태", statusLengthSummary(group), "", "wrap-status") +
@@ -13543,6 +13853,7 @@
               roadPopupVisibilityToggle(group) +
             '</div>' +
           '</div>' +
+          routeMemoBlock(group) +
           '<div class="road-attributes">' +
             row("노선번호", group.number) +
             row("구분", joinValues(uniqueValues(list, "GUBUN"))) +
