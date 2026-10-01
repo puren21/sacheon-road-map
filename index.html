@@ -5642,6 +5642,192 @@
     }
   }
 
+
+  /* ===== 2026-10-01: flight-route형 스타일 설정 계층 ===== */
+  #roadMenuStylePage #roadLayerEditorBody {
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .layer-style-menu-card,
+  .layer-map-settings-card {
+    width:100%;
+    overflow:hidden;
+    border:0;
+    border-radius:14px;
+    background:#fff;
+    box-shadow:0 0 0 .5px rgba(60,60,67,.10);
+  }
+
+  .layer-style-menu-row {
+    position:relative;
+    width:100%;
+    min-height:56px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:0 14px;
+    border:0;
+    border-radius:0;
+    background:#fff;
+    color:#000;
+    text-align:left;
+    cursor:pointer;
+  }
+
+  .layer-style-menu-row:not(:last-child)::after,
+  .layer-map-settings-card .layer-map-toggle:not(:last-child)::after {
+    content:"";
+    position:absolute;
+    left:14px;
+    right:0;
+    bottom:0;
+    height:.5px;
+    background:rgba(60,60,67,.18);
+  }
+
+  .layer-style-menu-row:hover,
+  .layer-style-menu-row:active {
+    background:#f6f6f8;
+  }
+
+  .layer-style-menu-copy {
+    min-width:0;
+    flex:1 1 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  .layer-style-menu-name {
+    color:#000;
+    font-size:16px;
+    font-weight:400;
+    letter-spacing:-.2px;
+    white-space:nowrap;
+  }
+
+  .layer-style-menu-summary {
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    color:#8e8e93;
+    font-size:12.5px;
+    font-weight:400;
+    text-align:right;
+  }
+
+  .layer-style-menu-chevron {
+    flex:0 0 auto;
+    color:#c7c7cc;
+    font-size:28px;
+    font-weight:300;
+    line-height:1;
+  }
+
+  .layer-style-inline-check {
+    width:20px;
+    height:20px;
+    flex:0 0 20px;
+    margin:0 2px 0 0;
+    accent-color:#007aff;
+  }
+
+  .layer-map-settings-card {
+    display:flex;
+    flex-direction:column;
+  }
+
+  .layer-map-settings-card .layer-map-toggle {
+    position:relative;
+    min-height:56px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:0 14px;
+    border:0 !important;
+    border-radius:0 !important;
+    background:#fff !important;
+    color:#000 !important;
+    font-size:16px !important;
+    font-weight:400 !important;
+  }
+
+  .layer-map-settings-card .layer-map-toggle input {
+    width:20px !important;
+    height:20px !important;
+    margin:0;
+    accent-color:#007aff;
+  }
+
+  .layer-style-reset {
+    min-height:50px !important;
+    margin:0 !important;
+    border:0 !important;
+    border-radius:14px !important;
+    background:#fff !important;
+    color:#007aff !important;
+    font-size:15px !important;
+    font-weight:500 !important;
+    box-shadow:0 0 0 .5px rgba(60,60,67,.10) !important;
+  }
+
+  #roadMenuStylePage .layer-editor-backbar {
+    min-height:54px;
+    padding:0 4px 8px;
+    border:0;
+    background:transparent;
+  }
+
+  #roadMenuStylePage .layer-editor-back {
+    width:34px;
+    height:34px;
+    border:0;
+    border-radius:17px;
+    background:#fff;
+    color:#1c1c1e;
+    box-shadow:0 0 0 .5px rgba(60,60,67,.18);
+    font-size:29px;
+    font-weight:300;
+    line-height:31px;
+  }
+
+  #roadMenuStylePage .layer-editor-detail-title {
+    font-size:17px;
+    font-weight:600;
+    color:#1c1c1e;
+  }
+
+  #roadMenuStylePage .layer-editor-detail-note {
+    color:#8e8e93;
+    font-size:11px;
+    line-height:1.35;
+  }
+
+  #roadMenuStylePage .road-layer-group,
+  #roadMenuStylePage .layer-detail-card {
+    border:0 !important;
+    border-radius:14px !important;
+    background:#fff !important;
+    box-shadow:0 0 0 .5px rgba(60,60,67,.10) !important;
+  }
+
+  @media (max-width:700px) {
+    .layer-style-menu-row,
+    .layer-map-settings-card .layer-map-toggle {
+      min-height:58px;
+    }
+    .layer-style-menu-name {
+      font-size:17px;
+    }
+    .layer-style-menu-summary {
+      font-size:13px;
+    }
+  }
+
 </style>
 
 </head>
@@ -9741,49 +9927,75 @@
         }).join('');
       }
 
-      function renderRoadLayerMain(body) {
-        const mapSection = document.createElement("section");
-        mapSection.className = "layer-simple-section";
-        mapSection.innerHTML = '<div class="layer-simple-title">지도 설정</div><div class="layer-map-grid">' +
-          '<label class="layer-map-toggle"><input id="editorHybridCheck" type="checkbox">하이브리드</label>' +
-          '<label class="layer-map-toggle"><input id="editorDistrictCheck" type="checkbox">지적편집도</label>' +
-          '<label class="layer-map-toggle"><input id="editorTownshipBoundaryCheck" type="checkbox">읍면동 경계</label>' +
-          '<label class="layer-map-toggle"><input id="editorRiBoundaryCheck" type="checkbox">리 경계</label>' +
-          '</div>';
-        body.appendChild(mapSection);
-        [
-          ["editorHybridCheck", "hybridCheck"],
-          ["editorDistrictCheck", "districtCheck"],
-          ["editorTownshipBoundaryCheck", "townshipBoundaryCheck"],
-          ["editorRiBoundaryCheck", "riBoundaryCheck"]
-        ].forEach(function(pair) {
-          const editor = mapSection.querySelector('#' + pair[0]);
-          const original = document.getElementById(pair[1]);
-          if (!editor || !original) return;
-          editor.checked = !!original.checked;
-          editor.addEventListener('change', function() {
-            original.checked = editor.checked;
-            original.dispatchEvent(new Event('change', { bubbles:true }));
-          });
+      function makeStyleMenuRow(label, summary, onClick) {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "layer-style-menu-row";
+        row.innerHTML =
+          '<span class="layer-style-menu-copy">' +
+            '<span class="layer-style-menu-name">' + escapeHTML(label) + '</span>' +
+            (summary ? '<span class="layer-style-menu-summary">' + escapeHTML(summary) + '</span>' : '') +
+          '</span>' +
+          '<span class="layer-style-menu-chevron">›</span>';
+        row.addEventListener("click", function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          onClick();
         });
+        return row;
+      }
 
-        const roadsSection = document.createElement("section");
-        roadsSection.className = "layer-simple-section";
-        roadsSection.innerHTML = '<div class="layer-simple-title">도로 표현</div>';
+      function renderRoadLayerMain(body) {
+        const card = document.createElement("section");
+        card.className = "layer-style-menu-card";
+        card.appendChild(makeStyleMenuRow("라인", "", function() {
+          roadLayerEditorView = { type:"lineMain", styleKey:null };
+          renderRoadLayerEditor();
+        }));
+        card.appendChild(makeStyleMenuRow("라벨", "", function() {
+          roadLayerEditorView = { type:"labelMain", styleKey:null };
+          renderRoadLayerEditor();
+        }));
+        card.appendChild(makeStyleMenuRow("지도 설정", "", function() {
+          roadLayerEditorView = { type:"mapMain", styleKey:null };
+          renderRoadLayerEditor();
+        }));
+        body.appendChild(card);
+
+        const reset = document.createElement("button");
+        reset.className = "layer-reset-button layer-style-reset";
+        reset.type = "button";
+        reset.textContent = "기본값으로 초기화";
+        reset.addEventListener("click", function() {
+          const legacyReset = document.getElementById("styleReset");
+          if (legacyReset) legacyReset.click();
+        });
+        body.appendChild(reset);
+      }
+
+      function renderRoadLineMenu(body) {
+        const card = document.createElement("section");
+        card.className = "layer-style-menu-card";
 
         ["CITY", "MYEON", "RI", "FARM"].forEach(function(styleKey) {
           const stack = getRoadLayerStack(styleKey);
           const enabled = stack.some(function(item) { return item.visible !== false; });
           const top = stack[0] || {};
-          const row = document.createElement("div");
-          row.className = "layer-simple-row";
-          row.innerHTML =
-            '<input class="layer-simple-check" type="checkbox" ' + (enabled ? 'checked ' : '') + 'aria-label="' + ROAD_LAYER_NAMES[styleKey] + ' 표시">' +
-            '<span class="layer-simple-name">' + ROAD_LAYER_NAMES[styleKey] + '</span>' +
-            '<div><div>' + roadLayerPreviewHtml(styleKey) + '</div><div class="layer-simple-summary">' + escapeHTML(String(top.color || '').toUpperCase()) + ' · ' + (Number(top.width) || 0) + 'px</div></div>' +
-            '<button class="layer-simple-detail" type="button">설정 ›</button>';
+          const summary = (enabled ? "" : "숨김 · ") +
+            String(top.color || "").toUpperCase() + " · " + (Number(top.width) || 0) + "px";
 
-          row.querySelector('.layer-simple-check').addEventListener('change', function() {
+          const row = makeStyleMenuRow(ROAD_LAYER_NAMES[styleKey], summary, function() {
+            roadLayerEditorView = { type:"road", styleKey:styleKey, parent:"lineMain" };
+            renderRoadLayerEditor();
+          });
+
+          const toggle = document.createElement("input");
+          toggle.type = "checkbox";
+          toggle.className = "layer-style-inline-check";
+          toggle.checked = enabled;
+          toggle.setAttribute("aria-label", ROAD_LAYER_NAMES[styleKey] + " 표시");
+          toggle.addEventListener("click", function(event) { event.stopPropagation(); });
+          toggle.addEventListener("change", function() {
             const turnOn = this.checked;
             stack.forEach(function(item) { item.visible = turnOn; });
             saveRoadLayerStacks();
@@ -9793,57 +10005,87 @@
             if (selectedRoadGroupKey) setRoadGroupHighlight(selectedRoadGroupKey, true);
             renderRoadLayerEditor();
           });
+          row.insertBefore(toggle, row.querySelector(".layer-style-menu-chevron"));
+          card.appendChild(row);
+        });
 
-          function openDetail() {
-            roadLayerEditorView = { type: 'road', styleKey: styleKey };
+        card.appendChild(makeStyleMenuRow(
+          "개설상태 표현",
+          "미확장 " + getStatusStyleLabel(STATUS_STYLES.UNEXPANDED) +
+            " · 미개설 " + getStatusStyleLabel(STATUS_STYLES.UNOPENED_GAP),
+          function() {
+            roadLayerEditorView = { type:"status", styleKey:null, parent:"lineMain" };
             renderRoadLayerEditor();
           }
-          row.querySelector('.layer-simple-detail').addEventListener('click', function(event) { event.stopPropagation(); openDetail(); });
-          row.addEventListener('dblclick', openDetail);
-          roadsSection.appendChild(row);
+        ));
+
+        body.appendChild(card);
+      }
+
+      function renderRoadLabelMenu(body) {
+        const card = document.createElement("section");
+        card.className = "layer-style-menu-card";
+
+        card.appendChild(makeStyleMenuRow(
+          "노선번호",
+          LABEL_STYLES.VISIBLE === false ? "숨김" : (LABEL_STYLES.SCALE + "%"),
+          function() {
+            roadLayerEditorView = { type:"label", styleKey:null, parent:"labelMain" };
+            renderRoadLayerEditor();
+          }
+        ));
+
+        card.appendChild(makeStyleMenuRow(
+          "읍면 명칭",
+          TOWNSHIP_LABEL_STYLES.VISIBLE === false ? "숨김" : (TOWNSHIP_LABEL_STYLES.SCALE + "%"),
+          function() {
+            roadLayerEditorView = { type:"townshipLabel", styleKey:null, parent:"labelMain" };
+            renderRoadLayerEditor();
+          }
+        ));
+
+        body.appendChild(card);
+      }
+
+      function renderRoadMapMenu(body) {
+        const card = document.createElement("section");
+        card.className = "layer-map-settings-card";
+        card.innerHTML =
+          '<label class="layer-map-toggle"><input id="editorHybridCheck" type="checkbox"><span>하이브리드</span></label>' +
+          '<label class="layer-map-toggle"><input id="editorDistrictCheck" type="checkbox"><span>지적편집도</span></label>' +
+          '<label class="layer-map-toggle"><input id="editorTownshipBoundaryCheck" type="checkbox"><span>읍면동 경계</span></label>' +
+          '<label class="layer-map-toggle"><input id="editorRiBoundaryCheck" type="checkbox"><span>리 경계</span></label>';
+        body.appendChild(card);
+
+        [
+          ["editorHybridCheck", "hybridCheck"],
+          ["editorDistrictCheck", "districtCheck"],
+          ["editorTownshipBoundaryCheck", "townshipBoundaryCheck"],
+          ["editorRiBoundaryCheck", "riBoundaryCheck"]
+        ].forEach(function(pair) {
+          const editor = card.querySelector("#" + pair[0]);
+          const original = document.getElementById(pair[1]);
+          if (!editor || !original) return;
+          editor.checked = !!original.checked;
+          editor.addEventListener("change", function() {
+            original.checked = editor.checked;
+            original.dispatchEvent(new Event("change", { bubbles:true }));
+          });
         });
-        body.appendChild(roadsSection);
-
-        const settingsSection = document.createElement('section');
-        settingsSection.className = 'layer-simple-section';
-        settingsSection.innerHTML = '<div class="layer-simple-title">표시 설정</div>';
-
-        const labelRow = document.createElement('div');
-        labelRow.className = 'layer-action-row';
-        labelRow.innerHTML = '<span class="layer-action-name">노선번호</span><span class="layer-action-summary">' + (LABEL_STYLES.VISIBLE === false ? '숨김' : (LABEL_STYLES.SCALE + '%')) + '</span><span class="layer-action-arrow">›</span>';
-        labelRow.addEventListener('click', function() { roadLayerEditorView = { type:'label', styleKey:null }; renderRoadLayerEditor(); });
-        settingsSection.appendChild(labelRow);
-
-        const townshipLabelRow = document.createElement('div');
-        townshipLabelRow.className = 'layer-action-row';
-        townshipLabelRow.innerHTML = '<span class="layer-action-name">읍면 명칭</span><span class="layer-action-summary">' + (TOWNSHIP_LABEL_STYLES.VISIBLE === false ? '숨김' : (TOWNSHIP_LABEL_STYLES.SCALE + '%')) + '</span><span class="layer-action-arrow">›</span>';
-        townshipLabelRow.addEventListener('click', function() { roadLayerEditorView = { type:'townshipLabel', styleKey:null }; renderRoadLayerEditor(); });
-        settingsSection.appendChild(townshipLabelRow);
-
-        const statusRow = document.createElement('div');
-        statusRow.className = 'layer-action-row';
-        statusRow.innerHTML = '<span class="layer-action-name">개설상태 표현</span><span class="layer-action-summary">미확장 ' + getStatusStyleLabel(STATUS_STYLES.UNEXPANDED) + ' · 미개설 ' + getStatusStyleLabel(STATUS_STYLES.UNOPENED_GAP) + '</span><span class="layer-action-arrow">›</span>';
-        statusRow.addEventListener('click', function() { roadLayerEditorView = { type:'status', styleKey:null }; renderRoadLayerEditor(); });
-        settingsSection.appendChild(statusRow);
-        body.appendChild(settingsSection);
-
-        const reset = document.createElement('button');
-        reset.className = 'layer-reset-button';
-        reset.type = 'button';
-        reset.textContent = '기본값으로 초기화';
-        reset.addEventListener('click', function() {
-          const legacyReset = document.getElementById('styleReset');
-          if (legacyReset) legacyReset.click();
-        });
-        body.appendChild(reset);
       }
 
       function renderEditorBackbar(body, title, note) {
-        const bar = document.createElement('div');
-        bar.className = 'layer-editor-backbar';
-        bar.innerHTML = '<button class="layer-editor-back" type="button" aria-label="뒤로">‹</button><div><div class="layer-editor-detail-title">' + escapeHTML(title) + '</div><div class="layer-editor-detail-note">' + escapeHTML(note || '') + '</div></div>';
-        bar.querySelector('.layer-editor-back').addEventListener('click', function() {
-          roadLayerEditorView = { type:'main', styleKey:null };
+        const bar = document.createElement("div");
+        bar.className = "layer-editor-backbar";
+        bar.innerHTML =
+          '<button class="layer-editor-back" type="button" aria-label="뒤로">‹</button>' +
+          '<div><div class="layer-editor-detail-title">' + escapeHTML(title) + '</div>' +
+          '<div class="layer-editor-detail-note">' + escapeHTML(note || '') + '</div></div>';
+        bar.querySelector(".layer-editor-back").addEventListener("click", function() {
+          const parent = roadLayerEditorView && roadLayerEditorView.parent
+            ? roadLayerEditorView.parent
+            : "main";
+          roadLayerEditorView = { type:parent, styleKey:null };
           renderRoadLayerEditor();
         });
         body.appendChild(bar);
@@ -10129,19 +10371,26 @@
       }
 
       function renderRoadLayerEditor() {
-        const body = document.getElementById('roadLayerEditorBody');
+        const body = document.getElementById("roadLayerEditorBody");
         if (!body) return;
-        body.innerHTML = '';
-        if (roadLayerEditorView.type === 'road' && roadLayerEditorView.styleKey) {
+        body.innerHTML = "";
+
+        if (roadLayerEditorView.type === "road" && roadLayerEditorView.styleKey) {
           renderRoadStyleDetail(body, roadLayerEditorView.styleKey);
-        } else if (roadLayerEditorView.type === 'label') {
+        } else if (roadLayerEditorView.type === "label") {
           renderLabelDetail(body);
-        } else if (roadLayerEditorView.type === 'townshipLabel') {
+        } else if (roadLayerEditorView.type === "townshipLabel") {
           renderTownshipLabelDetail(body);
-        } else if (roadLayerEditorView.type === 'status') {
+        } else if (roadLayerEditorView.type === "status") {
           renderStatusDetail(body);
+        } else if (roadLayerEditorView.type === "lineMain") {
+          renderRoadLineMenu(body);
+        } else if (roadLayerEditorView.type === "labelMain") {
+          renderRoadLabelMenu(body);
+        } else if (roadLayerEditorView.type === "mapMain") {
+          renderRoadMapMenu(body);
         } else {
-          roadLayerEditorView = { type:'main', styleKey:null };
+          roadLayerEditorView = { type:"main", styleKey:null };
           renderRoadLayerMain(body);
         }
       }
