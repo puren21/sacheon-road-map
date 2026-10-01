@@ -15108,7 +15108,6 @@
               roadPopupVisibilityToggle(group) +
             '</div>' +
           '</div>' +
-          routeMemoBlock(group) +
           '<div class="road-attributes">' +
             row("노선번호", group.number) +
             row("구분", joinValues(uniqueValues(list, "GUBUN"))) +
@@ -15123,6 +15122,7 @@
             row("종점", joinValues(uniqueValues(list, "종점"))) +
             row("노선상태", roadStatusLabel(currentStatus)) +
           '</div>' +
+          routeMemoBlock(group) +
           roadPopupActions(group) +
         '</div>';
       }
