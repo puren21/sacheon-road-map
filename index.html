@@ -14262,7 +14262,7 @@
             '<button type="button" class="road-edit-close" onclick="closeRoadEditPanel()">×</button>' +
           '</div>' +
           '<div class="road-edit-body">' +
-            '<div class="road-edit-note">속성은 현재 선택한 구간에 적용됨. 구분(면도·리도·농도)은 노선 전체에 적용됨.</div>' +
+            '<div class="road-edit-note">수정한 내용은 인터넷에 저장되어 다른 기기에서도 동일하게 표시됨. 속성은 현재 선택한 구간에 적용되며, 구분(면도·리도·농도)은 노선 전체에 적용됨.</div>' +
             '<form id="roadEditForm">' + fields + '</form>' +
             '<div class="road-edit-actions">' +
               '<button type="button" class="geometry" id="startGeometryEditBtn">선형 편집</button>' +
@@ -14284,38 +14284,88 @@
 
       window.openRoadEditor = openRoadEditor;
 
-      function saveRoadAttributes(groupKey) {
-        const group = groups.get(groupKey);
-        const road = getEditableRoad(groupKey);
-        const form = document.getElementById("roadEditForm");
-        if (!group || !road || !form) return;
+      function sacheonRoadEditKey(group) {
+        if (!group) return "";
+        const kind = group.layerId === "city" ? "city" : "rural";
+        return "sacheon-edit:" + kind + ":" + String(group.number || group.key || "");
+      }
 
-        const props = road.properties || {};
-        const data = new FormData(form);
+      async function fetchOnlineRoadEdits(group) {
+        const editKey = sacheonRoadEditKey(group);
+        if (!editKey) return null;
 
-        if (group.layerId === "city") {
-          setPropertyValue(props, ["개설여부", "Opened", "Opend"], "개설여부", data.get("status") || "개설");
-          setPropertyValue(props, ["연장"], "연장", data.get("length") || "");
-          setPropertyValue(props, ["검토"], "검토", data.get("review") || "");
-          setPropertyValue(props, ["시점"], "시점", data.get("start") || "");
-          setPropertyValue(props, ["종점"], "종점", data.get("end") || "");
-        } else {
-          const newGubun = data.get("gubun") || "농도";
+        const response = await fetch(
+          SACHEON_MEMO_REST_URL + "/route_memos?route_number=eq." +
+          encodeURIComponent(editKey) +
+          "&select=route_number,memo,updated_at",
+          { headers:SACHEON_MEMO_HEADERS, cache:"no-store" }
+        );
 
-          // 도로 구분은 같은 노선의 전체 구간에 적용
-          group.propertiesList.forEach(function(p) {
-            setPropertyValue(p, ["GUBUN", "구분"], "GUBUN", newGubun);
-          });
-
-          setPropertyValue(props, ["Opened", "Opend", "개설여부"], "Opened", data.get("status") || "개설");
-          setPropertyValue(props, ["차선"], "차선", data.get("lane") || "");
-          setPropertyValue(props, ["도로폭"], "도로폭", data.get("width") || "");
-          setPropertyValue(props, ["연장"], "연장", data.get("length") || "");
-          setPropertyValue(props, ["기점"], "기점", data.get("start") || "");
-          setPropertyValue(props, ["종점"], "종점", data.get("end") || "");
+        if (!response.ok) {
+          throw new Error("온라인 편집정보 불러오기 실패 (" + response.status + ")");
         }
 
-        // 변경된 속성으로 도로 스타일/상태 재계산
+        const rows = await response.json();
+        if (!rows || !rows[0] || !rows[0].memo) return null;
+
+        try {
+          const parsed = JSON.parse(String(rows[0].memo));
+          return parsed && typeof parsed === "object" ? parsed : null;
+        } catch (error) {
+          console.error("온라인 편집정보 형식 오류", error);
+          return null;
+        }
+      }
+
+      async function saveOnlineRoadEdits(group, payload) {
+        const editKey = sacheonRoadEditKey(group);
+        const updated = new Date().toISOString();
+
+        const response = await fetch(
+          SACHEON_MEMO_REST_URL + "/route_memos?on_conflict=route_number",
+          {
+            method:"POST",
+            headers:Object.assign({}, SACHEON_MEMO_HEADERS, {
+              "Prefer":"resolution=merge-duplicates,return=minimal"
+            }),
+            body:JSON.stringify({
+              route_number:editKey,
+              memo:JSON.stringify(payload),
+              updated_at:updated
+            })
+          }
+        );
+
+        if (!response.ok) {
+          const detail = await response.text();
+          throw new Error("온라인 편집정보 저장 실패 (" + response.status + "): " + detail);
+        }
+      }
+
+      function applyRoadEditValuesToRoad(group, road, values) {
+        if (!group || !road || !values) return;
+        const props = road.properties || {};
+
+        if (group.layerId === "city") {
+          if (values.status !== undefined) setPropertyValue(props, ["개설여부","Opened","Opend"], "개설여부", values.status);
+          if (values.length !== undefined) setPropertyValue(props, ["연장"], "연장", values.length);
+          if (values.review !== undefined) setPropertyValue(props, ["검토"], "검토", values.review);
+          if (values.start !== undefined) setPropertyValue(props, ["시점"], "시점", values.start);
+          if (values.end !== undefined) setPropertyValue(props, ["종점"], "종점", values.end);
+        } else {
+          if (values.status !== undefined) setPropertyValue(props, ["Opened","Opend","개설여부"], "Opened", values.status);
+          if (values.lane !== undefined) setPropertyValue(props, ["차선"], "차선", values.lane);
+          if (values.width !== undefined) setPropertyValue(props, ["도로폭"], "도로폭", values.width);
+          if (values.length !== undefined) setPropertyValue(props, ["연장"], "연장", values.length);
+          if (values.start !== undefined) setPropertyValue(props, ["기점"], "기점", values.start);
+          if (values.end !== undefined) setPropertyValue(props, ["종점"], "종점", values.end);
+        }
+      }
+
+      function refreshEditedRoadGroup(groupKey) {
+        const group = groups.get(groupKey);
+        if (!group) return;
+
         group.roads.forEach(function(groupRoad) {
           groupRoad.statusKey = getRoadStatusKey(groupRoad.properties, group.layerId);
           groupRoad.styleKey = getStyleKey(groupRoad.properties, group.layerId);
@@ -14334,15 +14384,125 @@
 
         applyRoadVisibility();
         updateLabels();
-        setRoadGroupHighlight(groupKey, true);
-
-        // 팝업 내용 즉시 갱신
-        const existingPopup = document.querySelector("body > .road-popup");
-        if (existingPopup) existingPopup.remove();
-        createFixedRoadPopup(groupPopup(group, road));
-
+        if (selectedRoadGroupKey === groupKey) {
+          setRoadGroupHighlight(groupKey, true);
+        }
         refreshRoadKindFilterResult();
-        closeRoadEditPanel();
+      }
+
+      function applyOnlineRoadEdits(group, payload) {
+        if (!group || !payload || typeof payload !== "object") return false;
+        let changed = false;
+
+        if (group.layerId !== "city" && payload.gubun) {
+          group.propertiesList.forEach(function(p) {
+            setPropertyValue(p, ["GUBUN","구분"], "GUBUN", payload.gubun);
+          });
+          changed = true;
+        }
+
+        const roadValues = payload.roads && typeof payload.roads === "object"
+          ? payload.roads
+          : {};
+
+        Object.keys(roadValues).forEach(function(indexText) {
+          const index = Number(indexText);
+          if (!Number.isInteger(index) || index < 0 || index >= group.roads.length) return;
+          applyRoadEditValuesToRoad(group, group.roads[index], roadValues[indexText]);
+          changed = true;
+        });
+
+        if (changed) refreshEditedRoadGroup(group.key);
+        return changed;
+      }
+
+      async function syncOnlineRoadEdits(groupKey) {
+        const group = groups.get(groupKey);
+        if (!group) return false;
+
+        const payload = await fetchOnlineRoadEdits(group);
+        if (!payload) return false;
+        return applyOnlineRoadEdits(group, payload);
+      }
+
+      async function saveRoadAttributes(groupKey) {
+        const group = groups.get(groupKey);
+        const road = getEditableRoad(groupKey);
+        const form = document.getElementById("roadEditForm");
+        const saveButton = document.getElementById("saveRoadAttributesBtn");
+        if (!group || !road || !form) return;
+
+        const data = new FormData(form);
+        const roadIndex = Math.max(0, group.roads.indexOf(road));
+        const values = {};
+
+        if (group.layerId === "city") {
+          values.status = data.get("status") || "개설";
+          values.length = data.get("length") || "";
+          values.review = data.get("review") || "";
+          values.start = data.get("start") || "";
+          values.end = data.get("end") || "";
+        } else {
+          values.status = data.get("status") || "개설";
+          values.lane = data.get("lane") || "";
+          values.width = data.get("width") || "";
+          values.length = data.get("length") || "";
+          values.start = data.get("start") || "";
+          values.end = data.get("end") || "";
+        }
+
+        try {
+          if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = "저장 중";
+          }
+
+          let payload = null;
+          try {
+            payload = await fetchOnlineRoadEdits(group);
+          } catch (error) {
+            console.warn(error);
+          }
+
+          if (!payload || typeof payload !== "object") {
+            payload = { version:1, roads:{} };
+          }
+          if (!payload.roads || typeof payload.roads !== "object") {
+            payload.roads = {};
+          }
+
+          if (group.layerId !== "city") {
+            payload.gubun = data.get("gubun") || "농도";
+            group.propertiesList.forEach(function(p) {
+              setPropertyValue(p, ["GUBUN","구분"], "GUBUN", payload.gubun);
+            });
+          }
+
+          payload.version = 1;
+          payload.layerId = group.layerId;
+          payload.number = String(group.number || "");
+          payload.roads[String(roadIndex)] = values;
+
+          applyRoadEditValuesToRoad(group, road, values);
+          refreshEditedRoadGroup(groupKey);
+
+          await saveOnlineRoadEdits(group, payload);
+
+          // 팝업 내용 즉시 갱신
+          const existingPopup = document.querySelector("body > .road-popup");
+          if (existingPopup) existingPopup.remove();
+          createFixedRoadPopup(groupPopup(group, road));
+
+          closeRoadEditPanel();
+        } catch (error) {
+          console.error(error);
+          alert("온라인 도로정보 저장에 실패했습니다.\n\n" + error.message);
+        } finally {
+          if (saveButton && document.body.contains(saveButton)) {
+            saveButton.disabled = false;
+            saveButton.textContent = "저장";
+          }
+        }
       }
 
       function recalcRoadExtent(road, path) {
@@ -15500,6 +15660,22 @@
         // 도로노선 정보는 지도 좌표에 연결하지 않고
         // 화면 우측 상단의 고정 HTML 패널로 생성.
         createFixedRoadPopup(html);
+
+        // 온라인에 저장된 편집정보가 있으면 즉시 불러와 현재 노선에 반영.
+        syncOnlineRoadEdits(groupKey)
+          .then(function(changed) {
+            if (!changed) return;
+            if (!selectedRoadPopupState || selectedRoadPopupState.groupKey !== groupKey) return;
+            const currentGroup = groups.get(groupKey);
+            if (!currentGroup) return;
+            const currentRoad = selectedRoadPopupState.road || road || currentGroup.roads[0] || null;
+            const existingPopup = document.querySelector("body > .road-popup");
+            if (existingPopup) existingPopup.remove();
+            createFixedRoadPopup(groupPopup(currentGroup, currentRoad));
+          })
+          .catch(function(error) {
+            console.error(error);
+          });
       }
 
       function row(title, value, unit = "", extraClass = "") {
