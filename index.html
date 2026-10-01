@@ -4447,6 +4447,102 @@
     }
   }
 
+
+  /* ===== 2026-10-01: 직관형 검색창 개선 ===== */
+  @media (min-width: 701px) {
+    #listPanel .road-search-wrap {
+      position: relative !important;
+      display: block !important;
+      padding: 8px 10px 9px !important;
+      background: #f2f2f7 !important;
+      border-bottom: 1px solid #e5e5ea !important;
+    }
+
+    #listPanel .road-search-wrap::before {
+      content: "";
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      width: 13px;
+      height: 13px;
+      border: 1.8px solid #8e8e93;
+      border-radius: 50%;
+      transform: translateY(-58%);
+      pointer-events: none;
+      box-sizing: border-box;
+    }
+
+    #listPanel .road-search-wrap::after {
+      content: "";
+      position: absolute;
+      left: 31px;
+      top: calc(50% + 5px);
+      width: 6px;
+      height: 1.8px;
+      border-radius: 2px;
+      background: #8e8e93;
+      transform: rotate(45deg);
+      transform-origin: left center;
+      pointer-events: none;
+    }
+
+    #listPanel #roadSearch {
+      width: 100% !important;
+      height: 36px !important;
+      padding: 0 34px 0 34px !important;
+      border: 0 !important;
+      border-radius: 10px !important;
+      outline: none !important;
+      background: #e9e9ee !important;
+      color: #1c1c1e !important;
+      font-size: 12px !important;
+      line-height: 36px !important;
+      box-shadow: none !important;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    #listPanel #roadSearch:focus {
+      background: #fff !important;
+      box-shadow: 0 0 0 1px #c7c7cc inset !important;
+    }
+
+    #listPanel #roadSearch::placeholder {
+      color: #8e8e93 !important;
+      opacity: 1;
+    }
+
+    #roadSearchClear {
+      position: absolute;
+      top: 50%;
+      right: 18px;
+      z-index: 3;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: #b7b7bc;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 600;
+      transform: translateY(-50%);
+      cursor: pointer;
+    }
+
+    #roadSearchClear.visible {
+      display: inline-flex;
+    }
+
+    #roadSearchClear:hover {
+      background: #9d9da2;
+    }
+  }
+
 </style>
 
 </head>
@@ -4531,6 +4627,7 @@
         autocomplete="off"
       >
       <button id="addressSearchBtn" type="button" title="검색" aria-label="검색">검색</button>
+      <button id="roadSearchClear" type="button" aria-label="검색어 지우기" title="검색어 지우기">×</button>
     </div>
 
     <div class="road-kind-filters" aria-label="도로 종류 필터">
@@ -13664,6 +13761,34 @@
   }
 
   restoreFloatingPanel();
+})();
+</script>
+
+
+<script>
+(function() {
+  "use strict";
+  // ===== 직관형 검색창 동작 =====
+  const input = document.getElementById("roadSearch");
+  const clearBtn = document.getElementById("roadSearchClear");
+  if (!input || !clearBtn) return;
+
+  function updateClearButton() {
+    clearBtn.classList.toggle("visible", !!input.value.trim());
+  }
+
+  input.addEventListener("input", updateClearButton);
+  input.addEventListener("search", updateClearButton);
+
+  clearBtn.addEventListener("click", function() {
+    input.value = "";
+    updateClearButton();
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("search", { bubbles: true }));
+    input.focus();
+  });
+
+  updateClearButton();
 })();
 </script>
 
