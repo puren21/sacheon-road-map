@@ -10522,23 +10522,71 @@
         const card = document.createElement("section");
         card.className = "layer-style-menu-card";
 
-        card.appendChild(makeStyleMenuRow(
+        const routeLabelRow = makeStyleMenuRow(
           "노선번호",
-          LABEL_STYLES.VISIBLE === false ? "숨김" : (LABEL_STYLES.SCALE + "%"),
+          "",
           function() {
             roadLayerEditorView = { type:"label", styleKey:null, parent:"labelMain" };
             renderRoadLayerEditor();
           }
-        ));
+        );
 
-        card.appendChild(makeStyleMenuRow(
+        const routeLabelToggle = document.createElement("input");
+        routeLabelToggle.type = "checkbox";
+        routeLabelToggle.className = "layer-style-inline-check";
+        routeLabelToggle.checked = LABEL_STYLES.VISIBLE !== false;
+        routeLabelToggle.setAttribute("aria-label", "노선번호 표시");
+        routeLabelToggle.addEventListener("click", function(event) {
+          event.stopPropagation();
+        });
+        routeLabelToggle.addEventListener("change", function() {
+          LABEL_STYLES.VISIBLE = this.checked;
+          localStorage.setItem("labelStyles", JSON.stringify(LABEL_STYLES));
+          Object.values(LAYERS).forEach(function(layer) {
+            (layer.labels || []).forEach(function(item) {
+              item._visible = false;
+            });
+          });
+          applyLabelScale();
+          applyLabelAppearance();
+          updateLabels();
+        });
+        routeLabelRow.insertBefore(
+          routeLabelToggle,
+          routeLabelRow.querySelector(".layer-style-menu-chevron")
+        );
+        card.appendChild(routeLabelRow);
+
+        const townshipLabelRow = makeStyleMenuRow(
           "읍면 명칭",
-          TOWNSHIP_LABEL_STYLES.VISIBLE === false ? "숨김" : (TOWNSHIP_LABEL_STYLES.SCALE + "%"),
+          "",
           function() {
             roadLayerEditorView = { type:"townshipLabel", styleKey:null, parent:"labelMain" };
             renderRoadLayerEditor();
           }
-        ));
+        );
+
+        const townshipLabelToggle = document.createElement("input");
+        townshipLabelToggle.type = "checkbox";
+        townshipLabelToggle.className = "layer-style-inline-check";
+        townshipLabelToggle.checked = TOWNSHIP_LABEL_STYLES.VISIBLE !== false;
+        townshipLabelToggle.setAttribute("aria-label", "읍면 명칭 표시");
+        townshipLabelToggle.addEventListener("click", function(event) {
+          event.stopPropagation();
+        });
+        townshipLabelToggle.addEventListener("change", function() {
+          TOWNSHIP_LABEL_STYLES.VISIBLE = this.checked;
+          localStorage.setItem(
+            "townshipLabelStyles",
+            JSON.stringify(TOWNSHIP_LABEL_STYLES)
+          );
+          applyTownshipLabelStyles();
+        });
+        townshipLabelRow.insertBefore(
+          townshipLabelToggle,
+          townshipLabelRow.querySelector(".layer-style-menu-chevron")
+        );
+        card.appendChild(townshipLabelRow);
 
         body.appendChild(card);
       }
