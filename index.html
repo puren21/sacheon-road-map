@@ -6787,6 +6787,35 @@
     }
   }
 
+
+  /* ===== 2026-10-01: 도로목록 구분 제목 + 메인 제목 130% ===== */
+  #listContent .list-title.city,
+  #listContent .list-title.rural {
+    color: #2f80ff !important;
+    font-size: 19.5px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+  }
+
+  /* 메인화면의 '사천시 도로현황'만 확대. 하위 메뉴 제목은 기존 크기 유지 */
+  #listPanel .list-header-main-title > span {
+    font-size: 26px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+  }
+
+  @media (max-width:700px) {
+    #listContent .list-title.city,
+    #listContent .list-title.rural {
+      font-size: 19.5px !important;
+    }
+
+    #listPanel .list-header-main-title > span {
+      font-size: 24.7px !important;
+      font-weight: 700 !important;
+    }
+  }
+
 </style>
 
 </head>
