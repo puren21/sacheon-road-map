@@ -4999,6 +4999,86 @@
     color: #d94a45 !important;
   }
 
+
+  /* ===== 2026-10-01: 고급기능 접기 + 회색톤 강화 ===== */
+  .road-popup .popup-header {
+    background: #d9dadd !important;
+    border-bottom-color: #c8c9cd !important;
+  }
+
+  .road-popup .popup-eyebrow {
+    color: #4f5358 !important;
+  }
+
+  .road-memo-section,
+  .road-advanced-section {
+    margin: 8px 0 6px;
+    border-radius: 12px;
+    background: #e3e4e7 !important;
+    overflow: hidden;
+  }
+
+  .road-advanced-open {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: transparent;
+    color: #202124;
+    font-size: 14px;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .road-advanced-chevron {
+    color: #8d9095;
+    font-size: 22px;
+    font-weight: 400;
+  }
+
+  .road-advanced-menu {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin: 0 !important;
+    padding: 0 10px 10px !important;
+    border-top: 0 !important;
+  }
+
+  .road-advanced-menu[hidden] {
+    display: none !important;
+  }
+
+  .road-advanced-menu button {
+    width: 100%;
+    height: 38px;
+    margin-top: 6px;
+    border: 1px solid #c7c9ce;
+    border-radius: 8px;
+    background: #f7f7f8;
+    color: #34383d;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .road-advanced-menu .road-edit-btn {
+    color: #176fc1;
+    border-color: #b7cde3;
+    background: #eef4fa;
+  }
+
+  .road-memo-open {
+    background: transparent !important;
+  }
+
+  .road-memo-preview {
+    color: #4f5358 !important;
+  }
+
 </style>
 
 </head>
@@ -13462,6 +13542,30 @@
           };
         }
 
+        const advancedSection = popup.querySelector(".road-advanced-section");
+        const advancedOpen = popup.querySelector(".road-advanced-open");
+        const advancedMenu = popup.querySelector(".road-advanced-menu");
+
+        if (advancedSection) {
+          ["pointerdown", "mousedown", "touchstart"].forEach(function(type) {
+            advancedSection.addEventListener(type, function(event) {
+              event.stopPropagation();
+            });
+          });
+        }
+
+        if (advancedOpen && advancedMenu) {
+          advancedOpen.onclick = function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const willOpen = advancedMenu.hidden;
+            advancedMenu.hidden = !willOpen;
+            advancedOpen.classList.toggle("advanced-open", willOpen);
+            const chevron = advancedOpen.querySelector(".road-advanced-chevron");
+            if (chevron) chevron.textContent = willOpen ? "⌄" : "›";
+          };
+        }
+
         const editBtn = popup.querySelector(".road-edit-btn");
         if (editBtn) {
           editBtn.onclick = function() {
@@ -13808,9 +13912,15 @@
 
       function roadPopupActions(group) {
         const encodedKey = encodeURIComponent(group.key);
-        return '<div class="road-popup-actions">' +
-          '<button type="button" class="road-edit-btn" data-group-key="' + encodedKey + '">편집</button>' +
-          '<button type="button" class="road-export-btn">GeoJSON 저장</button>' +
+        return '<div class="road-advanced-section">' +
+          '<button type="button" class="road-advanced-open">' +
+            '<span>고급기능</span>' +
+            '<span class="road-advanced-chevron">›</span>' +
+          '</button>' +
+          '<div class="road-popup-actions road-advanced-menu" hidden>' +
+            '<button type="button" class="road-edit-btn" data-group-key="' + encodedKey + '">편집</button>' +
+            '<button type="button" class="road-export-btn">GeoJSON 저장</button>' +
+          '</div>' +
         '</div>';
       }
 
