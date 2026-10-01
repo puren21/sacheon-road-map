@@ -7440,6 +7440,7 @@
       let selectedTownshipName = null;
       let townshipStartMode = true;
       let townshipStartCompleted = false;
+      let townshipInitialMapLevel = null;
       let townshipSelectionFillShown = false;
       let townshipFillTimer = null;
       let activeTownshipHoverGroup = null;
@@ -8284,6 +8285,16 @@
 
         const scaleMeters = niceScaleDistance(metersPerPixel * 110);
         currentScaleDenominator = metersPerPixel * 3779.527559;
+
+        if (
+          townshipStartMode &&
+          !townshipStartCompleted &&
+          townshipSelectGroups.size > 0 &&
+          !townshipAllBounds.isEmpty()
+        ) {
+          townshipInitialMapLevel = map.getLevel();
+        }
+
         const denominator = roundScale(currentScaleDenominator);
 
         document.getElementById("scaleBar").style.width =
@@ -11791,9 +11802,16 @@
       }
 
       function shouldAutoShowTownshipBoundary() {
-        // 최초 읍면 선택 화면에서만 자동 표시.
-        // 한 번 초기 화면을 벗어난 뒤에는 확대/축소/전체보기로 절대 자동 복귀하지 않음.
-        return townshipStartMode && !townshipStartCompleted;
+        // 최초 읍면 선택 화면에서는 항상 표시.
+        if (townshipStartMode && !townshipStartCompleted) return true;
+
+        // 초기 화면을 벗어난 뒤에는 최초 화면과 정확히 같은 축척(level)으로
+        // 돌아왔을 때만 자동 표시. 그 외에는 기타기능 수동 설정만 따른다.
+        return (
+          townshipStartCompleted &&
+          Number.isFinite(townshipInitialMapLevel) &&
+          map.getLevel() === townshipInitialMapLevel
+        );
       }
 
       function syncTownshipBoundaryDisplay() {
@@ -11812,9 +11830,12 @@
             );
           });
 
-          // 클릭용 hit polygon은 초기 선택화면에서만 유지
+          // 클릭용 hit polygon은 실제 최초 선택화면에서만 유지.
+          // 같은 축척으로 돌아왔을 때는 경계선만 표시하고 선택용 hit 영역은 붙이지 않음.
           (group.hitPolygons || []).forEach(function(poly) {
-            poly.setMap(townshipStartMode ? map : null);
+            poly.setMap(
+              townshipStartMode && !townshipStartCompleted ? map : null
+            );
           });
         });
 
