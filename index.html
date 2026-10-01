@@ -12522,12 +12522,13 @@
           '<div class="road-attributes">' +
             row("노선번호", group.number) +
             row("구분", joinValues(uniqueValues(list, "GUBUN"))) +
-            row("구간상태", statusLengthSummary(group), "", "wrap-status") +
-            row("차선상태", rangeValues(list, "차선")) +
-            row("도로폭(노선)", rangeValues(list, "도로폭"), " m") +
-            row("도로폭(선택)", current["도로폭"] !== undefined && current["도로폭"] !== null && String(current["도로폭"]).trim() !== "" ? current["도로폭"] : "-", current["도로폭"] !== undefined && current["도로폭"] !== null && String(current["도로폭"]).trim() !== "" ? " m" : "") +
+            row("구간현황", statusLengthSummary(group), "", "wrap-status") +
+            row("차선현황", rangeValues(list, "차선")) +
+            row("도로폭", rangeValues(list, "도로폭"), " m") +
             row("총연장", formatRoadLength(ruralTotalLengths.get(group.number) || 0), " km") +
-            row("연장(선택)", current["연장"] !== undefined && current["연장"] !== null && String(current["연장"]).trim() !== "" ? formatRoadLength(parseRoadLength(current["연장"])) : "-", current["연장"] !== undefined && current["연장"] !== null && String(current["연장"]).trim() !== "" ? " km" : "") +
+            row("차선현황(선택구간)", current["차선"] !== undefined && current["차선"] !== null && String(current["차선"]).trim() !== "" ? current["차선"] : "-") +
+            row("도로폭(선택구간)", current["도로폭"] !== undefined && current["도로폭"] !== null && String(current["도로폭"]).trim() !== "" ? current["도로폭"] : "-", current["도로폭"] !== undefined && current["도로폭"] !== null && String(current["도로폭"]).trim() !== "" ? " m" : "") +
+            row("연장(선택구간)", current["연장"] !== undefined && current["연장"] !== null && String(current["연장"]).trim() !== "" ? formatRoadLength(parseRoadLength(current["연장"])) : "-", current["연장"] !== undefined && current["연장"] !== null && String(current["연장"]).trim() !== "" ? " km" : "") +
             row("기점", joinValues(uniqueValues(list, "기점"))) +
             row("종점", joinValues(uniqueValues(list, "종점"))) +
             row("노선상태", roadStatusLabel(currentStatus)) +
