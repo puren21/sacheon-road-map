@@ -6327,6 +6327,18 @@
   }
 
 
+  /* ===== 2026-10-01: 숫자 선택 드롭다운 + 상세헤더 정리 ===== */
+  .layer-editor-detail-heading {
+    padding-left: 4px !important;
+  }
+
+  .road-layer-width {
+    appearance: auto !important;
+    -webkit-appearance: menulist !important;
+    cursor: pointer !important;
+    padding: 0 28px 0 10px !important;
+  }
+
   /* ===== 2026-10-01: 메모 저장 버튼 강조 ===== */
   .road-popup .road-memo-actions {
     grid-template-columns: 1fr 1fr !important;
@@ -6381,6 +6393,38 @@
       min-height: 54px !important;
       font-size: 18px !important;
     }
+  }
+
+
+  /* 저장 버튼은 hover 여부와 관계없이 항상 강조 */
+  body .road-popup .road-memo-actions > button.road-memo-save,
+  body .road-popup .road-memo-actions > button.road-memo-save:link,
+  body .road-popup .road-memo-actions > button.road-memo-save:visited {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 50px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: #007aff !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border: 0 !important;
+    border-radius: 12px !important;
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    opacity: 1 !important;
+    box-shadow: 0 3px 10px rgba(0,122,255,.32) !important;
+  }
+
+  body .road-popup .road-memo-actions > button.road-memo-save:hover,
+  body .road-popup .road-memo-actions > button.road-memo-save:focus-visible,
+  body .road-popup .road-memo-actions > button.road-memo-save:active {
+    background-color: #006ee6 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
   }
 
 </style>
@@ -10677,27 +10721,25 @@
 
       function renderEditorBackbar(body, title, note) {
         const bar = document.createElement("div");
-        bar.className = "layer-editor-backbar";
+        bar.className = "layer-editor-backbar layer-editor-detail-heading";
         bar.innerHTML =
-          '<button class="layer-editor-back" type="button" aria-label="뒤로">‹</button>' +
           '<div><div class="layer-editor-detail-title">' + escapeHTML(title) + '</div>' +
           '<div class="layer-editor-detail-note">' + escapeHTML(note || '') + '</div></div>';
-        bar.querySelector(".layer-editor-back").addEventListener("click", function() {
-          const parent = roadLayerEditorView && roadLayerEditorView.parent
-            ? roadLayerEditorView.parent
-            : "main";
-          roadLayerEditorView = { type:parent, styleKey:null };
-          renderRoadLayerEditor();
-          const mainTitle = document.querySelector("#listPanel .list-header-main-title");
-          if (mainTitle) {
-            mainTitle.textContent = parent === "lineMain"
-              ? "라인"
-              : parent === "labelMain"
-                ? "라벨"
-                : "스타일 설정";
-          }
-        });
         body.appendChild(bar);
+      }
+
+      function roadWidthOptions(currentValue) {
+        const presets = [0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,24,30];
+        const current = Number(currentValue);
+        const values = presets.slice();
+        if (Number.isFinite(current) && !values.some(function(v) { return Math.abs(v - current) < 0.001; })) {
+          values.push(current);
+          values.sort(function(a,b) { return a-b; });
+        }
+        return values.map(function(value) {
+          const selected = Number.isFinite(current) && Math.abs(value - current) < 0.001 ? ' selected' : '';
+          return '<option value="' + value + '"' + selected + '>' + value + ' px</option>';
+        }).join('');
       }
 
       function renderRoadStyleDetail(body, styleKey) {
@@ -10723,7 +10765,7 @@
             '<div class="road-layer-control-grid">' +
               '<span class="road-layer-field-label">색상</span><span class="road-layer-field-label">두께(px)</span>' +
               '<span class="road-layer-color-wrap"><input class="road-layer-color" type="color" value="' + layerConfig.color + '"><input class="road-layer-color-code" type="text" maxlength="7" spellcheck="false" value="' + String(layerConfig.color || '').toUpperCase() + '"></span>' +
-              '<input class="road-layer-width" type="number" min="0.5" max="30" step="0.1" value="' + layerConfig.width + '">' +
+              '<select class="road-layer-width" aria-label="라인 두께">' + roadWidthOptions(layerConfig.width) + '</select>' +
               '<span class="road-layer-field-label" style="grid-column:1/-1">투명도</span>' +
               '<span class="road-layer-opacity-wrap"><input class="road-layer-opacity" type="range" min="0" max="100" step="1" value="' + (Number.isFinite(Number(layerConfig.opacity)) ? layerConfig.opacity : 100) + '"><input class="road-layer-opacity-number" type="number" min="0" max="100" step="1" value="' + (Number.isFinite(Number(layerConfig.opacity)) ? layerConfig.opacity : 100) + '"></span>' +
             '</div>' +
@@ -15262,7 +15304,7 @@
             '<div class="road-memo-actions">' +
               '<button type="button" class="road-memo-cancel">취소</button>' +
               '<button type="button" class="road-memo-delete">삭제</button>' +
-              '<button type="button" class="road-memo-save">✓ 저장</button>' +
+              '<button type="button" class="road-memo-save" style="grid-column:1/-1;grid-row:1;display:flex;width:100%;min-width:0;min-height:50px;align-items:center;justify-content:center;background:#007aff;color:#fff;border:0;border-radius:12px;font-size:17px;font-weight:800;white-space:nowrap;box-shadow:0 3px 10px rgba(0,122,255,.32)">저장</button>' +
             '</div>' +
           '</div>' +
         '</div>';
@@ -15416,7 +15458,7 @@
             alert("온라인 메모 저장에 실패했습니다.\n\n" + error.message);
           } finally {
             saveBtn.disabled = false;
-            saveBtn.textContent = "✓ 저장";
+            saveBtn.textContent = "저장";
           }
         };
         if (deleteBtn) deleteBtn.onclick = async function(event) {
