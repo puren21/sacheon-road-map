@@ -5737,11 +5737,45 @@
   }
 
   .layer-style-inline-check {
-    width:20px;
-    height:20px;
-    flex:0 0 20px;
-    margin:0 2px 0 0;
-    accent-color:#007aff;
+    appearance:none !important;
+    -webkit-appearance:none !important;
+    position:relative !important;
+    width:42px !important;
+    height:24px !important;
+    flex:0 0 42px !important;
+    margin:0 2px 0 0 !important;
+    border:0 !important;
+    border-radius:999px !important;
+    background:#d1d1d6 !important;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.06) !important;
+    cursor:pointer !important;
+    transition:background .18s ease !important;
+  }
+
+  .layer-style-inline-check::before {
+    content:"" !important;
+    position:absolute !important;
+    top:2px !important;
+    left:2px !important;
+    width:20px !important;
+    height:20px !important;
+    border-radius:50% !important;
+    background:#ffffff !important;
+    box-shadow:0 1px 3px rgba(0,0,0,.24) !important;
+    transition:transform .18s ease !important;
+  }
+
+  .layer-style-inline-check:checked {
+    background:#34c759 !important;
+  }
+
+  .layer-style-inline-check:checked::before {
+    transform:translateX(18px) !important;
+  }
+
+  .layer-style-inline-check:focus-visible {
+    outline:2px solid rgba(0,122,255,.35) !important;
+    outline-offset:2px !important;
   }
 
   .layer-map-settings-card {
@@ -6734,6 +6768,22 @@
     #roadMenuOtherPage .other-load-button {
       min-height: 56px;
       font-size: 17px;
+    }
+  }
+
+
+  @media (max-width:700px) {
+    .layer-style-inline-check {
+      width:40px !important;
+      height:23px !important;
+      flex-basis:40px !important;
+    }
+    .layer-style-inline-check::before {
+      width:19px !important;
+      height:19px !important;
+    }
+    .layer-style-inline-check:checked::before {
+      transform:translateX(17px) !important;
     }
   }
 
