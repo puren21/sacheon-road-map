@@ -6199,6 +6199,51 @@
     text-shadow: none !important;
   }
 
+
+  /* ===== 2026-10-01: 두께 입력 가독성 + 스피너 제거 ===== */
+  .road-layer-width {
+    width: 100% !important;
+    min-width: 88px !important;
+    height: 38px !important;
+    padding: 4px 10px !important;
+    border: 1px solid #c7c7cc !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    color: #1c1c1e !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    appearance: textfield !important;
+    -moz-appearance: textfield !important;
+  }
+
+  .road-layer-width::-webkit-outer-spin-button,
+  .road-layer-width::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+
+  .road-layer-control-grid {
+    grid-template-columns: minmax(0, 1fr) 96px !important;
+  }
+
+  .road-layer-field-label {
+    font-size: 11px !important;
+  }
+
+  .road-layer-opacity-number {
+    appearance: textfield !important;
+    -moz-appearance: textfield !important;
+  }
+
+  .road-layer-opacity-number::-webkit-outer-spin-button,
+  .road-layer-opacity-number::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+
 </style>
 
 </head>
