@@ -6326,6 +6326,38 @@
     box-shadow: 0 1px 4px rgba(0,0,0,.28) !important;
   }
 
+
+  /* ===== 2026-10-01: 메모 저장 버튼 강조 ===== */
+  .road-popup .road-memo-actions {
+    grid-template-columns: .9fr .9fr 1.35fr !important;
+    gap: 8px !important;
+  }
+
+  .road-popup .road-memo-actions button {
+    min-height: 42px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+  }
+
+  .road-popup .road-memo-save {
+    background: #007aff !important;
+    color: #ffffff !important;
+    border: 0 !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(0,122,255,.24) !important;
+  }
+
+  .road-popup .road-memo-save:hover,
+  .road-popup .road-memo-save:active {
+    background: #006ee6 !important;
+  }
+
+  .road-popup .road-memo-save:disabled {
+    opacity: .55 !important;
+    box-shadow: none !important;
+  }
+
 </style>
 
 </head>
