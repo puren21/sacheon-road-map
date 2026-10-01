@@ -5471,6 +5471,177 @@
     }
   }
 
+
+  /* ===== 2026-10-01: 첨부이미지형 메인메뉴 색상/화살표 ===== */
+  #listPanel {
+    background: #f2f2f7 !important;
+  }
+
+  #listPanel .list-header {
+    min-height: 72px !important;
+    margin: 0 -12px 18px !important;
+    padding: 10px 14px !important;
+    display: grid !important;
+    grid-template-columns: 48px minmax(0,1fr) 48px !important;
+    align-items: center !important;
+    background: #ffffff !important;
+    border: 0 !important;
+    border-bottom: 0 !important;
+    border-radius: 22px 22px 0 0 !important;
+    cursor: move;
+  }
+
+  #listPanel .list-header-title-wrap {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    justify-self: start !important;
+    text-align: left !important;
+  }
+
+  #listPanel .list-header-main-title {
+    color: #000 !important;
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    letter-spacing: -.5px !important;
+    text-align: left !important;
+  }
+
+  #listPanel .list-menu-back {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    justify-self: start !important;
+    display: inline-flex !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    border: .5px solid rgba(60,60,67,.18) !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    color: #1c1c1e !important;
+    box-shadow: none !important;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Arial, sans-serif !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #listPanel .list-menu-back::before {
+    content: "‹";
+    display: block;
+    margin-top: -2px;
+    color: #1c1c1e;
+    font-size: 40px;
+    font-weight: 300;
+    line-height: .8;
+  }
+
+  #listPanel #listClose {
+    display: none !important;
+  }
+
+  .road-main-menu-home {
+    margin: 0 10px;
+    border: 0 !important;
+    border-radius: 18px !important;
+    background: #fff !important;
+    box-shadow: 0 0 0 .5px rgba(60,60,67,.10) !important;
+  }
+
+  .road-ios-menu-row {
+    min-height: 66px !important;
+    padding: 0 16px !important;
+    background: #fff !important;
+  }
+
+  .road-ios-menu-row:not(:last-child)::after {
+    left: 58px !important;
+    right: 0 !important;
+    height: .5px !important;
+    background: rgba(60,60,67,.18) !important;
+  }
+
+  .road-ios-menu-left {
+    gap: 13px !important;
+  }
+
+  .road-ios-menu-text {
+    color: #000 !important;
+    font-size: 20px !important;
+    font-weight: 400 !important;
+    letter-spacing: -.35px !important;
+  }
+
+  .road-ios-menu-icon {
+    width: 34px !important;
+    height: 34px !important;
+    flex-basis: 34px !important;
+    border-radius: 8px !important;
+  }
+
+  .road-ios-route-icon img,
+  .road-ios-style-icon img,
+  .road-ios-memo-icon svg {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .road-ios-chevron {
+    width: 20px !important;
+    flex: 0 0 20px !important;
+    color: #c7c7cc !important;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Arial, sans-serif !important;
+    font-size: 34px !important;
+    font-weight: 300 !important;
+    line-height: 1 !important;
+    text-align: center !important;
+  }
+
+  .road-ios-menu-row:hover,
+  .road-ios-menu-row:active {
+    background: #f6f6f8 !important;
+  }
+
+  #roadMenuRoadPage,
+  #roadMenuStylePage,
+  #roadMenuMemoPage {
+    padding: 0 10px 10px !important;
+    background: #f2f2f7 !important;
+  }
+
+  @media (max-width:700px) {
+    #listPanel .list-header {
+      min-height: 68px !important;
+      margin: 0 -10px 16px !important;
+      padding: 9px 12px !important;
+      border-radius: 16px 16px 0 0 !important;
+    }
+
+    #listPanel .list-header-main-title {
+      font-size: 22px !important;
+    }
+
+    #listPanel .list-menu-back {
+      width: 42px !important;
+      min-width: 42px !important;
+      height: 42px !important;
+    }
+
+    .road-main-menu-home {
+      margin: 0 8px;
+    }
+
+    .road-ios-menu-row {
+      min-height: 62px !important;
+      padding: 0 14px !important;
+    }
+
+    .road-ios-menu-text {
+      font-size: 19px !important;
+    }
+  }
+
 </style>
 
 </head>
@@ -14997,12 +15168,14 @@
     roadPage.classList.remove("active");
     stylePage.classList.remove("active");
     memoPage.classList.remove("active");
-    backBtn.style.display = "none";
-    title.textContent = "설정";
+    backBtn.style.display = "inline-flex";
+    backBtn.dataset.rootMenu = "1";
+    title.textContent = "메뉴";
   }
 
   function openPage(name) {
     panel.classList.add("road-menu-detail");
+    backBtn.dataset.rootMenu = "0";
     home.style.display = "none";
     roadPage.classList.toggle("active", name === "roads");
     stylePage.classList.toggle("active", name === "style");
@@ -15029,6 +15202,9 @@
   backBtn.addEventListener("click", function(event) {
     event.preventDefault();
     event.stopPropagation();
+    if (backBtn.dataset.rootMenu === "1") {
+      return;
+    }
     showHome();
   });
 
