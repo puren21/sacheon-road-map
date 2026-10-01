@@ -14347,9 +14347,25 @@
       }
 
       function rangeValues(list, key) {
-        const nums = list.map(function(p) {
-          return Number(String(p[key] ?? "").replace(/,/g, "").replace(/[^0-9.\-]/g, ""));
-        }).filter(Number.isFinite);
+        const nums = [];
+        list.forEach(function(p) {
+          const raw = String(p[key] ?? "").replace(/,/g, "").trim();
+          // 기존 동작과 동일하게 값이 없는 구간은 0으로 포함함.
+          // 따라서 3 / 10~14 / 빈 값이 섞인 노선은 0~14로 표시됨.
+          if (!raw) {
+            nums.push(0);
+            return;
+          }
+
+          // "10~14", "10-14", "10∼14"처럼 하나의 속성에 범위가
+          // 들어있는 경우 양 끝값을 각각 읽어 전체 노선의 최소/최대값을 계산함.
+          const matches = raw.match(/-?\d+(?:\.\d+)?/g);
+          if (!matches) return;
+          matches.forEach(function(value) {
+            const num = Number(value);
+            if (Number.isFinite(num)) nums.push(num);
+          });
+        });
         if (!nums.length) return joinValues(uniqueValues(list, key));
         const min = Math.min.apply(null, nums), max = Math.max.apply(null, nums);
         return min === max ? String(min) : min + "~" + max;
