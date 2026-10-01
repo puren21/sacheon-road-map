@@ -5382,6 +5382,95 @@
     .road-menu-memo-copy strong { font-size:17px; }
   }
 
+
+  /* ===== 2026-10-01: 스타일설정 메인메뉴 통합 + 상세창 좌측색상 ===== */
+  /* 우측 상단 레이어 버튼은 메인메뉴의 스타일 설정으로 이동 */
+  #roadLayerEditorBtn {
+    display: none !important;
+  }
+
+  /* 기존 레이어 팝업 자체는 사용하지 않고 내부 설정 내용만 왼쪽 메뉴에서 사용 */
+  #roadLayerEditorPanel {
+    display: none !important;
+  }
+
+  .road-ios-style-icon img {
+    display: block;
+    width: 29px;
+    height: 29px;
+    object-fit: cover;
+  }
+
+  #roadMenuStylePage {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #roadMenuStylePage #roadLayerUnifiedScroll {
+    display: block !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  #roadMenuStylePage #roadLayerEditorBody,
+  #roadMenuStylePage #roadLayerCustomizationBody {
+    width: 100%;
+  }
+
+  #roadMenuStylePage .road-layer-editor-section,
+  #roadMenuStylePage .layer-section,
+  #roadMenuStylePage .layer-group,
+  #roadMenuStylePage .layer-card {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* 상세 노선창: 첨부 이미지 왼쪽 예시 색상 */
+  .road-popup .popup-header {
+    background: #a9aaac !important;
+    border-bottom-color: #a9aaac !important;
+  }
+
+  .road-popup .popup-header .popup-eyebrow {
+    color: rgba(255,255,255,.92) !important;
+  }
+
+  .road-popup .popup-header .popup-title {
+    color: #fff !important;
+  }
+
+  .road-popup .popup-header .road-visibility-label {
+    color: rgba(255,255,255,.92) !important;
+  }
+
+  .road-popup .popup-close {
+    background: rgba(255,255,255,.22) !important;
+    color: #fff !important;
+  }
+
+  .road-memo-section,
+  .road-advanced-section {
+    background: #ececee !important;
+  }
+
+  .road-memo-open,
+  .road-advanced-open {
+    color: #1c1c1e !important;
+  }
+
+  .road-popup .road-attributes {
+    background: #fff !important;
+  }
+
+  @media (max-width:700px) {
+    #roadMenuStylePage #roadLayerUnifiedScroll {
+      padding-bottom: 8px !important;
+    }
+  }
+
 </style>
 
 </head>
@@ -9885,6 +9974,8 @@
           renderRoadLayerMain(body);
         }
       }
+
+      window.renderRoadLayerEditor = renderRoadLayerEditor;
 
       function initRoadLayerEditor() {
         const button = document.getElementById("roadLayerEditorBtn");
@@ -14784,6 +14875,15 @@
     roadPage.appendChild(el);
   });
 
+  const stylePage = document.createElement("div");
+  stylePage.id = "roadMenuStylePage";
+  stylePage.className = "road-menu-page";
+
+  const layerScroll = document.getElementById("roadLayerUnifiedScroll");
+  if (layerScroll) {
+    stylePage.appendChild(layerScroll);
+  }
+
   const memoPage = document.createElement("div");
   memoPage.id = "roadMenuMemoPage";
   memoPage.className = "road-menu-page";
@@ -14805,6 +14905,13 @@
       '</span>' +
       '<span class="road-ios-chevron">›</span>' +
     '</button>' +
+    '<button type="button" class="road-ios-menu-row" data-road-page="style">' +
+      '<span class="road-ios-menu-left">' +
+        '<span class="road-ios-menu-icon road-ios-style-icon" aria-hidden="true"><img src="data:image/webp;base64,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" alt=""></span>' +
+        '<span class="road-ios-menu-text">스타일 설정</span>' +
+      '</span>' +
+      '<span class="road-ios-chevron">›</span>' +
+    '</button>' +
     '<button type="button" class="road-ios-menu-row" data-road-page="memos">' +
       '<span class="road-ios-menu-left">' +
         '<span class="road-ios-menu-icon road-ios-memo-icon" aria-hidden="true">' +
@@ -14822,7 +14929,8 @@
 
   header.insertAdjacentElement("afterend", home);
   home.insertAdjacentElement("afterend", roadPage);
-  roadPage.insertAdjacentElement("afterend", memoPage);
+  roadPage.insertAdjacentElement("afterend", stylePage);
+  stylePage.insertAdjacentElement("afterend", memoPage);
 
   async function renderMemoMenu() {
     const list = document.getElementById("roadMenuMemoList");
@@ -14887,18 +14995,27 @@
     panel.classList.remove("road-menu-detail");
     home.style.display = "flex";
     roadPage.classList.remove("active");
+    stylePage.classList.remove("active");
     memoPage.classList.remove("active");
     backBtn.style.display = "none";
-    title.textContent = "사천시 도로현황";
+    title.textContent = "설정";
   }
 
   function openPage(name) {
     panel.classList.add("road-menu-detail");
     home.style.display = "none";
     roadPage.classList.toggle("active", name === "roads");
+    stylePage.classList.toggle("active", name === "style");
     memoPage.classList.toggle("active", name === "memos");
     backBtn.style.display = "inline-flex";
-    title.textContent = name === "memos" ? "메모" : "도로목록";
+    title.textContent = name === "memos"
+      ? "메모"
+      : name === "style"
+        ? "스타일 설정"
+        : "도로목록";
+    if (name === "style" && typeof window.renderRoadLayerEditor === "function") {
+      window.renderRoadLayerEditor();
+    }
     if (name === "memos") renderMemoMenu();
   }
 
