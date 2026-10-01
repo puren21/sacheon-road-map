@@ -16620,7 +16620,10 @@
       }
     }
     if (name === "memos") renderMemoMenu();
-    collapseRoadMenu();
+
+    // 메인 메뉴에서 하위 메뉴를 눌렀을 때는 해당 화면을 바로 보여준다.
+    // 원형 아이콘으로 자동 축소하지 않는다.
+    expandRoadMenu();
   }
 
   if (restoreBtn) {
