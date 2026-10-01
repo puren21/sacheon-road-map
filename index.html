@@ -10357,6 +10357,9 @@
           event.preventDefault();
           event.stopPropagation();
           onClick();
+          const mainTitle = document.querySelector("#listPanel .list-header-main-title");
+          const label = row.querySelector(".layer-style-menu-name");
+          if (mainTitle && label) mainTitle.textContent = label.textContent || "스타일 설정";
         });
         return row;
       }
@@ -10503,6 +10506,14 @@
             : "main";
           roadLayerEditorView = { type:parent, styleKey:null };
           renderRoadLayerEditor();
+          const mainTitle = document.querySelector("#listPanel .list-header-main-title");
+          if (mainTitle) {
+            mainTitle.textContent = parent === "lineMain"
+              ? "라인"
+              : parent === "labelMain"
+                ? "라벨"
+                : "스타일 설정";
+          }
         });
         body.appendChild(bar);
       }
@@ -10812,6 +10823,33 @@
       }
 
       window.renderRoadLayerEditor = renderRoadLayerEditor;
+      window.resetSacheonStyleMenu = function() {
+        roadLayerEditorView = { type:"main", styleKey:null };
+        renderRoadLayerEditor();
+      };
+      window.handleSacheonStyleBack = function() {
+        const type = roadLayerEditorView && roadLayerEditorView.type ? roadLayerEditorView.type : "main";
+
+        if (type === "road" || type === "status") {
+          roadLayerEditorView = { type:"lineMain", styleKey:null };
+          renderRoadLayerEditor();
+          return { handled:true, title:"라인" };
+        }
+
+        if (type === "label" || type === "townshipLabel") {
+          roadLayerEditorView = { type:"labelMain", styleKey:null };
+          renderRoadLayerEditor();
+          return { handled:true, title:"라벨" };
+        }
+
+        if (type === "lineMain" || type === "labelMain" || type === "mapMain") {
+          roadLayerEditorView = { type:"main", styleKey:null };
+          renderRoadLayerEditor();
+          return { handled:true, title:"스타일 설정" };
+        }
+
+        return { handled:false, title:"스타일 설정" };
+      };
 
       function initRoadLayerEditor() {
         const button = document.getElementById("roadLayerEditorBtn");
@@ -15879,8 +15917,12 @@
       : name === "style"
         ? "스타일 설정"
         : "도로목록";
-    if (name === "style" && typeof window.renderRoadLayerEditor === "function") {
-      window.renderRoadLayerEditor();
+    if (name === "style") {
+      if (typeof window.resetSacheonStyleMenu === "function") {
+        window.resetSacheonStyleMenu();
+      } else if (typeof window.renderRoadLayerEditor === "function") {
+        window.renderRoadLayerEditor();
+      }
     }
     if (name === "memos") renderMemoMenu();
   }
@@ -15895,9 +15937,20 @@
   backBtn.addEventListener("click", function(event) {
     event.preventDefault();
     event.stopPropagation();
+
     if (backBtn.dataset.rootMenu === "1") {
       return;
     }
+
+    if (stylePage.classList.contains("active") &&
+        typeof window.handleSacheonStyleBack === "function") {
+      const result = window.handleSacheonStyleBack();
+      if (result && result.handled) {
+        title.textContent = result.title || "스타일 설정";
+        return;
+      }
+    }
+
     showHome();
   });
 
