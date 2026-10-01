@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const html = fs.readFileSync(require('node:path').join(__dirname, '../index.html'), 'utf8');
 function source(name) {
-  const start = html.indexOf(`      function ${name}(`);
+  let start = html.indexOf(`      function ${name}(`);
+  if (start < 0) start = html.indexOf(`      async function ${name}(`);
   assert.ok(start >= 0, name);
   return html.slice(start, html.indexOf('\n      }', start) + 8);
 }
@@ -16,14 +17,14 @@ function overlay() {
 function setup(windows = false) {
   const jobs = new Map(), frames = new Map(); let id = 0;
   const group = { polygons: [overlay()], skyBackPolygons: [overlay()], hitPolygons: [overlay()], label: overlay(), hoverDismissed: false };
-  const c = { INITIAL_MAP_LEVEL: 7, mapInteracting: false, mapIdleTimer: null, mapRefreshFrame: null,
+  const c = { mapStrokePx: x=>x, INITIAL_MAP_LEVEL: 7, mapInteracting: false, mapIdleTimer: null, mapRefreshFrame: null,
     deferredRoadRestoreToken: 0, windowsDragFastMode: false, windowsZoomFastMode: false,
     zoomLightMode: false, zoomRestoreTimer: null, windowsPanPrepared: false, IS_WINDOWS: windows,
     townshipStartMode: true, townshipStartCompleted: false, isSkyViewMode: false,
     currentScaleDenominator: 60000, townshipSelectGroups: [group], activeTownshipHoverGroup: null,
     selectedTownshipName: null, selectedRoadGroupKey: null, allRoads: [], removeSelectedRouteBalloon() {},
     LAYERS: { city: { visible: true, labels: [{ overlay: overlay(), _visible: true }] } },
-    BOUNDARY_LAYERS: { townshipBoundary: { visible: false, maxScale: Infinity, shapes: [overlay()] }, riBoundary: { visible: true, maxScale: 75000, shapes: [overlay()] } },
+    BOUNDARY_LAYERS: { townshipBoundary: { visible: false, detailLoaded: true, overviewShapes: group.polygons, maxScale: Infinity, shapes: [overlay()] }, riBoundary: { visible: true, maxScale: 75000, shapes: [overlay()] } },
     map: { level: 7, getLevel() { return this.level; }, setCursor() {} },
     resetTownshipStyles() {}, setTownshipGroupStyle() {},
     document: { body: { classList: { add() {}, remove() {} } } },
@@ -65,7 +66,7 @@ for (const windows of [false, true]) {
     c.BOUNDARY_LAYERS.townshipBoundary.visible=true; c.isSkyViewMode=true; c.updateBoundaryVisibility();
     for (const level of [4, 7, 11]) {
       c.events.zoom_start(); c.map.level=level; c.events.zoom_changed(); c.events.dragstart();
-      for (const item of [...group.polygons,...group.skyBackPolygons,...c.BOUNDARY_LAYERS.townshipBoundary.shapes]) assert.equal(item.getMap(),c.map);
+      for (const item of c.BOUNDARY_LAYERS.townshipBoundary.shapes) assert.equal(item.getMap(),c.map);
       assert.equal(group.hitPolygons[0].getMap(),null);
       c.events.idle();timers();paint();
     }
@@ -190,4 +191,46 @@ test('cached overlapping labels are rejected without reattachment or layout read
   c.updateLabels();assert.equal(reads,2);assert.equal(labels[0].overlay.getMap(),c.map);assert.equal(labels[1].overlay.getMap(),null);
   const rejectedWrites=labels[1].overlay.writes;c.updateLabels();assert.equal(reads,2);assert.equal(labels[1].overlay.writes,rejectedWrites);
   c.LABEL_STYLES.SCALE=150;c.updateLabels();assert.equal(reads,4);
+});
+test('automatic overview and manual original lines never render together',()=>{
+  const {c}=setup();const layer=c.BOUNDARY_LAYERS.townshipBoundary;
+  for(const level of [6,7,9]){
+    c.map.level=level;layer.visible=false;c.updateBoundaryVisibility();
+    assert.equal(layer.overviewShapes[0].getMap(),level>=7?c.map:null);assert.equal(layer.shapes[0].getMap(),null);
+    layer.visible=true;c.updateBoundaryVisibility();assert.equal(layer.overviewShapes[0].getMap(),null);assert.equal(layer.shapes[0].getMap(),c.map);
+  }
+});
+test('detail fetch is lazy, deduplicated, and respects OFF before load completes',async()=>{
+  const {c}=setup();const layer=c.BOUNDARY_LAYERS.townshipBoundary;layer.detailLoaded=false;layer.shapes=[];
+  let resolve,fetches=0;Object.assign(c,{fetchFirstAvailableGeoJSON(){fetches++;return new Promise(r=>resolve=r)},addTownshipBoundaryLines(f,target){target.push(overlay())}});
+  vm.runInContext(source('loadDetailedTownshipBoundary'),c);
+  assert.equal(fetches,0);layer.visible=true;const first=c.loadDetailedTownshipBoundary(),second=c.loadDetailedTownshipBoundary();assert.equal(fetches,1);
+  layer.visible=false;resolve({data:{features:[{}]}});await Promise.all([first,second]);assert.equal(layer.shapes[0].getMap(),null);assert.equal(layer.detailLoaded,true);
+  await c.loadDetailedTownshipBoundary();assert.equal(fetches,1);
+});
+test('detail load failures allow retry',async()=>{
+  const {c}=setup();const layer=c.BOUNDARY_LAYERS.townshipBoundary;layer.detailLoaded=false;let attempts=0;
+  Object.assign(c,{fetchFirstAvailableGeoJSON:async()=>{if(++attempts===1)throw Error('network');return {data:{features:[]}}},addTownshipBoundaryLines(){}});
+  vm.runInContext(source('loadDetailedTownshipBoundary'),c);
+  await assert.rejects(c.loadDetailedTownshipBoundary());assert.equal(layer.detailLoadingPromise,null);await c.loadDetailedTownshipBoundary();assert.equal(attempts,2);
+});
+test('township display creates only lines and area selection respects holes',()=>{
+  for(const name of ['addTownshipSelectorFeature','addTownshipBoundaryLines','setTownshipGroupStyle'])assert.doesNotMatch(source(name),/new kakao\.maps\.Polygon|fillColor|fillOpacity/);
+  const outer=[[0,0],[10,0],[10,10],[0,10],[0,0]],hole=[[4,4],[6,4],[6,6],[4,6],[4,4]];
+  const c={townshipSelectGroups:new Map([['A',{name:'A',bounds:{contain:()=>true},selectionParts:[[outer,hole]]}]])};vm.createContext(c);
+  for(const name of ['pointInRing','findTownshipAtPosition'])vm.runInContext(source(name),c);
+  const pos=(x,y)=>({getLng:()=>x,getLat:()=>y});assert.equal(c.findTownshipAtPosition(pos(1,1)),'A');assert.equal(c.findTownshipAtPosition(pos(5,5)),null);assert.equal(c.findTownshipAtPosition(pos(11,11)),null);
+});
+test('generated lines have no duplicate segments and manual detail preserves every original segment',()=>{
+  const root=require('node:path').join(__dirname,'..');
+  const read=name=>JSON.parse(fs.readFileSync(require('node:path').join(root,name),'utf8'));
+  function edges(data,linesOnly){const counts=new Map();for(const f of data.features){const g=f.geometry;if(linesOnly&&!g.type.includes('LineString'))continue;const paths=g.type==='LineString'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates.flat():g.coordinates;for(const path of paths)for(let i=1;i<path.length;i++){const a=JSON.stringify(path[i-1]),b=JSON.stringify(path[i]);if(a===b)continue;const k=[a,b].sort().join('|');counts.set(k,(counts.get(k)||0)+1)}}return counts}
+  const original=read('Township Boundary.geojson'),detail=read('township_detail_lines.geojson'),overview=read('township_overview.geojson');
+  const sourceEdges=edges(original,false),detailEdges=edges(detail,true),overviewEdges=edges(overview,true);
+  assert.deepEqual(new Set(detailEdges.keys()),new Set(sourceEdges.keys()));
+  for(const count of [...detailEdges.values(),...overviewEdges.values()])assert.equal(count,1);
+  assert.ok(overviewEdges.size<sourceEdges.size*0.05);
+  assert.ok(detail.features.every(f=>f.geometry.type.includes('LineString')));
+  const names=data=>new Set(data.features.filter(f=>f.geometry.type.includes('Polygon')).map(f=>JSON.stringify(f.properties)));
+  assert.deepEqual(names(overview),names(original));
 });

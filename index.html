@@ -7389,7 +7389,10 @@
           shapes: []
         },
         townshipBoundary: {
-          files: ["township_boundary.geojson", "Township Boundary.geojson", "Township Boundary(1).geojson"],
+          files: ["township_overview.geojson"],
+          overviewShapes: [],
+          detailLoaded: false,
+          detailLoadingPromise: null,
           visible: false,
           loaded: false,
           loadingPromise: null,
@@ -7476,52 +7479,6 @@
         }
 
         const selected = mode === "selected";
-        const hover = mode === "hover";
-
-        group.polygons.forEach(function(poly) {
-          let fillOpacity = 0;
-
-          if (selected) {
-            fillOpacity = townshipSelectionFillShown ? (isSkyViewMode ? 0.16 : 0.18) : 0;
-          } else if (hover) {
-            fillOpacity = isSkyViewMode ? 0.12 : 0.16;
-          } else if (townshipStartMode) {
-            fillOpacity = isSkyViewMode ? 0.04 : 0.10;
-          }
-
-          if (isSkyViewMode) {
-            setMapOptionsIfChanged(poly, {
-              strokeWeight: mapStrokePx(selected ? 3.4 : hover ? 3.0 : 2.6, 1),
-              strokeColor: selected ? "#3DB2FF" : hover ? "#FFE066" : "#FFFFFF",
-              strokeOpacity: 1,
-              strokeStyle: "shortdash",
-              fillColor: selected ? "#258FFF" : hover ? "#FFE066" : "#FFFFFF",
-              fillOpacity: fillOpacity
-            });
-          } else {
-            setMapOptionsIfChanged(poly, {
-              strokeWeight: mapStrokePx(selected ? 2.2 : hover ? 2.0 : 1.6, 1),
-              strokeColor: selected ? "#258FFF" : hover ? "#3D7194" : "#59636D",
-              strokeOpacity: selected ? 1 : hover ? 1 : 0.92,
-              strokeStyle: "shortdash",
-              fillColor: selected ? "#258FFF" : hover ? "#74A9CF" : "#B8C8D3",
-              fillOpacity: fillOpacity
-            });
-          }
-        });
-
-        (group.skyBackPolygons || []).forEach(function(poly) {
-          const boundaryVisible =
-            BOUNDARY_LAYERS.townshipBoundary.visible ||
-            (!mapInteracting && shouldAutoShowTownshipBoundary());
-          setOverlayMapIfChanged(poly, isSkyViewMode && boundaryVisible ? map : null);
-          setMapOptionsIfChanged(poly, {
-            strokeWeight: mapStrokePx(selected ? 6.2 : hover ? 5.8 : 5.0, 1),
-            strokeColor: "#111111",
-            strokeOpacity: selected ? 0.82 : hover ? 0.78 : 0.72,
-            strokeStyle: "solid"
-          });
-        });
 
         if (group.labelEl) {
           group.labelEl.classList.toggle("selected", selected);
@@ -7538,13 +7495,7 @@
           }
         }
 
-        (group.hitPolygons || []).forEach(function(hit) {
-          if (typeof hit.setOptions === "function") {
-            setMapOptionsIfChanged(hit, {
-              fillOpacity: selected ? 0 : 0.01
-            });
-          }
-        });
+
       }
 
       function dismissTownshipHoverLayer(group) {
@@ -8390,6 +8341,9 @@
 
       function hideBoundaryLayersForInteraction() {
         Object.values(BOUNDARY_LAYERS).forEach(function(layer) {
+          (layer.overviewShapes || []).forEach(function(line) {
+            setOverlayMapIfChanged(line, null);
+          });
           if (layer === BOUNDARY_LAYERS.townshipBoundary && layer.visible) return;
           layer.shapes.forEach(function(shape) {
             if (shape.getMap()) shape.setMap(null);
@@ -11812,6 +11766,16 @@
         if (!layer) return;
 
         layer.visible = visible;
+        if (layerId === "townshipBoundary" && visible && !layer.detailLoaded) {
+          loadDetailedTownshipBoundary().catch(function(error) {
+            console.warn("원본 읍면 경계를 불러오지 못했습니다.", error);
+            layer.visible = false;
+            document.getElementById("townshipBoundaryCheck").checked = false;
+            const editorCheck = document.getElementById("editorTownshipBoundaryCheck");
+            if (editorCheck) editorCheck.checked = false;
+            updateBoundaryVisibility();
+          });
+        }
 
         if (visible && !layer.loaded && layerId !== "townshipBoundary") {
           loadBoundaryGeoJSON(layerId).catch(function(error) {
@@ -11848,60 +11812,42 @@
       }
 
       function syncTownshipBoundaryDisplay() {
-        const showTownshipBoundary =
-          BOUNDARY_LAYERS.townshipBoundary.visible ||
-          (!mapInteracting && shouldAutoShowTownshipBoundary());
-
-        townshipSelectGroups.forEach(function(group) {
-          group.polygons.forEach(function(poly) {
-            setOverlayMapIfChanged(poly, showTownshipBoundary ? map : null);
-          });
-
-          (group.skyBackPolygons || []).forEach(function(poly) {
-            setOverlayMapIfChanged(poly,
-              showTownshipBoundary && isSkyViewMode ? map : null
-            );
-          });
-
-          // 클릭용 hit polygon은 실제 최초 선택화면에서만 유지.
-          // 같은 축척으로 돌아왔을 때는 경계선만 표시하고 선택용 hit 영역은 붙이지 않음.
-          (group.hitPolygons || []).forEach(function(poly) {
-            setOverlayMapIfChanged(poly,
-              showTownshipBoundary && townshipStartMode && !townshipStartCompleted && !group.hoverDismissed && !mapInteracting ? map : null
-            );
-          });
+        const layer = BOUNDARY_LAYERS.townshipBoundary;
+        const showDetail = layer.visible && layer.detailLoaded;
+        const showOverview = !showDetail && !mapInteracting && shouldAutoShowTownshipBoundary();
+        const options = {
+          strokeColor: isSkyViewMode ? "#FFFFFF" : "#59636D",
+          strokeWeight: mapStrokePx(isSkyViewMode ? 2.6 : 1.6, 1),
+          strokeOpacity: isSkyViewMode ? 1 : 0.92, strokeStyle: "shortdash"
+        };
+        (layer.overviewShapes || []).forEach(function(line) {
+          setMapOptionsIfChanged(line, options);
+          setOverlayMapIfChanged(line, showOverview ? map : null);
         });
-
-        // 초기화면이 아니면 면 채우기/강조 없이 경계선만 보이도록 정리
-        if (!mapInteracting) resetTownshipStyles();
+        layer.shapes.forEach(function(line) {
+          setMapOptionsIfChanged(line, options);
+          setOverlayMapIfChanged(line, showDetail ? map : null);
+        });
       }
 
       function updateBoundaryVisibility() {
         Object.keys(BOUNDARY_LAYERS).forEach(function(layerId) {
+          if (layerId === "townshipBoundary") return;
           const layer = BOUNDARY_LAYERS[layerId];
           const scaleVisible =
             !Number.isFinite(currentScaleDenominator) ||
             currentScaleDenominator <= layer.maxScale;
 
-          // 읍면동계는 level 7 이상 자동 표시, 메뉴 ON은 모든 축척에서 우선 표시.
-          // 리 경계 등 다른 경계는 레이어 메뉴 체크 상태를 따름.
-          const show =
-            scaleVisible &&
-            (
-              layer.visible ||
-              (
-                layerId === "townshipBoundary" &&
-                shouldAutoShowTownshipBoundary()
-              )
-            );
+          // 읍면동은 아래에서 간략/원본 선을 전환하고 나머지는 메뉴 상태를 따름.
+          const show = scaleVisible && layer.visible;
 
           layer.shapes.forEach(function(shape) {
-            const visible = show && (!mapInteracting || (layerId === "townshipBoundary" && layer.visible));
+            const visible = show && !mapInteracting;
             setOverlayMapIfChanged(shape, visible ? map : null);
           });
         });
 
-        // GeoJSON Polyline과 읍면 선택용 Polygon을 항상 같은 조건으로 동기화
+        // 공유 경계 Polyline의 간략/원본 표시를 동기화
         syncTownshipBoundaryDisplay();
       }
 
@@ -12686,15 +12632,7 @@
         }).filter(Boolean);
       }
 
-      // 읍면동/리 경계는 미리 위상(topology)을 보존하여 단순화한
-      // township_boundary.geojson / ri_boundary.geojson을 우선 사용함.
-      // 인접 행정구역별로 정점을 따로 건너뛰면 공통 경계가 서로 달라져 틈/겹침이 생기므로
-      // 모든 화면에서 브라우저 추가 단순화 없이 파일에 저장된 좌표를 그대로 사용함.
-      // 최적화 파일이 없을 때만 원본 파일로 폴백하여 경계 정확도를 우선함.
-      function simplifyBoundaryRingForOverview(ring, maxPoints) {
-        return Array.isArray(ring) ? ring : [];
-      }
-
+      // 초기 읍면 경계는 사전에 단순화하고 공유선을 중복 제거한 파일에서 읽음.
       function addBoundaryFeature(feature, layerId) {
         const layer = BOUNDARY_LAYERS[layerId];
         const polygonParts = boundaryPolygonParts(feature && feature.geometry);
@@ -12723,99 +12661,71 @@
 
       function addTownshipSelectorFeature(feature) {
         const name = townshipName(feature);
-        const polygonParts = boundaryPolygonParts(feature && feature.geometry);
-        if (!polygonParts.length) return;
+        const parts = boundaryPolygonParts(feature && feature.geometry);
+        if (!parts.length) return;
         let group = townshipSelectGroups.get(name);
         if (!group) {
-          group = { name:name, bounds:new kakao.maps.LatLngBounds(), polygons:[], skyBackPolygons:[], hitPolygons:[], labelRings:[], label:null, labelEl:null, hoverDismissed:false };
+          group = { name:name, bounds:new kakao.maps.LatLngBounds(), polygons:[], skyBackPolygons:[], hitPolygons:[], labelRings:[], selectionParts:[], label:null, labelEl:null, hoverDismissed:false };
           townshipSelectGroups.set(name, group);
         }
-
-        polygonParts.forEach(function(polygonCoordinates) {
-          // 읍면동 선택 영역은 각 MultiPolygon 조각의 외곽링만 사용한다.
-          // Kakao Polygon에 복잡한 내부링 배열을 넘길 때 생길 수 있는 브라우저별 표시 문제를 피함.
-          const outerRing = polygonCoordinates && polygonCoordinates[0];
-          const overviewRing = simplifyBoundaryRingForOverview(outerRing);
-          const path = boundaryRingToPath(overviewRing);
-          if (path.length < 3) return;
+        parts.forEach(function(rings) {
+          if (!rings.length) return;
+          group.selectionParts.push(rings);
+          group.labelRings.push(rings[0]);
+          const path = boundaryRingToPath(rings[0]);
           extendBoundsWithPath(group.bounds, path);
           extendBoundsWithPath(townshipAllBounds, path);
-          group.labelRings.push(overviewRing);
-          // 스카이뷰에서 밝은 경계선이 위성영상에 묻히지 않도록
-          // 그 아래에 어두운 바깥선을 한 겹 더 둠.
-          const skyBackPolygon = new kakao.maps.Polygon({
-            path: path,
-            strokeWeight: mapStrokePx(5.0, 1),
-            strokeColor: "#111111",
-            strokeOpacity: 0.72,
-            strokeStyle: "solid",
-            fillOpacity: 0,
-            zIndex: 29
-          });
-          skyBackPolygon.setMap(
-            (
-              shouldAutoShowTownshipBoundary() ||
-              BOUNDARY_LAYERS.townshipBoundary.visible
-            ) &&
-            isSkyViewMode
-              ? map
-              : null
-          );
-          group.skyBackPolygons.push(skyBackPolygon);
-
-          // 화면에 보이는 읍면동 경계/면 표현용 폴리곤
-          const polygon = new kakao.maps.Polygon({
-            path: path,
-            strokeWeight: mapStrokePx(1.0, 1),
-            strokeColor: "#59636D",
-            strokeOpacity: .92,
-            strokeStyle: "shortdash",
-            fillColor: "#B8C8D3",
-            fillOpacity: .10,
-            zIndex: 30
-          });
-          polygon.setMap(
-            (
-              shouldAutoShowTownshipBoundary() ||
-              BOUNDARY_LAYERS.townshipBoundary.visible
-            )
-              ? map
-              : null
-          );
-          group.polygons.push(polygon);
-
-          // 클릭 전용 투명 폴리곤.
-          // 면 색상이 0이 된 뒤에도 읍면 전체 영역을 계속 클릭할 수 있도록 별도로 유지함.
-          const hitPolygon = new kakao.maps.Polygon({
-            path: path,
-            strokeWeight: 0,
-            strokeOpacity: 0,
-            fillColor: "#000000",
-            fillOpacity: 0.01,
-            zIndex: 100
-          });
-          hitPolygon.setMap(townshipStartMode ? map : null);
-          group.hitPolygons.push(hitPolygon);
-
-          kakao.maps.event.addListener(hitPolygon, "mouseover", function() {
-            if (!townshipStartMode) return;
-            map.setCursor("pointer");
-          });
-
-          kakao.maps.event.addListener(hitPolygon, "mouseout", function() {
-            if (!townshipStartMode) return;
-            map.setCursor("");
-          });
-
-          kakao.maps.event.addListener(hitPolygon, "click", function() {
-            // 초기화면에서는 읍면 선택모드만 종료
-            if (townshipStartMode) {
-              if (selectedTownshipName === name) return;
-              selectTownship(name);
-            }
-            // 읍면 진입 후의 클릭 처리는 지도 DOM click에서 공통 처리함.
-          });
         });
+      }
+
+      function findTownshipAtPosition(position) {
+        const point = [position.getLng(), position.getLat()];
+        for (const group of townshipSelectGroups.values()) {
+          if (!group.bounds.contain(position)) continue;
+          const inside = (group.selectionParts || []).some(function(rings) {
+            return pointInRing(point, rings[0]) &&
+              !rings.slice(1).some(function(hole) { return pointInRing(point, hole); });
+          });
+          if (inside) return group.name;
+        }
+        return null;
+      }
+
+      function addTownshipBoundaryLines(feature, target) {
+        const geometry = feature && feature.geometry;
+        if (!geometry) return;
+        const paths = geometry.type === "LineString" ? [geometry.coordinates] :
+          geometry.type === "MultiLineString" ? geometry.coordinates : [];
+        paths.forEach(function(coordinates) {
+          const path = boundaryRingToPath(coordinates);
+          if (path.length < 2) return;
+          target.push(new kakao.maps.Polyline({
+            path: path, strokeWeight: mapStrokePx(1.6, 1),
+            strokeColor: "#59636D", strokeOpacity: 0.92,
+            strokeStyle: "shortdash", zIndex: 30
+          }));
+        });
+      }
+
+      async function loadDetailedTownshipBoundary() {
+        const layer = BOUNDARY_LAYERS.townshipBoundary;
+        if (layer.detailLoaded) return;
+        if (layer.detailLoadingPromise) return layer.detailLoadingPromise;
+        layer.detailLoadingPromise = (async function() {
+          const loaded = await fetchFirstAvailableGeoJSON(["township_detail_lines.geojson"]);
+          const shapes = [];
+          loaded.data.features.forEach(function(feature) {
+            addTownshipBoundaryLines(feature, shapes);
+          });
+          layer.shapes = shapes;
+          layer.detailLoaded = true;
+          updateBoundaryVisibility();
+        })();
+        try {
+          await layer.detailLoadingPromise;
+        } finally {
+          layer.detailLoadingPromise = null;
+        }
       }
 
       function shouldShowTownshipLabel(name) {
@@ -12948,8 +12858,9 @@
 
           loaded.data.features.forEach(function(feature) {
             if (layerId === "townshipBoundary") {
-              // 초기 화면에서는 선택 Polygon 자체를 경계로 재사용하여 중복 객체 생성을 피함.
+              // 작은 파일의 폴리곤은 이름/선택 계산에만 사용하고 화면에는 중복 제거한 선만 그림.
               addTownshipSelectorFeature(feature);
+              addTownshipBoundaryLines(feature, layer.overviewShapes);
             } else {
               addBoundaryFeature(feature, layerId);
             }
@@ -16635,6 +16546,10 @@
           if (roadviewMode) {
             openRoadview(event.latLng);
             return;
+          }
+          if (townshipStartMode && !townshipStartCompleted && shouldAutoShowTownshipBoundary()) {
+            const name = findTownshipAtPosition(event.latLng);
+            if (name) selectTownship(name);
           }
 
         }
