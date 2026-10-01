@@ -7439,6 +7439,7 @@
       let selectedRoadObject = null;
       let selectedTownshipName = null;
       let townshipStartMode = true;
+      let townshipStartCompleted = false;
       let townshipSelectionFillShown = false;
       let townshipFillTimer = null;
       let activeTownshipHoverGroup = null;
@@ -8105,6 +8106,12 @@
         // 지도 이동/확대 및 클릭 선택 색상 변경은 사용하지 않음.
         selectedTownshipName = null;
         townshipStartMode = false;
+        townshipStartCompleted = true;
+        // 초기화면 종료 시 자동 경계 표시 상태를 완전히 끔.
+        // 이후에는 기타기능에서 사용자가 직접 켠 경우만 표시됨.
+        BOUNDARY_LAYERS.townshipBoundary.visible = false;
+        const townshipBoundaryCheck = document.getElementById("townshipBoundaryCheck");
+        if (townshipBoundaryCheck) townshipBoundaryCheck.checked = false;
         activeTownshipHoverGroup = null;
         townshipSelectionFillShown = false;
 
@@ -8141,6 +8148,14 @@
           setTownshipGroupStyle(otherGroup, "normal");
         });
 
+        // 초기 선택용 읍면 폴리곤을 한 번 더 강제로 분리해
+        // 이후 zoom/drag 이벤트에서도 남아 있지 않도록 함.
+        townshipSelectGroups.forEach(function(otherGroup) {
+          (otherGroup.polygons || []).forEach(function(poly) { poly.setMap(null); });
+          (otherGroup.skyBackPolygons || []).forEach(function(poly) { poly.setMap(null); });
+          (otherGroup.hitPolygons || []).forEach(function(poly) { poly.setMap(null); });
+        });
+
         map.setCursor("");
         updateBoundaryVisibility();
         updateTownshipLabelPointerEvents();
@@ -8154,7 +8169,7 @@
       function showTownshipOverview() {
         clearSelectedRoadHighlight();
         selectedTownshipName = null;
-        townshipStartMode = true;
+        townshipStartMode = !townshipStartCompleted;
         activeTownshipHoverGroup = null;
         updateBoundaryVisibility();
         updateTownshipLabelPointerEvents();
@@ -8186,14 +8201,14 @@
           });
 
           (group.hitPolygons || []).forEach(function(hit) {
-            hit.setMap(map);
+            hit.setMap(shouldAutoShowTownshipBoundary() ? map : null);
           });
         });
         townshipSelectionFillShown = false;
 
         townshipSelectGroups.forEach(function(group) {
           (group.hitPolygons || []).forEach(function(hit) {
-            hit.setMap(map);
+            hit.setMap(shouldAutoShowTownshipBoundary() ? map : null);
           });
         });
         if (townshipFillTimer) {
@@ -11776,9 +11791,9 @@
       }
 
       function shouldAutoShowTownshipBoundary() {
-        // 읍면동 경계 자동표시는 최초 읍면 선택 화면에서만 사용.
-        // 초기 화면 이후에는 확대/축소와 무관하게 기타기능의 수동 설정만 따른다.
-        return townshipStartMode;
+        // 최초 읍면 선택 화면에서만 자동 표시.
+        // 한 번 초기 화면을 벗어난 뒤에는 확대/축소/전체보기로 절대 자동 복귀하지 않음.
+        return townshipStartMode && !townshipStartCompleted;
       }
 
       function syncTownshipBoundaryDisplay() {
