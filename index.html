@@ -5582,9 +5582,11 @@
 
   .road-ios-route-icon img,
   .road-ios-style-icon img,
-  .road-ios-memo-icon svg {
+  .road-ios-memo-icon svg,
+  .road-ios-other-icon svg {
     width: 34px !important;
     height: 34px !important;
+    display: block !important;
   }
 
   .road-ios-chevron {
@@ -5605,9 +5607,14 @@
 
   #roadMenuRoadPage,
   #roadMenuStylePage,
-  #roadMenuMemoPage {
+  #roadMenuMemoPage,
+  #roadMenuOtherPage {
     padding: 0 10px 10px !important;
     background: #f2f2f7 !important;
+  }
+
+  #roadMenuOtherPage .layer-map-settings-card {
+    margin: 0 !important;
   }
 
   @media (max-width:700px) {
@@ -10741,10 +10748,6 @@
           roadLayerEditorView = { type:"labelMain", styleKey:null };
           renderRoadLayerEditor();
         }));
-        card.appendChild(makeStyleMenuRow("지도 설정", "", function() {
-          roadLayerEditorView = { type:"mapMain", styleKey:null };
-          renderRoadLayerEditor();
-        }));
         body.appendChild(card);
 
         const reset = document.createElement("button");
@@ -11323,6 +11326,12 @@
           renderRoadLayerMain(body);
         }
       }
+
+      window.renderSacheonOtherFunctions = function(container) {
+        if (!container) return;
+        container.innerHTML = "";
+        renderRoadMapMenu(container);
+      };
 
       window.renderRoadLayerEditor = renderRoadLayerEditor;
       window.resetSacheonStyleMenu = function() {
@@ -16475,6 +16484,10 @@
       '</div>' +
     '</div>';
 
+  const otherPage = document.createElement("div");
+  otherPage.id = "roadMenuOtherPage";
+  otherPage.className = "road-menu-page";
+
   const home = document.createElement("div");
   home.id = "roadMainMenuHome";
   home.className = "road-main-menu-home";
@@ -16506,12 +16519,31 @@
         '<span class="road-ios-menu-text">메모</span>' +
       '</span>' +
       '<span class="road-ios-chevron">›</span>' +
+    '</button>' +
+    '<button type="button" class="road-ios-menu-row" data-road-page="other">' +
+      '<span class="road-ios-menu-left">' +
+        '<span class="road-ios-menu-icon road-ios-other-icon" aria-hidden="true">' +
+          '<svg viewBox="0 0 34 34">' +
+            '<defs><linearGradient id="otherIconBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef0ee"/><stop offset="1" stop-color="#b9bdb8"/></linearGradient></defs>' +
+            '<rect x="0.5" y="0.5" width="33" height="33" rx="8" fill="url(#otherIconBg)"/>' +
+            '<circle cx="17" cy="17" r="11.5" fill="#35c759"/>' +
+            '<path d="M17 5.5A11.5 11.5 0 0 1 28.5 17H17Z" fill="#4aa3ff"/>' +
+            '<path d="M17 28.5A11.5 11.5 0 0 1 5.5 17H17Z" fill="#7ed957"/>' +
+            '<circle cx="17" cy="17" r="6.8" fill="#2f91f2"/>' +
+            '<circle cx="17" cy="17" r="3.1" fill="#ffffff"/>' +
+            '<circle cx="17" cy="17" r="1.8" fill="#2f91f2"/>' +
+          '</svg>' +
+        '</span>' +
+        '<span class="road-ios-menu-text">기타기능</span>' +
+      '</span>' +
+      '<span class="road-ios-chevron">›</span>' +
     '</button>';
 
   header.insertAdjacentElement("afterend", home);
   home.insertAdjacentElement("afterend", roadPage);
   roadPage.insertAdjacentElement("afterend", stylePage);
   stylePage.insertAdjacentElement("afterend", memoPage);
+  memoPage.insertAdjacentElement("afterend", otherPage);
 
   async function renderMemoMenu() {
     const list = document.getElementById("roadMenuMemoList");
@@ -16593,6 +16625,7 @@
     roadPage.classList.remove("active");
     stylePage.classList.remove("active");
     memoPage.classList.remove("active");
+    otherPage.classList.remove("active");
     backBtn.style.display = "inline-flex";
     backBtn.dataset.rootMenu = "1";
     title.textContent = "사천시 도로현황";
@@ -16606,12 +16639,15 @@
     roadPage.classList.toggle("active", name === "roads");
     stylePage.classList.toggle("active", name === "style");
     memoPage.classList.toggle("active", name === "memos");
+    otherPage.classList.toggle("active", name === "other");
     backBtn.style.display = "inline-flex";
     title.textContent = name === "memos"
       ? "메모"
       : name === "style"
         ? "스타일 설정"
-        : "도로목록";
+        : name === "other"
+          ? "기타기능"
+          : "도로목록";
     if (name === "style") {
       if (typeof window.resetSacheonStyleMenu === "function") {
         window.resetSacheonStyleMenu();
@@ -16620,6 +16656,9 @@
       }
     }
     if (name === "memos") renderMemoMenu();
+    if (name === "other" && typeof window.renderSacheonOtherFunctions === "function") {
+      window.renderSacheonOtherFunctions(otherPage);
+    }
 
     // 메인 메뉴에서 하위 메뉴를 눌렀을 때는 해당 화면을 바로 보여준다.
     // 원형 아이콘으로 자동 축소하지 않는다.
