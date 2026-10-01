@@ -4792,6 +4792,24 @@
     transform: translateX(22px);
   }
 
+
+  /* ===== 2026-10-01: 노선목록 20px 최종강제 ===== */
+  #listPanel #listContent .road-category-detail .list-item .road-list-main,
+  #listPanel #listContent .road-category-detail .list-item.selected .road-list-main,
+  #listPanel #listContent #cityList .list-item .road-list-main,
+  #listPanel #listContent #ruralList .list-item .road-list-main {
+    font-size: 20px !important;
+    line-height: 1.3 !important;
+    font-weight: 600 !important;
+  }
+
+  #listPanel #listContent #cityList .list-item,
+  #listPanel #listContent #ruralList .list-item {
+    min-height: 54px !important;
+    padding-top: 13px !important;
+    padding-bottom: 13px !important;
+  }
+
 </style>
 
 </head>
@@ -11310,6 +11328,16 @@
 
             button.innerHTML =
               '<span class="road-list-main">' + escapeHTML(mainText) + '</span>';
+
+            const roadListMain = button.querySelector(".road-list-main");
+            if (roadListMain) {
+              roadListMain.style.setProperty("font-size", "20px", "important");
+              roadListMain.style.setProperty("line-height", "1.3", "important");
+              roadListMain.style.setProperty("font-weight", "600", "important");
+            }
+            button.style.setProperty("min-height", "54px", "important");
+            button.style.setProperty("padding-top", "13px", "important");
+            button.style.setProperty("padding-bottom", "13px", "important");
 
             button.onclick = function () {
               selectGroup(group.key);
