@@ -10399,11 +10399,7 @@
         ["CITY", "MYEON", "RI", "FARM"].forEach(function(styleKey) {
           const stack = getRoadLayerStack(styleKey);
           const enabled = stack.some(function(item) { return item.visible !== false; });
-          const top = stack[0] || {};
-          const summary = (enabled ? "" : "숨김 · ") +
-            String(top.color || "").toUpperCase() + " · " + (Number(top.width) || 0) + "px";
-
-          const row = makeStyleMenuRow(ROAD_LAYER_NAMES[styleKey], summary, function() {
+          const row = makeStyleMenuRow(ROAD_LAYER_NAMES[styleKey], "", function() {
             roadLayerEditorView = { type:"road", styleKey:styleKey, parent:"lineMain" };
             renderRoadLayerEditor();
           });
@@ -10430,8 +10426,7 @@
 
         card.appendChild(makeStyleMenuRow(
           "개설상태 표현",
-          "미확장 " + getStatusStyleLabel(STATUS_STYLES.UNEXPANDED) +
-            " · 미개설 " + getStatusStyleLabel(STATUS_STYLES.UNOPENED_GAP),
+          "",
           function() {
             roadLayerEditorView = { type:"status", styleKey:null, parent:"lineMain" };
             renderRoadLayerEditor();
