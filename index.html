@@ -7096,8 +7096,6 @@
     <div id="roadviewMiniMap" aria-label="로드뷰 현재 위치 지도"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/shpjs@latest/dist/shp.js"></script>
   <script>
     function showAppError(title, message) {
       const panel = document.getElementById("appError");
@@ -7364,6 +7362,8 @@
         townshipBoundary: {
           files: ["township_boundary.geojson", "Township Boundary.geojson", "Township Boundary(1).geojson"],
           visible: false,
+          loaded: false,
+          loadingPromise: null,
           maxScale: Infinity,
           strokeColor: "#4C5863",
           strokeWeight: mapStrokePx(1.0, 1),
@@ -7375,6 +7375,8 @@
         riBoundary: {
           files: ["ri_boundary.geojson", "Ri Boundary.geojson", "Ri Boundary(1).geojson"],
           visible: false,
+          loaded: false,
+          loadingPromise: null,
           maxScale: 75000,
           strokeColor: "#7D8790",
           strokeWeight: 1,
@@ -9917,7 +9919,51 @@
         spatialMinBtn.textContent = minimized ? "□" : "−";
         spatialMinBtn.title = minimized ? "복원" : "최소화";
       };
-      spatialOpenBtn.onclick = function () { spatialFileInput.click(); };
+      let spatialLibrariesPromise = null;
+
+      function loadExternalScriptOnce(src, test) {
+        if (test()) return Promise.resolve();
+        return new Promise(function(resolve, reject) {
+          const existing = document.querySelector('script[data-lazy-src="' + src + '"]');
+          if (existing) {
+            existing.addEventListener("load", resolve, { once:true });
+            existing.addEventListener("error", reject, { once:true });
+            return;
+          }
+          const script = document.createElement("script");
+          script.src = src;
+          script.async = true;
+          script.dataset.lazySrc = src;
+          script.onload = resolve;
+          script.onerror = function() { reject(new Error(src + " 로드 실패")); };
+          document.head.appendChild(script);
+        });
+      }
+
+      function ensureSpatialLibraries() {
+        if (spatialLibrariesPromise) return spatialLibrariesPromise;
+
+        spatialLibrariesPromise = loadExternalScriptOnce(
+          "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
+          function() { return typeof JSZip !== "undefined"; }
+        ).then(function() {
+          return loadExternalScriptOnce(
+            "https://cdn.jsdelivr.net/npm/shpjs@latest/dist/shp.js",
+            function() { return typeof shp === "function"; }
+          );
+        }).catch(function(error) {
+          spatialLibrariesPromise = null;
+          throw error;
+        });
+
+        return spatialLibrariesPromise;
+      }
+
+      spatialOpenBtn.onclick = function () {
+        // 파일 선택창이 열린 동안 라이브러리를 병렬로 준비함.
+        ensureSpatialLibraries().catch(function(error) { console.warn(error); });
+        spatialFileInput.click();
+      };
       spatialResetBtn.onclick = function () {
         importedLayers.forEach(function(layer) { clearImportedGraphics(layer); });
         importedLayers.clear();
@@ -9939,6 +9985,10 @@
         const geoFiles = files.filter(f => /\.(geojson|json)$/i.test(f.name));
         const zipFiles = files.filter(f => /\.zip$/i.test(f.name));
         const shpFiles = files.filter(f => /\.shp$/i.test(f.name));
+
+        if (zipFiles.length || shpFiles.length) {
+          await ensureSpatialLibraries();
+        }
 
         for (const file of geoFiles) {
           const data = JSON.parse(await file.text());
@@ -11675,8 +11725,24 @@
         };
 
       function setBoundaryLayer(layerId, visible) {
-        if (!BOUNDARY_LAYERS[layerId]) return;
-        BOUNDARY_LAYERS[layerId].visible = visible;
+        const layer = BOUNDARY_LAYERS[layerId];
+        if (!layer) return;
+
+        layer.visible = visible;
+
+        if (visible && !layer.loaded && layerId !== "townshipBoundary") {
+          loadBoundaryGeoJSON(layerId).catch(function(error) {
+            console.warn(layerId + " 경계를 불러오지 못했습니다.", error);
+            layer.visible = false;
+            const checkbox =
+              layerId === "riBoundary"
+                ? document.getElementById("riBoundaryCheck")
+                : null;
+            if (checkbox) checkbox.checked = false;
+          });
+          return;
+        }
+
         updateBoundaryVisibility();
       }
 
@@ -12769,26 +12835,42 @@
 
       async function loadBoundaryGeoJSON(layerId) {
         const layer = BOUNDARY_LAYERS[layerId];
-        const candidates = layer.files || (layer.file ? [layer.file] : []);
-        const loaded = await fetchFirstAvailableGeoJSON(candidates);
-        loaded.data.features.forEach(function(feature) {
+        if (!layer) throw new Error("알 수 없는 경계 레이어: " + layerId);
+        if (layer.loaded) return layer._loadedFile || "";
+        if (layer.loadingPromise) return layer.loadingPromise;
+
+        layer.loadingPromise = (async function() {
+          const candidates = layer.files || (layer.file ? [layer.file] : []);
+          const loaded = await fetchFirstAvailableGeoJSON(candidates);
+
+          loaded.data.features.forEach(function(feature) {
+            if (layerId === "townshipBoundary") {
+              // 초기 화면에서는 선택 Polygon 자체를 경계로 재사용하여 중복 객체 생성을 피함.
+              addTownshipSelectorFeature(feature);
+            } else {
+              addBoundaryFeature(feature, layerId);
+            }
+          });
+
+          layer.loaded = true;
+          layer._loadedFile = loaded.file;
+
           if (layerId === "townshipBoundary") {
-            // 초기 화면에서는 단순화된 선택 Polygon 자체를 읍면동 경계로 사용함.
-            // 동일 경계를 정밀 Polyline으로 한 번 더 만드는 중복 작업을 생략해 로딩 속도를 개선함.
-            addTownshipSelectorFeature(feature);
-          } else {
-            addBoundaryFeature(feature, layerId);
+            createTownshipSelectorLabels();
+            if (!townshipAllBounds.isEmpty()) showTownshipOverview();
           }
-          // 리 명칭은 생성하지 않음.
-        });
-        if (layerId === "townshipBoundary") {
-          createTownshipSelectorLabels();
-          if (!townshipAllBounds.isEmpty()) showTownshipOverview();
+
+          updateBoundaryVisibility();
+          syncTownshipBoundaryDisplay();
+          updateRiLabelVisibility();
+          return loaded.file;
+        })();
+
+        try {
+          return await layer.loadingPromise;
+        } finally {
+          layer.loadingPromise = null;
         }
-        updateBoundaryVisibility();
-        syncTownshipBoundaryDisplay();
-        updateRiLabelVisibility();
-        return loaded.file;
       }
 
       // 초기 화면에서는 읍면동 선택이 가장 먼저 보여야 하므로 읍면동 경계를 최우선 로드함.
@@ -12821,13 +12903,6 @@
         }, 500);
       });
 
-      townshipBoundaryReadyPromise.then(function() {
-        // 읍면동 선택화면을 먼저 보여준 뒤 리 경계를 후순위로 읽음.
-        runAfterFirstPaint(function() {
-          loadBoundaryGeoJSON("riBoundary").catch(function(error) { console.warn("리 경계 로드 생략:", error); });
-        }, 1200);
-      });
-
       roadsReadyPromise
       .then(function () {
         buildGroupLabels();
@@ -12847,9 +12922,55 @@
         );
       });
 
+      function processRoadFeaturesInChunks(features, layerId) {
+        return new Promise(function(resolve) {
+          let index = 0;
+          let skipped = 0;
+          const total = features.length;
+          const chunkSize = 18;
+
+          function runChunk(deadline) {
+            let processed = 0;
+
+            while (
+              index < total &&
+              processed < chunkSize &&
+              (!deadline || deadline.timeRemaining() > 2 || deadline.didTimeout)
+            ) {
+              const before = allRoads.length;
+              addFeature(features[index], layerId);
+              if (before === allRoads.length) skipped++;
+              index++;
+              processed++;
+            }
+
+            if (index >= total) {
+              resolve(skipped);
+              return;
+            }
+
+            if ("requestIdleCallback" in window) {
+              window.requestIdleCallback(runChunk, { timeout: 80 });
+            } else {
+              setTimeout(function() { runChunk(null); }, 0);
+            }
+          }
+
+          // Edge/Chrome에서 첫 렌더링 직후 작업을 잘게 나눠 메인 스레드 정지를 줄임.
+          if ("requestIdleCallback" in window) {
+            window.requestIdleCallback(runChunk, { timeout: 80 });
+          } else {
+            setTimeout(function() { runChunk(null); }, 0);
+          }
+        });
+      }
+
       async function loadGeoJSON(layerId) {
         const response =
-          await fetch(LAYERS[layerId].file, { cache: "default" });
+          await fetch(LAYERS[layerId].file, {
+            cache: "force-cache",
+            credentials: "same-origin"
+          });
 
         if (!response.ok) {
           throw new Error(
@@ -12864,12 +12985,7 @@
           throw new Error(LAYERS[layerId].file + " 형식이 올바른 GeoJSON FeatureCollection이 아닙니다.");
         }
 
-        let skipped = 0;
-        data.features.forEach(function (feature) {
-          const before = allRoads.length;
-          addFeature(feature, layerId);
-          if (before === allRoads.length) skipped++;
-        });
+        const skipped = await processRoadFeaturesInChunks(data.features, layerId);
         if (skipped) console.warn(LAYERS[layerId].file + ": 표시하지 못한 Feature " + skipped + "개");
       }
 
