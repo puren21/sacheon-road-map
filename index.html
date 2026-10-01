@@ -7164,38 +7164,55 @@
     font-weight: 700 !important;
   }
 
-  /* 농어촌도로 / 시도 선택을 명확한 2분할 버튼으로 */
-  #roadCategoryHome {
-    width: 100% !important;
-    padding: 6px 0 8px !important;
+  /* PC와 동일한 도로구분 선택창: 농어촌도로 기본 / 시도 전환 */
+  #roadCategoryHome,
+  #roadCategoryHome.is-visible {
+    display:block !important;
+    width:100% !important;
+    padding:4px 6px 10px !important;
+    box-sizing:border-box !important;
+    background:transparent !important;
   }
-  #roadCategoryHome .road-category-select-label,
+  #roadCategoryHome .road-category-select-label {
+    display:block !important;
+    margin:0 0 6px 2px !important;
+    color:#666 !important;
+    font-size:12px !important;
+    font-weight:600 !important;
+  }
   #roadCategoryHome .road-category-select-wrap {
-    display:none !important;
+    display:block !important;
+    position:relative !important;
+    width:100% !important;
   }
-  #roadCategoryTabs {
-    display:grid !important;
-    grid-template-columns:1fr 1fr;
-    gap:6px;
-    width:100%;
-    padding:0 2px;
-    box-sizing:border-box;
+  #roadCategoryHome .road-category-select-wrap::after {
+    content:"⌄" !important;
+    position:absolute !important;
+    top:50% !important;
+    right:14px !important;
+    color:#8e8e93 !important;
+    font-size:17px !important;
+    pointer-events:none !important;
+    transform:translateY(-55%) !important;
   }
-  #roadCategoryTabs button {
-    min-width:0;
-    height:42px;
-    border:1px solid #d1d1d6;
-    border-radius:10px;
-    background:#fff;
-    color:#333;
-    font-size:15px;
-    font-weight:700;
+  #roadCategorySelect {
+    display:block !important;
+    width:100% !important;
+    height:46px !important;
+    padding:0 38px 0 14px !important;
+    border:1px solid #dedee3 !important;
+    border-radius:11px !important;
+    outline:none !important;
+    background:#fff !important;
+    color:#1c1c1e !important;
+    font-size:16px !important;
+    font-weight:700 !important;
+    appearance:none !important;
+    -webkit-appearance:none !important;
   }
-  #roadCategoryTabs button.active {
-    border-color:#2f91f2;
-    background:#2f91f2;
-    color:#fff;
-  }
+  #roadCategoryTabs { display:none !important; }
+  #roadMenuRoadPage .road-kind-filters,
+  #roadMenuRoadPage .search-result-summary { display:none !important; }
 
   /* 목록이 패널 내부에서만 스크롤되도록 */
   #listContent {
@@ -17604,6 +17621,13 @@
     if (name === "other" && typeof window.renderSacheonOtherFunctions === "function") {
       window.renderSacheonOtherFunctions(otherPage);
     }
+    if (name === "roads" && window.matchMedia && window.matchMedia("(max-width:700px)").matches) {
+      const categorySelect = document.getElementById("roadCategorySelect");
+      if (categorySelect) {
+        categorySelect.value = "rural";
+        categorySelect.dispatchEvent(new Event("change", { bubbles:true }));
+      }
+    }
 
     // 메인 메뉴에서 하위 메뉴를 눌렀을 때는 해당 화면을 바로 보여준다.
     // 원형 아이콘으로 자동 축소하지 않는다.
@@ -17930,30 +17954,11 @@
   function installCategoryTabs(){
     const home = document.getElementById("roadCategoryHome");
     const select = document.getElementById("roadCategorySelect");
-    if (!home || !select || document.getElementById("roadCategoryTabs")) return;
-    const tabs = document.createElement("div");
-    tabs.id = "roadCategoryTabs";
-    tabs.setAttribute("role","group");
-    tabs.setAttribute("aria-label","도로구분 선택");
-    tabs.innerHTML = '<button type="button" data-road-category="rural" class="active">농어촌도로</button>' +
-                     '<button type="button" data-road-category="city">시도</button>';
-    home.appendChild(tabs);
-    function sync(){
-      tabs.querySelectorAll("button").forEach(function(btn){
-        btn.classList.toggle("active", btn.dataset.roadCategory === select.value);
-      });
-    }
-    tabs.addEventListener("click", function(e){
-      const btn = e.target.closest("button[data-road-category]");
-      if (!btn) return;
-      select.value = btn.dataset.roadCategory;
-      select.dispatchEvent(new Event("change", {bubbles:true}));
-      sync();
-    });
-    select.addEventListener("change", sync);
+    if (!home || !select) return;
+    const oldTabs = document.getElementById("roadCategoryTabs");
+    if (oldTabs) oldTabs.remove();
     select.value = "rural";
     select.dispatchEvent(new Event("change", {bubbles:true}));
-    sync();
   }
 
   let openDrag = null;
