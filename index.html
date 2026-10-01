@@ -8770,6 +8770,13 @@
         beginMapInteraction();
         // 축척 이탈 즉시 실제 Polygon/Polyline을 제거하며 수동 ON은 유지함.
         syncTownshipBoundaryDisplay();
+        if (map.getLevel() >= INITIAL_MAP_LEVEL) {
+          allRoads.forEach(function(road) {
+            if (road._visible) setRoadObjectMap(road, false);
+          });
+          hideLayerLabelsForInteraction();
+          removeSelectedRouteBalloon();
+        }
         if (isSkyExtraZoomActive()) {
           restoreSkyExtraZoomCenter();
         }
@@ -10822,7 +10829,7 @@
 
         const stack = getRoadLayerStack(road.styleKey);
         const lines = getRoadVisualLines(road);
-        const roadVisible = !!road._visible;
+        const roadVisible = !!road._visible && isRoadLayerVisibleAtScale(road.layerId);
         const statusHidden = isRoadStatusHidden(road.statusKey);
         const isOff = hiddenRoadGroups.has(road.groupKey);
 
@@ -11823,7 +11830,7 @@
       }
 
       function shouldAutoShowTownshipBoundary() {
-        return map.getLevel() === INITIAL_MAP_LEVEL;
+        return map.getLevel() >= INITIAL_MAP_LEVEL;
       }
 
       function setMapOptionsIfChanged(shape, options) {
@@ -11876,7 +11883,7 @@
             !Number.isFinite(currentScaleDenominator) ||
             currentScaleDenominator <= layer.maxScale;
 
-          // 읍면동계는 level 7 자동 표시, 메뉴 ON은 모든 축척에서 우선 표시.
+          // 읍면동계는 level 7 이상 자동 표시, 메뉴 ON은 모든 축척에서 우선 표시.
           // 리 경계 등 다른 경계는 레이어 메뉴 체크 상태를 따름.
           const show =
             scaleVisible &&
@@ -12444,6 +12451,8 @@
       // 미확장 dash, 미개설 shortdash
 
       function isRoadLayerVisibleAtScale(layerId) {
+        // 기본 화면과 더 축소한 화면은 읍면 경계/명칭만 표시.
+        if (map.getLevel() >= INITIAL_MAP_LEVEL) return false;
         if (layerId === "rural") {
           const scale = Number(currentScaleDenominator);
           if (Number.isFinite(scale) && scale > 0) {
@@ -12811,6 +12820,7 @@
 
       function shouldShowTownshipLabel(name) {
         if (!name) return false;
+        if (shouldAutoShowTownshipBoundary()) return true;
 
         const isDong = /동$/.test(String(name).trim());
 
@@ -14143,6 +14153,10 @@
       }
 
       function updateSelectedRouteBalloon() {
+        if (mapInteracting || map.getLevel() >= INITIAL_MAP_LEVEL) {
+          removeSelectedRouteBalloon();
+          return;
+        }
         if (roadGeometryEditState) {
           removeSelectedRouteBalloon();
           return;

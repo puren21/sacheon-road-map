@@ -21,7 +21,7 @@ function setup(windows = false) {
     zoomLightMode: false, zoomRestoreTimer: null, windowsPanPrepared: false, IS_WINDOWS: windows,
     townshipStartMode: true, townshipStartCompleted: false, isSkyViewMode: false,
     currentScaleDenominator: 60000, townshipSelectGroups: [group], activeTownshipHoverGroup: null,
-    selectedTownshipName: null, selectedRoadGroupKey: null,
+    selectedTownshipName: null, selectedRoadGroupKey: null, allRoads: [], removeSelectedRouteBalloon() {},
     LAYERS: { city: { visible: true, labels: [{ overlay: overlay(), _visible: true }] } },
     BOUNDARY_LAYERS: { townshipBoundary: { visible: false, maxScale: Infinity, shapes: [overlay()] }, riBoundary: { visible: true, maxScale: 75000, shapes: [overlay()] } },
     map: { level: 7, getLevel() { return this.level; }, setCursor() {} },
@@ -49,7 +49,7 @@ test('all inline scripts parse', () => {
 });
 for (const windows of [false, true]) {
   const platform = windows ? 'Windows Chromium branch' : 'mobile/non-Windows branch';
-  test(`${platform}: zoom detaches automatic boundary immediately and restores only level 7`, () => {
+  test(`${platform}: zoom detaches automatic boundary immediately and restores level 7 and more zoomed-out views`, () => {
     const {c,group,timers,paint} = setup(windows);
     c.updateBoundaryVisibility(); assert.equal(group.polygons[0].getMap(),c.map);
     for (const level of [6, 8, 10, 7]) {
@@ -57,7 +57,7 @@ for (const windows of [false, true]) {
       assert.equal(group.polygons[0].getMap(),null);
       assert.equal(group.hitPolygons[0].getMap(),null);
       c.events.idle(); timers(); paint();
-      assert.equal(group.polygons[0].getMap(),level===7?c.map:null);
+      assert.equal(group.polygons[0].getMap(),level>=7?c.map:null);
     }
   });
   test(`${platform}: manual ON remains attached during zoom and drag, OFF resumes automatic rule`, () => {
@@ -69,7 +69,8 @@ for (const windows of [false, true]) {
       assert.equal(group.hitPolygons[0].getMap(),null);
       c.events.idle();timers();paint();
     }
-    c.BOUNDARY_LAYERS.townshipBoundary.visible=false;c.updateBoundaryVisibility();assert.equal(group.polygons[0].getMap(),null);
+    c.BOUNDARY_LAYERS.townshipBoundary.visible=false;c.updateBoundaryVisibility();assert.equal(group.polygons[0].getMap(),c.map);
+    c.map.level=6;c.updateBoundaryVisibility();assert.equal(group.polygons[0].getMap(),null);
   });
 }
 test('completed township selection does not regain hit polygons at level 7', () => {
@@ -122,4 +123,30 @@ test('staged restore retains dimmed OFF routes and cannot restore stale hits dur
   for(const name of ['roadShouldBeVisibleNow','applyRoadLineVisibility','restoreRoadsInStages'])vm.runInContext(source(name),c);
   c.restoreRoadsInStages();assert.equal(lines[0].strokeColor,'#6f7f95');assert.equal(lines[1].getMap(),null);assert.equal(hit.getMap(),null);
   c.beginMapInteraction();paint();assert.equal(hit.getMap(),null);
+});
+test('overview excludes both road layers at startup and at every level >= 7',()=>{
+  const {c}=setup();vm.runInContext(source('isRoadLayerVisibleAtScale'),c);
+  for(const scale of [null,20000,60000,100000])for(const level of [7,8,10,14]){
+    c.currentScaleDenominator=scale;c.map.level=level;
+    for(const layer of ['city','rural'])assert.equal(c.isRoadLayerVisibleAtScale(layer),false);
+  }
+  c.map.level=6;c.currentScaleDenominator=30000;
+  for(const layer of ['city','rural'])assert.equal(c.isRoadLayerVisibleAtScale(layer),true);
+});
+test('overview shows township and dong names regardless of denominator',()=>{
+  const {c}=setup();vm.runInContext(source('shouldShowTownshipLabel'),c);
+  for(const level of [7,8,12]) {c.map.level=level;c.currentScaleDenominator=200000;for(const name of ['사천읍','정동면','동서동'])assert.equal(c.shouldShowTownshipLabel(name),true);}
+});
+test('zooming out immediately removes roads and labels before idle',()=>{
+  const {c}=setup();const line=overlay();line.setMap(c.map);const road={_visible:true};c.allRoads=[road];
+  c.setRoadObjectMap=(r,visible)=>{r._visible=visible;line.setMap(visible?c.map:null)};
+  c.LAYERS.city.labels[0].overlay.setMap(c.map);c.map.level=7;c.events.zoom_changed();
+  assert.equal(line.getMap(),null);assert.equal(road._visible,false);assert.equal(c.LAYERS.city.labels[0].overlay.getMap(),null);
+});
+test('route styling cannot reattach an OFF route in overview',()=>{
+  const {c}=setup();const line=overlay(),hit=overlay();line.setMap(c.map);hit.setMap(c.map);
+  const road={_visible:true,layerId:'city',groupKey:'off',statusKey:'open',hitLine:hit};
+  Object.assign(c,{hiddenRoadGroups:new Set(['off']),getRoadLayerStack:()=>[{}],getRoadVisualLines:()=>[line],isRoadStatusHidden:()=>false});
+  for(const name of ['isRoadLayerVisibleAtScale','applyRoadLineVisibility'])vm.runInContext(source(name),c);
+  c.applyRoadLineVisibility(road);assert.equal(line.getMap(),null);assert.equal(hit.getMap(),null);
 });
