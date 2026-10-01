@@ -4810,6 +4810,80 @@
     padding-bottom: 11px !important;
   }
 
+
+  /* ===== 2026-10-01: 노선표시 스위치 제목 옆 배치 ===== */
+  .road-popup .popup-title-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 42px 14px 0;
+  }
+
+  .road-popup .popup-title-line .popup-title {
+    min-width: 0;
+    flex: 1 1 auto;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .road-popup .road-visibility-inline {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .road-popup .road-visibility-inline .road-visibility-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #5f6368;
+  }
+
+  .road-popup .road-visibility-inline .road-visibility-switch {
+    width: 46px;
+    height: 27px;
+  }
+
+  .road-popup .road-visibility-inline .road-visibility-slider::after {
+    width: 21px;
+    height: 21px;
+  }
+
+  .road-popup .road-visibility-inline .road-visibility-switch input:checked + .road-visibility-slider::after {
+    transform: translateX(19px);
+  }
+
+  .road-popup > .road-visibility-row {
+    display: none !important;
+  }
+
+  @media (max-width: 700px) {
+    .road-popup .popup-title-line {
+      gap: 8px;
+      padding-right: 38px;
+    }
+
+    .road-popup .road-visibility-inline .road-visibility-label {
+      font-size: 11.5px;
+    }
+
+    .road-popup .road-visibility-inline .road-visibility-switch {
+      width: 42px;
+      height: 25px;
+    }
+
+    .road-popup .road-visibility-inline .road-visibility-slider::after {
+      width: 19px;
+      height: 19px;
+    }
+
+    .road-popup .road-visibility-inline .road-visibility-switch input:checked + .road-visibility-slider::after {
+      transform: translateX(17px);
+    }
+  }
+
 </style>
 
 </head>
@@ -13344,13 +13418,13 @@
       function roadPopupVisibilityToggle(group) {
         const encodedKey = encodeURIComponent(group.key);
         const checked = !hiddenRoadGroups.has(group.key);
-        return '<div class="road-visibility-row">' +
+        return '<span class="road-visibility-inline">' +
           '<span class="road-visibility-label">노선 표시</span>' +
           '<label class="road-visibility-switch">' +
             '<input type="checkbox" class="road-visibility-toggle" data-group-key="' + encodedKey + '"' + (checked ? ' checked' : '') + '>' +
             '<span class="road-visibility-slider"></span>' +
           '</label>' +
-        '</div>';
+        '</span>';
       }
 
       function setRoadGroupDisplay(groupKey, visible) {
@@ -13407,9 +13481,11 @@
             '<div class="popup-drag-handle popup-header">' +
               '<button class="popup-close" onclick="closeRoadPopup()">×</button>' +
               '<div class="popup-eyebrow">노선 정보</div>' +
-              '<div class="popup-title">시도 ' + escapeHTML(group.number) + '</div>' +
+              '<div class="popup-title-line">' +
+                '<div class="popup-title">시도 ' + escapeHTML(group.number) + '</div>' +
+                roadPopupVisibilityToggle(group) +
+              '</div>' +
             '</div>' +
-            roadPopupVisibilityToggle(group) +
             '<div class="road-attributes">' +
               row("도로구분", "시도") + row("노선번호", group.number) +
               row("구간상태", statusLengthSummary(group), "", "wrap-status") +
@@ -13430,9 +13506,11 @@
           '<div class="popup-drag-handle popup-header">' +
             '<button class="popup-close" onclick="closeRoadPopup()">×</button>' +
             '<div class="popup-eyebrow">농어촌도로</div>' +
-            '<div class="popup-title">' + escapeHTML(group.number) + '</div>' +
+            '<div class="popup-title-line">' +
+              '<div class="popup-title">' + escapeHTML(group.number) + '</div>' +
+              roadPopupVisibilityToggle(group) +
+            '</div>' +
           '</div>' +
-          roadPopupVisibilityToggle(group) +
           '<div class="road-attributes">' +
             row("노선번호", group.number) +
             row("구분", joinValues(uniqueValues(list, "GUBUN"))) +
