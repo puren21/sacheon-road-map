@@ -6666,6 +6666,67 @@
     }
   }
 
+
+  /* ===== 2026-10-01: 불러오기 기타기능 이동 + 로드뷰 아이콘 ===== */
+  #spatialBtn.top-load-button {
+    display: none !important;
+  }
+
+  #roadviewBtn .roadview-custom-icon {
+    width: 38px !important;
+    height: 38px !important;
+    display: block !important;
+    object-fit: contain !important;
+    border-radius: 50% !important;
+  }
+
+  #roadMenuOtherPage .other-load-card {
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 0 0 .5px rgba(60,60,67,.10);
+  }
+
+  #roadMenuOtherPage .other-load-button {
+    position: relative;
+    width: 100%;
+    min-height: 56px;
+    padding: 0 14px;
+    border: 0;
+    background: #fff;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  #roadMenuOtherPage .other-load-button:active {
+    background: #f6f6f8;
+  }
+
+  #roadMenuOtherPage .other-load-button .other-load-chevron {
+    color: #c7c7cc;
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1;
+  }
+
+  @media (max-width:700px) {
+    #roadviewBtn .roadview-custom-icon {
+      width: 34px !important;
+      height: 34px !important;
+    }
+    #roadMenuOtherPage .other-load-button {
+      min-height: 56px;
+      font-size: 17px;
+    }
+  }
+
 </style>
 
 </head>
@@ -6800,10 +6861,7 @@
     </div>
 
     <button id="roadviewBtn" class="top-square-button" type="button" title="로드뷰" aria-label="로드뷰">
-      <svg viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M16 3.5c-5.7 0-10.3 4.6-10.3 10.3 0 7.3 10.3 15 10.3 15s10.3-7.7 10.3-15C26.3 8.1 21.7 3.5 16 3.5Z" fill="currentColor"/>
-        <circle cx="16" cy="13.6" r="4.3" fill="#fff"/>
-      </svg>
+      <img class="roadview-custom-icon" src="data:image/webp;base64,UklGRlYHAABXRUJQVlA4IEoHAADQIgCdASpAAEAAPjEUiEKiISEWCq+YIAMEsgBfPbakP8x8zu4/4DirzPdan3XpW7dnzAfqhvgH9L/yvWdegB+qvpu/sB8IH7jej5//8JO3W/avxo/aDtzfLHsfyt4jvx/7r/a/yn5Q/g/kg/uH5acFJMB6gXsr8x/t35nf4TnU7lH+9/ld6uXgmUAP5j/PP85/bv2O/zPxg/5n5gf5n3GfSP/L/x3wDfx7+f/5X+y/ut/fv/t3R3s3frqD65pEKXWOOpLJDWtVUXH3MvINwY1LNgDuVHHq+oY77sgm35Q0W6JEh2QsJYU3SFGg+rzXY8o4x4/xYfanHyHIkdEI4qa04t1UMPUhf2/buDqqFXPtcSPCli2IalLeI2oE+j75sAD+/yQs++eWDP0YQLcSt0bCu588NhXPIo7CsKxnh+8nvMsI0aKijg8IeQs/to5TectfEf/5W4elACyLfdwWPHDh6myKD5QnYzhCjwsvh14vtULUPWNgj/hmISnmK0fT+GzUihGd4tXYBCplXxfdSbCMztjBxj0mCfa+XfiOOMpHUkIfOTVhusNcLDM1K+iy1pjax9k2JZ4hbyshdrOf51n9jl2/I1Xcc5tArT8u+VPl7EcP4Fr3v5F2WzxdALiYYOOf0kejNw3uS+pW/C8Amb3CiLqFPgBk2sBeJDXuwrcO0J5YwS+X3Um9cPzpnvDfTRC2qdaNGHZRkttySBL+yjbW6EqVuCkYqMr2Qb/S+aMuvcCPoEYEx1DqQIwEpaV+0IrpJFk2OMWVK3rpBpFHXzG5p//rp1Cp+leXhTUO2q8KrruA+DN1lT/DRjhdIwwk3CaYXnpIbmdK0aWRcIjyfRJQHyvOrCXQwDSWZCc36H0Non+v23ifB8WFWDeNKB8wxH/r45O1tpcrxKTB7PjNGBemn9ilH7qetQkwJziuCXc3XmF9S7/iJyuwK2p//tm22GpgVEq+77ttQ4cHFRAkCVXmwM/o2KGQ/GCOj8V1ZHu1PpCPA5jQK/oSi2HY/rl8s5/kC+vTP6I5I6MPALbVeT8r5yqyHBxAVoIRjK5mkB/p6J0EyS5rZEJVZf+u/51V9kdYgCG7Czf++cxGU/wVGIDhi5P2lNSoMEf0TymI+kDfUJtEl2xyayEsyLLtvtnl3oMtKw48AxpumMLuOk7+pj6nvWE3Vka47tjYyxjw4RWfDs/NEWeGIycjVJABHXrwKIWJC8Z9/BLt1QnyDXQsCmPIJr83O0/aCcPjo/mLTSN+uw5u93ynGxYHJ1A03nesRvmldK28gOajaqJSuVz2dj/bSqoxus5w5ryxp+L55wkfUGS22ewmVM5mnxSgR8T4lCJ8s2HfYd1WiFMdnvWwp0brFp5aBl3sECduVVph+cl4OcQ9WwSGFsQ4qxZBjiKXEgDU2sQERZ4K09nT9DE2lCzB47IKGuOIEWPa2eMoKUckYt1Bp+ob75tFLWs6/DDNq5WJh9Lf6o5BKrjaNKpNY6Zy41xdl+xLsqEiSJ0bod4R6LlH8VCUp7Eh3nJ0FfI9J+I9oWAqnidOcaZu7mP897YcF745CKrCyJrtn9T+9rv4W4SNicyvy4USnPJWtk7ON+k8NGUSDOB0IyyqB8wp1W5HJq9ve/DNvdN45UovYj/xIyswc639HujynDIQEK1FqzYy3Q8NCL4dcVIuumIM2tVrU3gOiGygq9QCzuGlgLJ4UdAuFv0gjyX76Rv6VW5+vFLDfc7C0ek8TaFk0SAvnl9t2PeVjdMIPk6mPvOZ210imraQu3PYG2zhqBpMeoQVwzlVTKWEMAdGG/+DST6HwUZkXLyxWnoQMTp++bX+ZiGdhyF5i4If0rPzj4rtAxG1hBtWXflxj48y5RKtX2xfXDMGDhHpLaIc4SRth1fuqTp7NEB3+wfWtBPIKU5FVVtI4q6kPm3N/VWi0/cgzr6LWob5XB8a2JgX6C9L9wSn0C/YdNYdvN6PtKGoBfuoF5NNncMvP61v7akg4rVclwvs3gLkBlrBMpfakeIylDcimeOR6OtfE27ae2izIMsPTn4pVPVNaVn/61+Au5zaPXkf0Wglqweh5SWaxJwEWlRE+RmK4eFd5YMEDiFf6gkgnf/8Jv+dUcdv2x1uYHgHUQ4913yn8lp9ZWgNOTkcxH6QY7SkY3POz656qatbptnk+xrKnqOoN6/x3+4FmHu0eE3rsSZTTQaBgf9xfmXv76UTOzOpZgvMUAos3ur3aftPod55DIT73jZH2CSu4d/c+GYtLHwHeRotO2u5/+17CYrOrQJ8wRQsFZj3pH4R8toZ3fkzBfn/+i0hOeUarQIIMr7PvG4zdOy4zy45XfLp87Xzxp/rXlEgLU+P3tRmTMVWZn8XQ0ErU0C7zOaLQzugyrJHfZn9kvewWkE81LJNotKNG9KDa4EkwuCI30f/waVcF0h6XGNzlq6SVnp1HWi/Fv79jolgzrq1wM06eLcdv1PmLuuAYgMRK5VB+EiAAAA=" alt="" aria-hidden="true">
     </button>
 
     <button id="roadLayerEditorBtn" class="top-square-button" type="button" title="레이어" aria-label="레이어">
@@ -10956,6 +11014,24 @@
             original.dispatchEvent(new Event("change", { bubbles:true }));
           });
         });
+
+        const loadCard = document.createElement("section");
+        loadCard.className = "other-load-card";
+        loadCard.innerHTML =
+          '<button type="button" class="other-load-button">' +
+            '<span>공간파일 불러오기</span>' +
+            '<span class="other-load-chevron">›</span>' +
+          '</button>';
+        const loadButton = loadCard.querySelector(".other-load-button");
+        if (loadButton) {
+          loadButton.addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const spatialButton = document.getElementById("spatialBtn");
+            if (spatialButton) spatialButton.click();
+          });
+        }
+        body.appendChild(loadCard);
       }
 
       function renderEditorBackbar(body, title, note) {
