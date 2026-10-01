@@ -6093,6 +6093,102 @@
     color: #000 !important;
   }
 
+
+  /* ===== 2026-10-01: 기본/외곽 라인명 + 투명도 슬라이더 표현 ===== */
+  .road-layer-name {
+    color: #1c1c1e !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    letter-spacing: -.2px !important;
+  }
+
+  .road-layer-order {
+    display: none !important;
+  }
+
+  .road-layer-opacity-wrap {
+    position: relative;
+    grid-template-columns: minmax(0,1fr) 52px !important;
+    gap: 8px !important;
+  }
+
+  .road-layer-opacity {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 24px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background:
+      linear-gradient(45deg, #d8d8dc 25%, transparent 25%),
+      linear-gradient(-45deg, #d8d8dc 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #d8d8dc 75%),
+      linear-gradient(-45deg, transparent 75%, #d8d8dc 75%),
+      #f4f4f6 !important;
+    background-size: 10px 10px !important;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0 !important;
+    border: 1px solid #c7c7cc !important;
+    border-radius: 12px !important;
+    outline: none !important;
+    accent-color: transparent !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+  }
+
+  .road-layer-opacity::-webkit-slider-runnable-track {
+    height: 22px !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background: linear-gradient(
+      to right,
+      rgba(28,28,30,.08),
+      rgba(28,28,30,.55)
+    ) !important;
+  }
+
+  .road-layer-opacity::-webkit-slider-thumb {
+    width: 26px !important;
+    height: 26px !important;
+    margin-top: -2px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    border: 1px solid rgba(0,0,0,.14) !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,.28) !important;
+  }
+
+  .road-layer-opacity::-moz-range-track {
+    height: 22px !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background:
+      linear-gradient(to right, rgba(28,28,30,.08), rgba(28,28,30,.55)),
+      repeating-conic-gradient(#d8d8dc 0 25%, #f4f4f6 0 50%) 50% / 10px 10px !important;
+  }
+
+  .road-layer-opacity::-moz-range-thumb {
+    width: 26px !important;
+    height: 26px !important;
+    border: 1px solid rgba(0,0,0,.14) !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,.28) !important;
+  }
+
+  .road-layer-opacity-number {
+    width: 52px !important;
+    height: 32px !important;
+    border: 1px solid #c7c7cc !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #3a3a3c !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+  }
+
 </style>
 
 </head>
@@ -6507,20 +6603,20 @@
 
       const DEFAULT_ROAD_LAYER_STACKS = {
         CITY: [
-          { name: "라인 1", color: "#77B959", skyColor: "#77B959", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
-          { name: "라인 2", color: "#FFFFFF", skyColor: "#FFFFFF", width: 7.0, lineStyle: "inherit", opacity: 100, visible: true }
+          { name: "기본라인", color: "#77B959", skyColor: "#77B959", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "외곽라인", color: "#FFFFFF", skyColor: "#FFFFFF", width: 7.0, lineStyle: "inherit", opacity: 100, visible: true }
         ],
         MYEON: [
-          { name: "라인 1", color: "#E7725A", skyColor: "#E7725A", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
-          { name: "라인 2", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
+          { name: "기본라인", color: "#E7725A", skyColor: "#E7725A", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "외곽라인", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
         ],
         RI: [
-          { name: "라인 1", color: "#8896F8", skyColor: "#8896F8", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
-          { name: "라인 2", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
+          { name: "기본라인", color: "#8896F8", skyColor: "#8896F8", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "외곽라인", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
         ],
         FARM: [
-          { name: "라인 1", color: "#CDAD5A", skyColor: "#CDAD5A", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
-          { name: "라인 2", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
+          { name: "기본라인", color: "#CDAD5A", skyColor: "#CDAD5A", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "외곽라인", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
         ]
       };
 
@@ -10373,7 +10469,7 @@
           item.innerHTML =
             '<div class="road-layer-item-top">' +
               '<input class="road-layer-visible" type="checkbox" ' + (layerConfig.visible !== false ? 'checked ' : '') + 'aria-label="라인 표시">' +
-              '<span class="road-layer-name">' + escapeHTML(layerConfig.name || ('라인 ' + (index + 1))) + '</span>' +
+              '<span class="road-layer-name">' + escapeHTML(index === 0 ? '기본라인' : index === 1 ? '외곽라인' : (layerConfig.name || ('라인 ' + (index + 1)))) + '</span>' +
               '<span class="road-layer-order">위에서 ' + (index + 1) + '번째</span>' +
             '</div>' +
             '<div class="road-layer-control-grid">' +
@@ -10437,7 +10533,7 @@
 
         head.querySelector('.road-layer-add').addEventListener('click', function() {
           const top = stack[0] || { color:ROAD_STYLES[styleKey].color, skyColor:ROAD_STYLES[styleKey].color, width:ROAD_STYLES[styleKey].mid };
-          stack.unshift({ name:'추가선', color:top.color, skyColor:top.skyColor || top.color, width:Number(top.width)||3, lineStyle:top.lineStyle || 'inherit', opacity:Number.isFinite(Number(top.opacity))?Number(top.opacity):100, visible:true });
+          stack.unshift({ name:'추가라인', color:top.color, skyColor:top.skyColor || top.color, width:Number(top.width)||3, lineStyle:top.lineStyle || 'inherit', opacity:Number.isFinite(Number(top.opacity))?Number(top.opacity):100, visible:true });
           syncRoadLayerStackForStyle(styleKey);
           renderRoadLayerEditor();
         });
