@@ -7086,6 +7086,129 @@
   }
 }
 </style>
+
+<style id="mobile-bottom-sheet-drag-20261001">
+@media (max-width:700px) {
+  /* 모바일 바텀시트: 화면 폭 전체 + 상단 드래그 영역 */
+  #listPanel {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    min-height: 220px !important;
+    max-height: calc(100dvh - 54px) !important;
+    border-radius: 18px 18px 0 0 !important;
+    overflow: hidden !important;
+    touch-action: pan-x pan-y;
+  }
+
+  #listPanel .list-header {
+    position: relative !important;
+    padding-top: 22px !important;
+    cursor: ns-resize !important;
+    touch-action: none !important;
+  }
+
+  #listPanel .list-header::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(60,60,67,.32);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  /* 기존 별도 리사이즈 핸들은 겹치지 않게 숨김 */
+  #listResizeHandle { display:none !important; }
+
+  /* 접힌 상태의 하단 메뉴바도 위로 드래그 가능 */
+  #listOpen {
+    display: none !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 48px !important;
+    border-radius: 14px 14px 0 0 !important;
+    transform: none !important;
+    touch-action: none !important;
+    cursor: ns-resize !important;
+    font-size: 0 !important;
+  }
+  body.list-collapsed #listOpen { display:block !important; }
+  #listOpen::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(60,60,67,.3);
+    transform: translateX(-50%);
+  }
+  #listOpen::after {
+    content: "메뉴" !important;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 7px;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+
+  /* 농어촌도로 / 시도 선택을 명확한 2분할 버튼으로 */
+  #roadCategoryHome {
+    width: 100% !important;
+    padding: 6px 0 8px !important;
+  }
+  #roadCategoryHome .road-category-select-label,
+  #roadCategoryHome .road-category-select-wrap {
+    display:none !important;
+  }
+  #roadCategoryTabs {
+    display:grid !important;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+    width:100%;
+    padding:0 2px;
+    box-sizing:border-box;
+  }
+  #roadCategoryTabs button {
+    min-width:0;
+    height:42px;
+    border:1px solid #d1d1d6;
+    border-radius:10px;
+    background:#fff;
+    color:#333;
+    font-size:15px;
+    font-weight:700;
+  }
+  #roadCategoryTabs button.active {
+    border-color:#2f91f2;
+    background:#2f91f2;
+    color:#fff;
+  }
+
+  /* 목록이 패널 내부에서만 스크롤되도록 */
+  #listContent {
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    height:auto !important;
+    overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+  }
+}
+</style>
+
 </head>
 
 <body>
@@ -17769,6 +17892,138 @@
 </script>
 
 
+<script id="mobile-bottom-sheet-drag-script-20261001">
+(function(){
+  "use strict";
+  const mobile = window.matchMedia && window.matchMedia("(max-width:700px)");
+  const panel = document.getElementById("listPanel");
+  const openBtn = document.getElementById("listOpen");
+  const header = panel && typeof panel.querySelector === "function" ? panel.querySelector(".list-header") : null;
+  if (!mobile || !panel || !openBtn || !header) return;
+
+  const MIN_H = 260;
+  function maxH(){ return Math.max(MIN_H, window.innerHeight - 54); }
+  function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+  function setHeight(h,save){
+    if (!mobile.matches) return;
+    const next = clamp(h, MIN_H, maxH());
+    panel.style.setProperty("height", Math.round(next)+"px", "important");
+    if (save) {
+      try { localStorage.setItem("roadMobileSheetHeight", String(Math.round(next))); } catch(e) {}
+    }
+  }
+  function defaultHeight(){ return clamp(window.innerHeight * .58, MIN_H, maxH()); }
+  function openRoads(height){
+    if (!mobile.matches) return;
+    document.body.classList.remove("list-collapsed");
+    setHeight(height || defaultHeight(), false);
+    if (typeof window.openSacheonRoadMenuPage === "function") {
+      window.openSacheonRoadMenuPage("roads");
+    }
+    const select = document.getElementById("roadCategorySelect");
+    if (select && select.value !== "rural") {
+      select.value = "rural";
+      select.dispatchEvent(new Event("change", {bubbles:true}));
+    }
+  }
+
+  function installCategoryTabs(){
+    const home = document.getElementById("roadCategoryHome");
+    const select = document.getElementById("roadCategorySelect");
+    if (!home || !select || document.getElementById("roadCategoryTabs")) return;
+    const tabs = document.createElement("div");
+    tabs.id = "roadCategoryTabs";
+    tabs.setAttribute("role","group");
+    tabs.setAttribute("aria-label","도로구분 선택");
+    tabs.innerHTML = '<button type="button" data-road-category="rural" class="active">농어촌도로</button>' +
+                     '<button type="button" data-road-category="city">시도</button>';
+    home.appendChild(tabs);
+    function sync(){
+      tabs.querySelectorAll("button").forEach(function(btn){
+        btn.classList.toggle("active", btn.dataset.roadCategory === select.value);
+      });
+    }
+    tabs.addEventListener("click", function(e){
+      const btn = e.target.closest("button[data-road-category]");
+      if (!btn) return;
+      select.value = btn.dataset.roadCategory;
+      select.dispatchEvent(new Event("change", {bubbles:true}));
+      sync();
+    });
+    select.addEventListener("change", sync);
+    select.value = "rural";
+    select.dispatchEvent(new Event("change", {bubbles:true}));
+    sync();
+  }
+
+  let openDrag = null;
+  openBtn.addEventListener("pointerdown", function(e){
+    if (!mobile.matches || e.button !== 0) return;
+    openDrag = {id:e.pointerId, startY:e.clientY, moved:false};
+    try { openBtn.setPointerCapture(e.pointerId); } catch(_) {}
+    e.preventDefault();
+  });
+  openBtn.addEventListener("pointermove", function(e){
+    if (!openDrag || e.pointerId !== openDrag.id) return;
+    const dy = openDrag.startY - e.clientY;
+    if (dy > 8) openDrag.moved = true;
+    if (dy > 24) {
+      openRoads(clamp(MIN_H + dy * 2.1, MIN_H, maxH()));
+    }
+    e.preventDefault();
+  });
+  function finishOpenDrag(e){
+    if (!openDrag || (e && e.pointerId !== openDrag.id)) return;
+    const moved = openDrag.moved;
+    try { if (openBtn.hasPointerCapture(openDrag.id)) openBtn.releasePointerCapture(openDrag.id); } catch(_) {}
+    openDrag = null;
+    if (!moved && document.body.classList.contains("list-collapsed")) openRoads(defaultHeight());
+  }
+  openBtn.addEventListener("pointerup", finishOpenDrag);
+  openBtn.addEventListener("pointercancel", finishOpenDrag);
+
+  let sheetDrag = null;
+  header.addEventListener("pointerdown", function(e){
+    if (!mobile.matches || e.button !== 0) return;
+    if (e.target.closest("button,input,select,a")) return;
+    sheetDrag = {id:e.pointerId, startY:e.clientY, startH:panel.getBoundingClientRect().height};
+    try { header.setPointerCapture(e.pointerId); } catch(_) {}
+    e.preventDefault();
+  }, true);
+  header.addEventListener("pointermove", function(e){
+    if (!sheetDrag || e.pointerId !== sheetDrag.id) return;
+    const next = sheetDrag.startH + (sheetDrag.startY - e.clientY);
+    setHeight(next, false);
+    e.preventDefault();
+  }, true);
+  function finishSheetDrag(e){
+    if (!sheetDrag || (e && e.pointerId !== sheetDrag.id)) return;
+    const h = panel.getBoundingClientRect().height;
+    try { if (header.hasPointerCapture(sheetDrag.id)) header.releasePointerCapture(sheetDrag.id); } catch(_) {}
+    sheetDrag = null;
+    if (h < MIN_H + 28) {
+      document.body.classList.add("list-collapsed");
+    } else {
+      setHeight(h, true);
+    }
+  }
+  header.addEventListener("pointerup", finishSheetDrag, true);
+  header.addEventListener("pointercancel", finishSheetDrag, true);
+
+  window.addEventListener("resize", function(){
+    if (!mobile.matches || document.body.classList.contains("list-collapsed")) return;
+    setHeight(panel.getBoundingClientRect().height || defaultHeight(), false);
+  });
+
+  let saved=0;
+  try { saved=Number(localStorage.getItem("roadMobileSheetHeight")); } catch(e) {}
+  if (mobile.matches && Number.isFinite(saved) && saved>0) setHeight(saved,false);
+
+  installCategoryTabs();
+  setTimeout(installCategoryTabs, 0);
+})();
+</script>
+
 <script>
 (function() {
   const legend = document.getElementById("roadMapLegend");
@@ -17821,6 +18076,9 @@
   schedule();
 })();
 </script>
+
+
+
 
 </body>
 </html>
