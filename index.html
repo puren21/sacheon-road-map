@@ -10719,6 +10719,9 @@
         row.addEventListener("click", function(event) {
           event.preventDefault();
           event.stopPropagation();
+          if (typeof window.expandSacheonRoadMenu === "function") {
+            window.expandSacheonRoadMenu();
+          }
           onClick();
           const mainTitle = document.querySelector("#listPanel .list-header-main-title");
           const label = row.querySelector(".layer-style-menu-name");
@@ -16640,6 +16643,7 @@
     event.stopPropagation();
 
     if (backBtn.dataset.rootMenu === "1") {
+      collapseRoadMenu();
       return;
     }
 
@@ -16647,6 +16651,7 @@
         typeof window.handleSacheonStyleBack === "function") {
       const result = window.handleSacheonStyleBack();
       if (result && result.handled) {
+        expandRoadMenu();
         title.textContent = result.title || "스타일 설정";
         return;
       }
@@ -16658,6 +16663,8 @@
   window.refreshSacheonMemoMenu = renderMemoMenu;
   window.openSacheonRoadMenuPage = openPage;
   window.showSacheonRoadMenuHome = showHome;
+  window.expandSacheonRoadMenu = expandRoadMenu;
+  window.collapseSacheonRoadMenu = collapseRoadMenu;
 
   showHome();
   panel.dataset.mainMenuReady = "1";
