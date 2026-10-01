@@ -150,3 +150,44 @@ test('route styling cannot reattach an OFF route in overview',()=>{
   for(const name of ['isRoadLayerVisibleAtScale','applyRoadLineVisibility'])vm.runInContext(source(name),c);
   c.applyRoadLineVisibility(road);assert.equal(line.getMap(),null);assert.equal(hit.getMap(),null);
 });
+test('unchanged road paths are sent once; forced in-place edits and tier changes still update',()=>{
+  const c={};vm.createContext(c);vm.runInContext(source('setRoadLinePathIfChanged'),c);
+  let writes=0;const line={setPath(){writes++}},fine=[1,2],coarse=[1];
+  for(let i=0;i<100;i++)c.setRoadLinePathIfChanged(line,fine);
+  assert.equal(writes,1);fine.push(3);c.setRoadLinePathIfChanged(line,fine,true);assert.equal(writes,2);
+  c.setRoadLinePathIfChanged(line,coarse);c.setRoadLinePathIfChanged(line,fine);assert.equal(writes,4);
+});
+test('visible label position survives panning, but zoom and geometry replacement invalidate it',()=>{
+  let scans=0;const point={id:'candidate'},base={id:'base'},path=[{},{}],group={paths:[path]};
+  const c={groups:new Map([['g',group]]),map:{level:6,getLevel(){return this.level},getCenter(){return {}}},nearestPointOnSegmentForLabel(){scans++;return point},distanceMeters(){return 1}};
+  vm.createContext(c);vm.runInContext(source('getVisibleLabelPosition'),c);
+  const item={groupKey:'g',basePosition:base};const bounds={contain:p=>p===point};
+  assert.equal(c.getVisibleLabelPosition(item,bounds),point);assert.equal(scans,1);
+  for(let i=0;i<100;i++)c.getVisibleLabelPosition(item,bounds);assert.equal(scans,1);
+  c.map.level=5;c.getVisibleLabelPosition(item,bounds);assert.equal(scans,2);
+  group.paths[0]=[{},{}];c.getVisibleLabelPosition(item,bounds);assert.equal(scans,3);
+  c.getVisibleLabelPosition(item,{contain:()=>false});assert.equal(scans,4);
+});
+test('label measurements cache actual size and invalidate on style/text changes',()=>{
+  let reads=0;const el={textContent:'101',getBoundingClientRect(){reads++;return {width:32,height:20}}};
+  const c={map:{getProjection:()=>({containerPointFromCoords:()=>({x:100,y:100})})},groups:new Map([['g',{number:101,layerId:'city'}]])};vm.createContext(c);vm.runInContext(source('getRoadLabelCollisionBox'),c);
+  const item={groupKey:'g',element:el};const box=c.getRoadLabelCollisionBox(item,{},'style1');assert.equal(box.left,79);
+  for(let i=0;i<100;i++)c.getRoadLabelCollisionBox(item,{},'style1');assert.equal(reads,1);
+  c.getRoadLabelCollisionBox(item,{},'style2');assert.equal(reads,2);
+  el.textContent='102';c.getRoadLabelCollisionBox(item,{},'style2');assert.equal(reads,3);
+});
+test('zero-size label measurements are not cached',()=>{
+  let reads=0;const el={textContent:'1',getBoundingClientRect(){reads++;return {width:0,height:0}}};
+  const c={map:{getProjection:()=>({containerPointFromCoords:()=>({x:0,y:0})})},groups:new Map()};vm.createContext(c);vm.runInContext(source('getRoadLabelCollisionBox'),c);
+  const item={element:el};c.getRoadLabelCollisionBox(item,{},'a');c.getRoadLabelCollisionBox(item,{},'a');assert.equal(reads,2);assert.equal(item._measuredSize,undefined);
+});
+test('cached overlapping labels are rejected without reattachment or layout reads',()=>{
+  const {c}=setup();let reads=0;const position={equals:()=>true};
+  const labels=['a','b'].map(key=>({groupKey:key,statusKeys:['open'],overlay:{...overlay(),getPosition:()=>position,setPosition(){}},element:{textContent:key,getBoundingClientRect(){reads++;return {width:30,height:20}}}}));
+  Object.assign(c,{roadGeometryEditState:null,LABEL_STYLES:{VISIBLE:true},hiddenRoadGroups:new Set(),roadStatusFilters:{open:true},groups:new Map(labels.map(item=>[item.groupKey,{number:item.groupKey,layerId:'city',roads:[{_visible:true}]}])),isRoadLayerVisibleAtScale:()=>true,isRoadGroupKindVisible:()=>true,getVisibleLabelPosition:()=>position,getMapResolutionScale:()=>1,applyLabelScale(){},applyLabelAppearance(){}});
+  c.LAYERS.city.labels=labels;c.map.getBounds=()=>({});c.map.getProjection=()=>({containerPointFromCoords:()=>({x:50,y:50})});
+  for(const name of ['getRoadLabelCollisionBox','roadLabelBoxesOverlap','updateLabels'])vm.runInContext(source(name),c);
+  c.updateLabels();assert.equal(reads,2);assert.equal(labels[0].overlay.getMap(),c.map);assert.equal(labels[1].overlay.getMap(),null);
+  const rejectedWrites=labels[1].overlay.writes;c.updateLabels();assert.equal(reads,2);assert.equal(labels[1].overlay.writes,rejectedWrites);
+  c.LABEL_STYLES.SCALE=150;c.updateLabels();assert.equal(reads,4);
+});

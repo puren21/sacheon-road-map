@@ -10559,10 +10559,10 @@
         document.getElementById("labelScaleValue").textContent = LABEL_STYLES.SCALE + "%";
       }
 
-      function applyLabelScale() {
+      function applyLabelScale(elements) {
         const scale = (limitNumber(LABEL_STYLES.SCALE, 50, 150) / 100) * getMapResolutionScale();
         document.documentElement.style.setProperty("--road-label-scale", scale);
-        document.querySelectorAll(".road-label").forEach(function (label) {
+        (elements || document.querySelectorAll(".road-label")).forEach(function (label) {
           if (label._appliedLabelScale === scale) return;
           label._appliedLabelScale = scale;
           label.style.setProperty("--label-scale", scale);
@@ -10591,7 +10591,7 @@
         LABEL_STYLES.SHAPE_LINE_WIDTH = Math.min(10, Math.max(0, Number(LABEL_STYLES.SHAPE_LINE_WIDTH) || 0));
       }
 
-      function applyLabelAppearance() {
+      function applyLabelAppearance(elements) {
         ensureLabelStyleModel();
         const activeTextColors = LABEL_STYLES.TEXT_COLORS.filter(function(item) { return item && item.visible !== false; }).map(function(item) { return normalizeLabelHex(item.color, '#111111'); });
         const textColor = activeTextColors[0] || 'transparent';
@@ -10600,7 +10600,7 @@
         const lineColor = normalizeLabelHex(LABEL_STYLES.SHAPE_LINE_COLOR, '#111111');
         const lineWidth = Math.min(10, Math.max(0, Number(LABEL_STYLES.SHAPE_LINE_WIDTH) || 0));
         const signature = JSON.stringify([activeTextColors, shapeMode, fillColor, lineColor, lineWidth]);
-        document.querySelectorAll('.road-label').forEach(function(label) {
+        (elements || document.querySelectorAll('.road-label')).forEach(function(label) {
           if (label._appliedLabelAppearance === signature) return;
           label._appliedLabelAppearance = signature;
           label.style.setProperty('--road-label-text-color', textColor);
@@ -10928,7 +10928,7 @@
 
         lines.forEach(function(line, index) {
           const config = stack[index];
-          line.setPath(path);
+          setRoadLinePathIfChanged(line, path);
           setMapOptionsIfChanged(line, {
             strokeColor: getRoadLayerDisplayColor(road.styleKey, config),
             strokeWeight: mapStrokePx(
@@ -13271,6 +13271,13 @@
         return road.pathFine;
       }
 
+      function setRoadLinePathIfChanged(line, path, force) {
+        // 편집 중 같은 배열을 수정하는 경우 force로 갱신. 이동/스타일 복원은 재사용.
+        if (!force && line._lastRoadPath === path) return;
+        line.setPath(path);
+        line._lastRoadPath = path;
+      }
+
       function applyRoadPathTier(road, tier) {
         if (!road || road._pathTier === tier) return;
 
@@ -13280,7 +13287,7 @@
         getRoadVisualLines(road)
           .concat(road.hitLine ? [road.hitLine] : [])
           .forEach(function(line) {
-            if (line) line.setPath(path);
+            if (line) setRoadLinePathIfChanged(line, path);
           });
 
         road._pathTier = tier;
@@ -13566,6 +13573,14 @@
 
         const group = groups.get(labelItem.groupKey);
         if (!group) return null;
+        const paths = group.paths || [];
+        const cached = labelItem._visiblePositionCache;
+        if (cached && cached.level === map.getLevel() &&
+            cached.paths.length === paths.length &&
+            cached.paths.every(function(path, index) { return path === paths[index]; }) &&
+            cached.position && bounds.contain(cached.position)) {
+          return cached.position;
+        }
         const center = map.getCenter();
         let best = null;
         let bestDistance = Infinity;
@@ -13586,10 +13601,13 @@
             if (d < bestDistance) { bestDistance = d; best = candidate; }
           }
         });
+        labelItem._visiblePositionCache = {
+          level: map.getLevel(), paths: paths.slice(), position: best
+        };
         return best;
       }
 
-      function getRoadLabelCollisionBox(labelItem, position) {
+      function getRoadLabelCollisionBox(labelItem, position, sizeSignature) {
         const projection = map.getProjection();
         if (!projection || !position) return null;
 
@@ -13600,18 +13618,27 @@
         const isCity = group && group.layerId === "city";
         const textValue = group ? String(group.number || "") : "";
 
-        // 실제 DOM 크기를 우선 사용하고, 아직 렌더링되지 않은 경우에는 예상 크기를 사용함.
         const el = labelItem.element;
-        let width = el && el.offsetWidth ? el.offsetWidth : 0;
-        let height = el && el.offsetHeight ? el.offsetHeight : 0;
-
-        if (!width || !height) {
-          if (isCity) {
-            width = 25;
-            height = 25;
+        const cached = labelItem._measuredSize;
+        let width, height;
+        if (cached && cached.signature === sizeSignature && cached.element === el &&
+            cached.text === (el ? el.textContent : textValue)) {
+          width = cached.width;
+          height = cached.height;
+        } else {
+          // 후보들을 먼저 붙이고 스타일을 적용한 뒤 치수를 읽어 강제 레이아웃을 묶음.
+          const rect = el && el.getBoundingClientRect();
+          width = rect ? rect.width : 0;
+          height = rect ? rect.height : 0;
+          if (width > 0 && height > 0) {
+            labelItem._measuredSize = {
+              signature: sizeSignature, element: el,
+              text: el.textContent, width: width, height: height
+            };
           } else {
-            width = Math.max(20, textValue.length * 8 + 8);
-            height = 18;
+            // 아직 측정 불가한 값은 저장하지 않고 다음 갱신에서 다시 확인.
+            width = isCity ? 25 : Math.max(20, textValue.length * 8 + 8);
+            height = isCity ? 25 : 18;
           }
         }
 
@@ -13710,15 +13737,31 @@
 
         const acceptedBoxes = [];
 
+        const elements = candidates.map(function(candidate) { return candidate.item.element; }).filter(Boolean);
+        applyLabelScale(elements);
+        applyLabelAppearance(elements);
+        const sizeSignature = JSON.stringify([
+          LABEL_STYLES, getMapResolutionScale(),
+          document.fonts ? document.fonts.status : ""
+        ]);
+        candidates.forEach(function(candidate) {
+          const item = candidate.item;
+          const cached = item._measuredSize;
+          const el = item.element;
+          if (!cached || cached.signature !== sizeSignature || cached.element !== el ||
+              cached.text !== (el ? el.textContent : "")) {
+            if (!item.overlay.getMap()) item.overlay.setMap(map);
+          }
+        });
+
+        // 모든 치수를 먼저 읽은 뒤 표시/제거를 수행해 DOM 읽기/쓰기 교차를 피함.
+        candidates.forEach(function(candidate) {
+          candidate.box = getRoadLabelCollisionBox(candidate.item, candidate.position, sizeSignature);
+        });
         candidates.forEach(function(candidate) {
           const item = candidate.item;
 
-          // 크기 측정을 위해 한 번 지도에 붙인 뒤 충돌 여부를 판단함.
-          if (!item.overlay.getMap()) {
-            item.overlay.setMap(map);
-          }
-
-          const box = getRoadLabelCollisionBox(item, candidate.position);
+          const box = candidate.box;
           let collided = false;
 
           if (box) {
@@ -13728,17 +13771,16 @@
           }
 
           if (collided) {
-            item.overlay.setMap(null);
+            if (item.overlay.getMap()) item.overlay.setMap(null);
             item._visible = false;
           } else {
+            if (!item.overlay.getMap()) item.overlay.setMap(map);
             if (box) acceptedBoxes.push(box);
             item._visible = true;
           }
         });
 
-        // 새로 붙은 라벨만 현재 스타일 적용. 조작 종료 프레임 안에서 처리함.
-        applyLabelScale();
-        applyLabelAppearance();
+        // 스타일은 측정 전에 적용했고, 겹침으로 탈락한 캐시 후보는 지도에 붙이지 않음.
       }
 
       /*
@@ -14850,7 +14892,7 @@
         getRoadVisualLines(road)
           .concat(road.hitLine ? [road.hitLine] : [])
           .forEach(function(line) {
-            if (line) line.setPath(path);
+            if (line) setRoadLinePathIfChanged(line, path, true);
           });
 
         applyRoadPathTier(road, getRoadPathTier());
@@ -15601,7 +15643,7 @@
         getRoadVisualLines(road)
           .concat(road.hitLine ? [road.hitLine] : [])
           .forEach(function(line) {
-            if (line) line.setPath(path);
+            if (line) setRoadLinePathIfChanged(line, path, true);
           });
 
         applyRoadPathTier(road, getRoadPathTier());
@@ -15635,7 +15677,7 @@
           getRoadVisualLines(road)
             .concat(road.hitLine ? [road.hitLine] : [])
             .forEach(function(line) {
-              if (line) line.setPath(path);
+              if (line) setRoadLinePathIfChanged(line, path, true);
             });
 
           applyRoadPathTier(road, getRoadPathTier());
@@ -15940,7 +15982,7 @@
           getRoadVisualLines(road)
             .concat(road.hitLine ? [road.hitLine] : [])
             .forEach(function(line) {
-              if (line) line.setPath(path);
+              if (line) setRoadLinePathIfChanged(line, path, true);
             });
 
           applyRoadPathTier(road, getRoadPathTier());
