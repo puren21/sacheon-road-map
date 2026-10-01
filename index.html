@@ -6427,6 +6427,53 @@
     -webkit-text-fill-color: #ffffff !important;
   }
 
+
+  /* ===== 2026-10-01: 메모 버튼 한 줄 + 좌측 메뉴 80% ===== */
+  .road-popup .road-memo-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
+  }
+
+  .road-popup .road-memo-actions > button,
+  body .road-popup .road-memo-actions > button.road-memo-save {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 0 8px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 650 !important;
+    line-height: 34px !important;
+    white-space: nowrap !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  body .road-popup .road-memo-actions > button.road-memo-save {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #007aff !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+
+  body .road-popup .road-memo-actions > button.road-memo-save:hover,
+  body .road-popup .road-memo-actions > button.road-memo-save:focus-visible,
+  body .road-popup .road-memo-actions > button.road-memo-save:active {
+    background: #006ee6 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+
+  #listPanel {
+    zoom: 0.8 !important;
+  }
+
 </style>
 
 </head>
