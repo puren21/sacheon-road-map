@@ -4543,6 +4543,85 @@
     }
   }
 
+
+  /* ===== 2026-10-01: 도로구분 선택형 목록 ===== */
+  @media (min-width: 701px) {
+    #roadCategoryHome,
+    #roadCategoryHome.is-visible {
+      display: block !important;
+      padding: 0 0 10px !important;
+      background: transparent !important;
+    }
+
+    .road-category-select-label {
+      display: block;
+      margin: 0 0 5px 2px;
+      color: #666;
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+
+    .road-category-select-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .road-category-select-wrap::after {
+      content: "⌄";
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      color: #8e8e93;
+      font-size: 15px;
+      pointer-events: none;
+      transform: translateY(-55%);
+    }
+
+    #roadCategorySelect {
+      width: 100%;
+      height: 40px;
+      padding: 0 34px 0 13px;
+      border: 1px solid #dedee3;
+      border-radius: 10px;
+      outline: none;
+      background: #fff;
+      color: #1c1c1e;
+      font-size: 13.5px;
+      font-weight: 700;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    #roadCategorySelect:focus {
+      border-color: #b8b8bd;
+      box-shadow: 0 0 0 2px rgba(0,0,0,.04);
+    }
+
+    .road-category-detail-head {
+      display: none !important;
+    }
+
+    .road-category-detail.is-visible {
+      display: block !important;
+      border-radius: 10px !important;
+      background: #fff !important;
+      overflow: hidden !important;
+    }
+
+    .road-category-detail .list-item {
+      min-height: 42px !important;
+      padding: 10px 13px !important;
+    }
+
+    .road-category-detail .list-item .road-list-main,
+    .road-category-detail .list-item.selected .road-list-main {
+      font-size: 14.5px !important;
+      font-weight: 600 !important;
+      line-height: 1.35 !important;
+    }
+  }
+
 </style>
 
 </head>
@@ -13548,34 +13627,23 @@
   const home = document.createElement("div");
   home.id = "roadCategoryHome";
   home.innerHTML =
-    '<button class="road-category-button" type="button" data-road-category="city">' +
-      '<span class="road-category-arrow">›</span>' +
-      '<span class="road-category-name">시도</span>' +
-      '<span class="road-category-count" data-count-for="city">노선 보기</span>' +
-    '</button>' +
-    '<button class="road-category-button" type="button" data-road-category="rural">' +
-      '<span class="road-category-arrow">›</span>' +
-      '<span class="road-category-name">농어촌도로</span>' +
-      '<span class="road-category-count" data-count-for="rural">노선 보기</span>' +
-    '</button>';
+    '<label class="road-category-select-label" for="roadCategorySelect">도로구분</label>' +
+    '<div class="road-category-select-wrap">' +
+      '<select id="roadCategorySelect" aria-label="도로구분 선택">' +
+        '<option value="rural" selected>농어촌도로</option>' +
+        '<option value="city">시도</option>' +
+      '</select>' +
+    '</div>';
 
   const cityDetail = document.createElement("div");
   cityDetail.className = "road-category-detail";
   cityDetail.dataset.category = "city";
-  cityDetail.innerHTML =
-    '<div class="road-category-detail-head">' +
-      '<button class="road-category-back" type="button" aria-label="도로 종류로 돌아가기">‹</button>' +
-      '<div class="road-category-detail-title">시도 상세 노선</div>' +
-    '</div>';
+  cityDetail.innerHTML = '';
 
   const ruralDetail = document.createElement("div");
   ruralDetail.className = "road-category-detail";
   ruralDetail.dataset.category = "rural";
-  ruralDetail.innerHTML =
-    '<div class="road-category-detail-head">' +
-      '<button class="road-category-back" type="button" aria-label="도로 종류로 돌아가기">‹</button>' +
-      '<div class="road-category-detail-title">농어촌도로 상세 노선</div>' +
-    '</div>';
+  ruralDetail.innerHTML = '';
 
   cityDetail.appendChild(cityTitle);
   cityDetail.appendChild(cityList);
@@ -13585,53 +13653,35 @@
   listContent.insertBefore(cityDetail, document.getElementById("searchEmpty"));
   listContent.insertBefore(ruralDetail, document.getElementById("searchEmpty"));
 
-  let categoryMode = "home";
+  let categoryMode = "rural";
+  const categorySelect = home.querySelector("#roadCategorySelect");
 
   function setCategoryMode(mode) {
-    categoryMode = mode;
-    const searching = mode === "search";
-    home.classList.toggle("is-visible", mode === "home");
-    cityDetail.classList.toggle("is-visible", mode === "city" || searching);
-    ruralDetail.classList.toggle("is-visible", mode === "rural" || searching);
-    if (mode === "home") listContent.scrollTop = 0;
+    categoryMode = mode === "city" ? "city" : "rural";
+    home.classList.add("is-visible");
+    cityDetail.classList.toggle("is-visible", categoryMode === "city");
+    ruralDetail.classList.toggle("is-visible", categoryMode === "rural");
+    if (categorySelect && categorySelect.value !== categoryMode) {
+      categorySelect.value = categoryMode;
+    }
+    listContent.scrollTop = 0;
   }
 
-  function updateCategoryCounts() {
-    const cityCount = cityList.querySelectorAll(".list-item").length;
-    const ruralCount = ruralList.querySelectorAll(".list-item").length;
-    const cityCountNode = home.querySelector('[data-count-for="city"]');
-    const ruralCountNode = home.querySelector('[data-count-for="rural"]');
-    if (cityCountNode) cityCountNode.textContent = cityCount ? cityCount + "개 노선" : "노선 보기";
-    if (ruralCountNode) ruralCountNode.textContent = ruralCount ? ruralCount + "개 노선" : "노선 보기";
-  }
-
-  home.addEventListener("click", function(event) {
-    const button = event.target.closest("[data-road-category]");
-    if (!button) return;
-    setCategoryMode(button.dataset.roadCategory);
-  });
-
-  panel.querySelectorAll(".road-category-back").forEach(function(button) {
-    button.addEventListener("click", function() {
-      if (searchInput) searchInput.value = "";
-      setCategoryMode("home");
-    });
-  });
-
-  if (searchInput) {
-    searchInput.addEventListener("input", function() {
-      setCategoryMode(searchInput.value.trim() ? "search" : "home");
-    });
-    searchInput.addEventListener("search", function() {
-      setCategoryMode(searchInput.value.trim() ? "search" : "home");
+  if (categorySelect) {
+    categorySelect.addEventListener("change", function() {
+      if (searchInput) {
+        searchInput.value = "";
+        searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      setCategoryMode(this.value);
+      if (typeof showAllRoadList === "function") {
+        showAllRoadList();
+        if (typeof updateRoadSearchCount === "function") updateRoadSearchCount();
+      }
     });
   }
 
-  const listObserver = new MutationObserver(updateCategoryCounts);
-  listObserver.observe(cityList, { childList: true });
-  listObserver.observe(ruralList, { childList: true });
-  updateCategoryCounts();
-  setCategoryMode("home");
+  setCategoryMode("rural");
 
   const bottomHandle = document.createElement("div");
   bottomHandle.id = "listBottomResizeHandle";
