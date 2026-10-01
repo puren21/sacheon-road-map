@@ -7001,6 +7001,91 @@
 
 </style>
 
+
+<style id="mobile-menu-detail-fix-20261001">
+@media (max-width:700px) {
+  /* 모바일 메뉴는 화면 좌우를 꽉 채움. 기존 80% zoom은 데스크톱에만 유지 */
+  #listPanel {
+    zoom: 1 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: min(48dvh, 430px) !important;
+    min-height: 330px !important;
+    max-height: 82dvh !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 메인 4개 메뉴가 잘리지 않도록 홈 메뉴는 모두 표시 */
+  #listPanel .road-main-menu-home {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+  #listPanel .road-ios-menu-row { width:100% !important; }
+  #listPanel .road-menu-page.active {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 축소 버튼은 좌상단에 띄우지 않고 하단 메뉴 탭만 사용 */
+  #roadMenuRestore,
+  #roadMenuRestore.show { display:none !important; }
+
+  #listOpen {
+    display:none !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 42px !important;
+    border-radius: 12px 12px 0 0 !important;
+    transform: none !important;
+    font-size: 0 !important;
+    z-index: 12060 !important;
+  }
+  body.list-collapsed #listOpen {
+    display:block !important;
+  }
+  #listOpen::after {
+    content: "메뉴" !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+
+  /* 상세 노선정보는 화면 안에서 끝까지 확인 가능하도록 독립 스크롤 */
+  body > .road-popup {
+    top: 58px !important;
+    right: 8px !important;
+    bottom: 50px !important;
+    left: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  body.mobile-road-info-open:not(.list-collapsed) > .road-popup,
+  body.mobile-road-info-open > .road-popup {
+    top: 58px !important;
+    bottom: 50px !important;
+    max-height: none !important;
+  }
+  .road-popup .popup-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 5 !important;
+  }
+}
+</style>
 </head>
 
 <body>
@@ -17335,13 +17420,22 @@
   let currentRoadMenuPage = "home";
 
   function collapseRoadMenu() {
+    const mobile = window.matchMedia && window.matchMedia("(max-width:700px)").matches;
+    if (mobile) {
+      panel.classList.remove("road-menu-auto-collapsed");
+      document.body.classList.add("list-collapsed");
+      if (restoreBtn) restoreBtn.classList.remove("show");
+      return;
+    }
     if (!restoreBtn) return;
     panel.classList.add("road-menu-auto-collapsed");
     restoreBtn.classList.add("show");
   }
 
   function expandRoadMenu() {
+    const mobile = window.matchMedia && window.matchMedia("(max-width:700px)").matches;
     panel.classList.remove("road-menu-auto-collapsed");
+    if (mobile) document.body.classList.remove("list-collapsed");
     if (restoreBtn) restoreBtn.classList.remove("show");
   }
 
