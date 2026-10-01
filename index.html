@@ -6554,6 +6554,58 @@
     zoom: 0.8 !important;
   }
 
+
+  /* ===== 2026-10-01: 메인메뉴 자동 축소 아이콘 ===== */
+  #roadMenuRestore {
+    position: fixed;
+    top: calc(var(--main-header-h, 58px) + 14px);
+    left: 14px;
+    z-index: 12050;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: #2f91f2;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(31,127,220,.32);
+    cursor: pointer;
+  }
+
+  #roadMenuRestore.show {
+    display: inline-flex;
+  }
+
+  #roadMenuRestore::before {
+    content: "›";
+    display: block;
+    margin-left: 2px;
+    font-size: 38px;
+    font-weight: 300;
+    line-height: 1;
+  }
+
+  #roadMenuRestore:hover,
+  #roadMenuRestore:active {
+    background: #1f7fdc;
+  }
+
+  #listPanel.road-menu-auto-collapsed {
+    display: none !important;
+  }
+
+  @media (max-width:700px) {
+    #roadMenuRestore {
+      top: calc(var(--main-header-h, 58px) + 10px);
+      left: 10px;
+      width: 46px;
+      height: 46px;
+    }
+  }
+
 </style>
 
 </head>
@@ -6617,6 +6669,7 @@
   </div>
 
   <button id="listOpen" title="노선목록 펼치기" aria-label="노선목록 펼치기">▶</button>
+  <button id="roadMenuRestore" type="button" title="메뉴 펼치기" aria-label="메뉴 펼치기"></button>
 
   <div id="listPanel">
     <div class="list-header">
@@ -16208,6 +16261,7 @@
   const header = panel.querySelector(".list-header");
   const title = panel.querySelector(".list-header-main-title");
   const backBtn = document.getElementById("listMenuBack");
+  const restoreBtn = document.getElementById("roadMenuRestore");
   const resizeHandle = document.getElementById("listResizeHandle");
   const searchWrap = panel.querySelector(".road-search-wrap");
   const kindFilters = panel.querySelector(".road-kind-filters");
@@ -16339,7 +16393,22 @@
       .replace(/'/g, "&#39;");
   }
 
+  let currentRoadMenuPage = "home";
+
+  function collapseRoadMenu() {
+    if (!restoreBtn) return;
+    panel.classList.add("road-menu-auto-collapsed");
+    restoreBtn.classList.add("show");
+  }
+
+  function expandRoadMenu() {
+    panel.classList.remove("road-menu-auto-collapsed");
+    if (restoreBtn) restoreBtn.classList.remove("show");
+  }
+
   function showHome() {
+    currentRoadMenuPage = "home";
+    expandRoadMenu();
     panel.classList.remove("road-menu-detail");
     home.style.display = "flex";
     roadPage.classList.remove("active");
@@ -16351,6 +16420,7 @@
   }
 
   function openPage(name) {
+    currentRoadMenuPage = name;
     panel.classList.add("road-menu-detail");
     backBtn.dataset.rootMenu = "0";
     home.style.display = "none";
@@ -16371,6 +16441,15 @@
       }
     }
     if (name === "memos") renderMemoMenu();
+    collapseRoadMenu();
+  }
+
+  if (restoreBtn) {
+    restoreBtn.addEventListener("click", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      expandRoadMenu();
+    });
   }
 
   home.querySelectorAll("[data-road-page]").forEach(function(button) {
