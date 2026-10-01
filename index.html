@@ -6873,10 +6873,10 @@
   /* ===== 2026-10-01: 노선정보 상단 우측 컨트롤 정렬 ===== */
   .road-popup .popup-header {
     position: relative !important;
-    min-height: 92px !important;
+    min-height: 72px !important;
   }
 
-  /* 닫기(X)와 노선 표시 스위치의 오른쪽 끝을 같은 기준선에 맞춤 */
+  /* X 버튼은 우측 끝, 노선 표시 컨트롤은 그 왼쪽에 한 줄로 배치 */
   .road-popup .popup-close {
     top: 12px !important;
     right: 14px !important;
@@ -6895,13 +6895,13 @@
   .road-popup .popup-title-line {
     position: relative !important;
     min-height: 40px !important;
-    padding-right: 142px !important;
+    padding-right: 190px !important;
   }
 
   .road-popup .road-visibility-inline {
     position: absolute !important;
-    top: 50px !important;
-    right: 14px !important;
+    top: 16px !important;
+    right: 66px !important;
     height: 32px !important;
     margin: 0 !important;
     display: flex !important;
@@ -6911,26 +6911,27 @@
     white-space: nowrap !important;
   }
 
+  /* 토글 스위치는 기존 크기의 약 80%로 축소 */
   .road-popup .road-visibility-inline .road-visibility-switch {
-    width: 52px !important;
-    height: 30px !important;
+    width: 42px !important;
+    height: 24px !important;
     margin: 0 !important;
   }
 
   .road-popup .road-visibility-inline .road-visibility-slider::after {
     top: 2px !important;
     left: 2px !important;
-    width: 26px !important;
-    height: 26px !important;
+    width: 20px !important;
+    height: 20px !important;
   }
 
   .road-popup .road-visibility-inline .road-visibility-switch input:checked + .road-visibility-slider::after {
-    transform: translateX(22px) !important;
+    transform: translateX(18px) !important;
   }
 
   @media (max-width:700px) {
     .road-popup .popup-header {
-      min-height: 90px !important;
+      min-height: 68px !important;
     }
 
     .road-popup .popup-close {
@@ -6944,12 +6945,12 @@
     }
 
     .road-popup .popup-title-line {
-      padding-right: 134px !important;
+      padding-right: 172px !important;
     }
 
     .road-popup .road-visibility-inline {
-      top: 49px !important;
-      right: 12px !important;
+      top: 15px !important;
+      right: 60px !important;
       height: 30px !important;
       gap: 7px !important;
     }
@@ -6959,19 +6960,19 @@
     }
 
     .road-popup .road-visibility-inline .road-visibility-switch {
-      width: 50px !important;
-      height: 29px !important;
+      width: 40px !important;
+      height: 23px !important;
     }
 
     .road-popup .road-visibility-inline .road-visibility-slider::after {
       top: 2px !important;
       left: 2px !important;
-      width: 25px !important;
-      height: 25px !important;
+      width: 19px !important;
+      height: 19px !important;
     }
 
     .road-popup .road-visibility-inline .road-visibility-switch input:checked + .road-visibility-slider::after {
-      transform: translateX(21px) !important;
+      transform: translateX(17px) !important;
     }
   }
 
