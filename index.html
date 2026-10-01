@@ -6613,6 +6613,22 @@
     }
   }
 
+
+  /* ===== 2026-10-01: 사천시 도로현황 심볼 ===== */
+  #listPanel .list-header-main-title {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  #listPanel .list-header-main-title .sacheon-city-symbol {
+    display: block !important;
+    height: 1em !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+    object-fit: contain !important;
+  }
+
 </style>
 
 </head>
@@ -16628,7 +16644,7 @@
     otherPage.classList.remove("active");
     backBtn.style.display = "inline-flex";
     backBtn.dataset.rootMenu = "1";
-    title.textContent = "사천시 도로현황";
+    title.innerHTML = '<img class="sacheon-city-symbol" src="data:image/webp;base64,UklGRgQDAABXRUJQVlA4IPgCAADwEQCdASojABwAPikQhkIhoQwFVqoMAUJbACdMoRiDzBKJ/QPv1k7fOpjV0AHmA/Xj1x/QB5s3UAc+H7IH7o/rB7LNya5Sv2Ayf7z78edEV/X/wt/KTMZf1y2pzBf9p5X/nX/d/134A/5B/Qf8F+WPGV/tUUC/xnFJfydm7y/mA15VoLbPVixCZbtjZP+SHKaWh7lcg6oAAAD+//5igeCKzXhL8tV8NUxD/xn6HJTdZfJmwWgXF9nT3dB35TuJo2+WQayCjwPSi8u9uqbA9dGec2rpHc1H6fvsVMCZuoccgkuJ/V+UmuxqfBW/oGeadAcG6wlcSrxJF0l4EF6rJiwVAiXhwOR/9/MmX+TvX7lsLVnv94o+nzKbc40CA1/xz/umf4fTVT911M6j3wu/4jmL01iltwDoPjphuszf8Vym+LCFnDO9RkiaL+kD2wpZopB6wYXP6z62/ZO5mH3+K4+OupI0i5/ULkvrDREg+bsxuYxZCV36/kI2ljihdI+4dP0XoGPb3ga5b9DD2yAbxl0YV5vEzxq4TPP8v/5fGgdzFIN9O/E/ypnGqGzv/hjDT9t3EWKf5c8oXpMPDerEPHj/mLdkrxd3iM5Cvvf+vnZI0YJFSgdr+CL5XKXf7Scb32QJFz43ZxZ0v902WXW3oxmDjOlr6FRkTslqZ+K/h3x7Jn+Oe4iKKMrJtetiAMYfx82rsN1jSr5/zwNXnMCc3iB/ueoHet6NNp//6T6wHl15HgmevXSmOmPC+EwXsG/5bRk4r1/shD2mL4eL0d+kluaXYj2Jaste5WNsCqfdoeO2+66PcEqojIP4k470UpFwo6qv0fEdHEz6U7Zz86HbwX8rbWxN+8Mcf3D6OcD91fO2r/hwn+TUv06EtPZOFytvN08ch4cpYzkp7ID4YM6/dR6vx3gAZJmcB4gxwcBLykJDECBPLW5BEUcMyNEyrVZG8xikv6gkKRRKB20uuj7K5aJGCnv0QjfSqh3vB6ATsEgEQnZH6xnwAAAA" alt="" aria-hidden="true"><span>사천시 도로현황</span>';
   }
 
   function openPage(name) {
