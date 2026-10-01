@@ -7416,11 +7416,16 @@
         }
       };
 
+      const INITIAL_MAP_LEVEL = 7;
+      let mapInteracting = false;
+      let mapIdleTimer = null;
+      let mapRefreshFrame = null;
+
       const map = new kakao.maps.Map(
         document.getElementById("map"),
         {
           center: new kakao.maps.LatLng(35.0036, 128.0642),
-          level: 7
+          level: INITIAL_MAP_LEVEL
         }
       );
 
@@ -7440,7 +7445,6 @@
       let selectedTownshipName = null;
       let townshipStartMode = true;
       let townshipStartCompleted = false;
-      let townshipInitialMapLevel = null;
       let townshipSelectionFillShown = false;
       let townshipFillTimer = null;
       let activeTownshipHoverGroup = null;
@@ -7486,7 +7490,7 @@
           }
 
           if (isSkyViewMode) {
-            poly.setOptions({
+            setMapOptionsIfChanged(poly, {
               strokeWeight: mapStrokePx(selected ? 3.4 : hover ? 3.0 : 2.6, 1),
               strokeColor: selected ? "#3DB2FF" : hover ? "#FFE066" : "#FFFFFF",
               strokeOpacity: 1,
@@ -7495,7 +7499,7 @@
               fillOpacity: fillOpacity
             });
           } else {
-            poly.setOptions({
+            setMapOptionsIfChanged(poly, {
               strokeWeight: mapStrokePx(selected ? 2.2 : hover ? 2.0 : 1.6, 1),
               strokeColor: selected ? "#258FFF" : hover ? "#3D7194" : "#59636D",
               strokeOpacity: selected ? 1 : hover ? 1 : 0.92,
@@ -7509,9 +7513,9 @@
         (group.skyBackPolygons || []).forEach(function(poly) {
           const boundaryVisible =
             BOUNDARY_LAYERS.townshipBoundary.visible ||
-            shouldAutoShowTownshipBoundary();
-          poly.setMap(isSkyViewMode && boundaryVisible ? map : null);
-          poly.setOptions({
+            (!mapInteracting && shouldAutoShowTownshipBoundary());
+          setOverlayMapIfChanged(poly, isSkyViewMode && boundaryVisible ? map : null);
+          setMapOptionsIfChanged(poly, {
             strokeWeight: mapStrokePx(selected ? 6.2 : hover ? 5.8 : 5.0, 1),
             strokeColor: "#111111",
             strokeOpacity: selected ? 0.82 : hover ? 0.78 : 0.72,
@@ -7536,7 +7540,7 @@
 
         (group.hitPolygons || []).forEach(function(hit) {
           if (typeof hit.setOptions === "function") {
-            hit.setOptions({
+            setMapOptionsIfChanged(hit, {
               fillOpacity: selected ? 0 : 0.01
             });
           }
@@ -8224,7 +8228,10 @@
         applyRoadVisibility();
         updateLabels();
         updateRiLabelVisibility();
-        if (!townshipAllBounds.isEmpty()) map.setBounds(townshipAllBounds);
+        if (!townshipAllBounds.isEmpty()) {
+          map.setCenter(midpointOfBounds(townshipAllBounds));
+          map.setLevel(INITIAL_MAP_LEVEL);
+        }
       }
 
       const cityOverviewButton = document.getElementById("cityOverviewBtn");
@@ -8285,15 +8292,6 @@
 
         const scaleMeters = niceScaleDistance(metersPerPixel * 110);
         currentScaleDenominator = metersPerPixel * 3779.527559;
-
-        if (
-          townshipStartMode &&
-          !townshipStartCompleted &&
-          townshipSelectGroups.size > 0 &&
-          !townshipAllBounds.isEmpty()
-        ) {
-          townshipInitialMapLevel = map.getLevel();
-        }
 
         const denominator = roundScale(currentScaleDenominator);
 
@@ -8392,6 +8390,7 @@
 
       function hideBoundaryLayersForInteraction() {
         Object.values(BOUNDARY_LAYERS).forEach(function(layer) {
+          if (layer === BOUNDARY_LAYERS.townshipBoundary && layer.visible) return;
           layer.shapes.forEach(function(shape) {
             if (shape.getMap()) shape.setMap(null);
           });
@@ -8399,10 +8398,10 @@
 
         townshipSelectGroups.forEach(function(group) {
           group.polygons.forEach(function(poly) {
-            if (poly.getMap()) poly.setMap(null);
+            if (!BOUNDARY_LAYERS.townshipBoundary.visible && poly.getMap()) poly.setMap(null);
           });
           (group.skyBackPolygons || []).forEach(function(poly) {
-            if (poly.getMap()) poly.setMap(null);
+            if (!BOUNDARY_LAYERS.townshipBoundary.visible && poly.getMap()) poly.setMap(null);
           });
           (group.hitPolygons || []).forEach(function(poly) {
             if (poly.getMap()) poly.setMap(null);
@@ -8417,25 +8416,7 @@
         activeTownshipHoverGroup = null;
         map.setCursor("");
         updateBoundaryVisibility();
-
-        if (BOUNDARY_LAYERS.townshipBoundary.visible) {
-          townshipSelectGroups.forEach(function(group) {
-            group.polygons.forEach(function(poly) {
-              poly.setMap(map);
-            });
-            (group.skyBackPolygons || []).forEach(function(poly) {
-              poly.setMap(isSkyViewMode ? map : null);
-            });
-            (group.hitPolygons || []).forEach(function(poly) {
-              poly.setMap(
-                townshipStartMode && !group.hoverDismissed ? map : null
-              );
-            });
-          });
-
-          updateTownshipLabelVisibility();
-          resetTownshipStyles();
-        }
+        updateTownshipLabelVisibility();
       }
 
       function hideAllRoadsForWindowsPan() {
@@ -8461,7 +8442,7 @@
           }
 
           if (topLine) {
-            topLine.setOptions({
+            setMapOptionsIfChanged(topLine, {
               strokeWeight: Math.max(2.2, getRoadStrokeWeight(road) - 0.7)
             });
           }
@@ -8489,6 +8470,8 @@
           LAYERS[road.layerId].visible &&
           roadStatusFilters[road.statusKey] &&
           isRoadLayerVisibleAtScale(road.layerId) &&
+          isRoadObjectKindVisible(road) &&
+          !isRoadStatusHidden(road.statusKey) &&
           extentIntersectsViewport(road.extent, viewport)
         );
       }
@@ -8520,6 +8503,7 @@
           road._visualTier = visualTier;
 
           applyRoadLineVisibility(road);
+          if (road.hitLine && road.hitLine.getMap()) road.hitLine.setMap(null);
 
           visibleRoads.push(road);
         });
@@ -8527,6 +8511,7 @@
         requestAnimationFrame(function() {
           if (
             token !== deferredRoadRestoreToken ||
+            mapInteracting ||
             windowsDragFastMode ||
             windowsZoomFastMode
           ) return;
@@ -8563,7 +8548,7 @@
           }
 
           if (topVisibleIndex >= 0 && lines[topVisibleIndex]) {
-            lines[topVisibleIndex].setOptions({
+            setMapOptionsIfChanged(lines[topVisibleIndex], {
               strokeWeight: Math.max(2, getRoadStrokeWeight(road) - 1.2)
             });
           }
@@ -8623,7 +8608,7 @@
             }
 
             if (topLine) {
-              topLine.setOptions({
+              setMapOptionsIfChanged(topLine, {
                 strokeWeight: Math.max(2.2, getRoadStrokeWeight(road) - 0.8)
               });
             }
@@ -8659,14 +8644,44 @@
         });
       }
 
+      function cancelMapRefresh() {
+        clearTimeout(mapIdleTimer);
+        if (mapRefreshFrame !== null) cancelAnimationFrame(mapRefreshFrame);
+        mapIdleTimer = null;
+        mapRefreshFrame = null;
+      }
+
+      function beginMapInteraction() {
+        cancelMapRefresh();
+        deferredRoadRestoreToken += 1;
+        if (mapInteracting) return;
+        mapInteracting = true;
+        hideLayerLabelsForInteraction();
+        hideBoundaryLayersForInteraction();
+      }
+
+      function scheduleMapRefresh() {
+        cancelMapRefresh();
+        mapIdleTimer = setTimeout(function() {
+          mapIdleTimer = null;
+          mapRefreshFrame = requestAnimationFrame(function() {
+            mapRefreshFrame = null;
+            mapInteracting = false;
+            refreshMapAfterInteraction();
+          });
+        }, 80);
+      }
+
       function refreshMapAfterInteraction() {
+        if (mapInteracting) return;
         document.body.classList.remove("map-interacting");
 
         const wasWindowsDragFastMode = windowsDragFastMode;
         const wasWindowsZoomFastMode = windowsZoomFastMode;
+        const wasZoomLightMode = zoomLightMode;
 
         setWindowsZoomFastMode(false);
-        setRoadZoomLightMode(false);
+        zoomLightMode = false;
 
         windowsDragFastMode = false;
         windowsPanPrepared = false;
@@ -8678,8 +8693,7 @@
           layer.labels.forEach(function(labelItem) { labelItem._visible = false; });
         });
 
-        if (IS_WINDOWS && (wasWindowsDragFastMode || wasWindowsZoomFastMode)) {
-          restoreInteractionLayers();
+        if (wasWindowsDragFastMode || wasWindowsZoomFastMode || wasZoomLightMode) {
           restoreRoadsInStages();
         } else {
           applyRoadVisibility();
@@ -8690,6 +8704,7 @@
           }
         }
 
+        restoreInteractionLayers();
         updateSelectedRouteBalloon();
         restoreSelectedRoadPopup();
 
@@ -8701,23 +8716,24 @@
 
       // 지도 클릭 대상(읍면/노선)을 보존하기 위해 pointerdown에서는
       // 사용자 도형을 숨기지 않고 실제 dragstart가 발생한 뒤에만 경량 모드로 전환함.
-      const performanceMapElement = document.getElementById("map");
 
-      // Windows에서는 wheel 확대/축소가 시작되기 직전에 사용자 도형을 숨긴다.
-      // Kakao 기본지도만 확대되므로 SVG/Overlay 변환 비용이 크게 줄어든다.
-      performanceMapElement.addEventListener("wheel", function() {
-        if (!IS_WINDOWS) return;
-        document.body.classList.add("map-interacting");
-        deferredRoadRestoreToken += 1;
-        setWindowsZoomFastMode(true);
-      }, { capture: true, passive: true });
-
-      performanceMapElement.addEventListener("dblclick", function() {
-        if (!IS_WINDOWS) return;
-        setWindowsZoomFastMode(true);
-      }, true);
+      // 실제 지도 이벤트를 사용해 비활성 wheel/단순 클릭이 레이어를 숨기지 않도록 함.
+      kakao.maps.event.addListener(map, "zoom_start", function() {
+        beginMapInteraction();
+        if (IS_WINDOWS) {
+          document.body.classList.add("map-interacting");
+          setWindowsZoomFastMode(true);
+        } else {
+          setRoadZoomLightMode(true);
+        }
+      });
+      kakao.maps.event.addListener(map, "bounds_changed", function() {
+        // 연속 이벤트에서는 예약만 취소. 전체 GeoJSON/DOM 순회는 하지 않음.
+        cancelMapRefresh();
+      });
 
       kakao.maps.event.addListener(map, "dragstart", function() {
+        beginMapInteraction();
         // 드래그 시작 시 남아 있던 읍면 hover 강조를 정상 상태로 되돌림.
         if (activeTownshipHoverGroup) {
           if (selectedTownshipName === activeTownshipHoverGroup.name) {
@@ -8729,10 +8745,7 @@
           map.setCursor("");
         }
 
-        if (!IS_WINDOWS) {
-          hideLayerLabelsForInteraction();
-          return;
-        }
+        if (!IS_WINDOWS) return;
 
         windowsPanPrepared = true;
         windowsDragFastMode = true;
@@ -8750,10 +8763,13 @@
       });
 
       // 무거운 도로 재계산은 지도 조작이 끝난 뒤 한 번만 실행.
-      kakao.maps.event.addListener(map, "idle", refreshMapAfterInteraction);
+      kakao.maps.event.addListener(map, "idle", scheduleMapRefresh);
 
       // 줌 중에는 팝업만 유지하고, 도로 갱신은 idle에서 처리.
       kakao.maps.event.addListener(map, "zoom_changed", function() {
+        beginMapInteraction();
+        // 축척 이탈 즉시 실제 Polygon/Polyline을 제거하며 수동 ON은 유지함.
+        syncTownshipBoundaryDisplay();
         if (isSkyExtraZoomActive()) {
           restoreSkyExtraZoomCenter();
         }
@@ -8772,9 +8788,9 @@
       let resizeRefreshTimer = null;
       window.addEventListener("resize", function() {
         clearTimeout(resizeRefreshTimer);
-        resizeRefreshTimer = setTimeout(refreshMapAfterInteraction, 80);
+        resizeRefreshTimer = setTimeout(scheduleMapRefresh, 80);
       });
-      setTimeout(refreshMapAfterInteraction, 0);
+      setTimeout(scheduleMapRefresh, 0);
 
       /* 확대·축소와 거리·면적 측정 - 카카오맵 방식 */
       let measureMode = null;
@@ -10540,6 +10556,8 @@
         const scale = (limitNumber(LABEL_STYLES.SCALE, 50, 150) / 100) * getMapResolutionScale();
         document.documentElement.style.setProperty("--road-label-scale", scale);
         document.querySelectorAll(".road-label").forEach(function (label) {
+          if (label._appliedLabelScale === scale) return;
+          label._appliedLabelScale = scale;
           label.style.setProperty("--label-scale", scale);
         });
       }
@@ -10574,7 +10592,10 @@
         const fillColor = normalizeLabelHex(LABEL_STYLES.SHAPE_FILL_COLOR, '#FFFFFF');
         const lineColor = normalizeLabelHex(LABEL_STYLES.SHAPE_LINE_COLOR, '#111111');
         const lineWidth = Math.min(10, Math.max(0, Number(LABEL_STYLES.SHAPE_LINE_WIDTH) || 0));
+        const signature = JSON.stringify([activeTextColors, shapeMode, fillColor, lineColor, lineWidth]);
         document.querySelectorAll('.road-label').forEach(function(label) {
+          if (label._appliedLabelAppearance === signature) return;
+          label._appliedLabelAppearance = signature;
           label.style.setProperty('--road-label-text-color', textColor);
           label.classList.remove('shape-none','shape-box','shape-rounded','shape-circle');
           if (shapeMode !== 'auto') label.classList.add('shape-' + shapeMode);
@@ -10810,7 +10831,7 @@
             if (!line) return;
             if (index === 0) {
               if (!line.getMap()) line.setMap(map);
-              line.setOptions({
+              setMapOptionsIfChanged(line, {
                 strokeColor: "#6f7f95",
                 strokeWeight: mapStrokePx(2, 1),
                 strokeOpacity: 0.5,
@@ -10824,7 +10845,7 @@
 
           if (road.hitLine) {
             if (!road.hitLine.getMap()) road.hitLine.setMap(map);
-            road.hitLine.setOptions({
+            setMapOptionsIfChanged(road.hitLine, {
               strokeWeight: Math.max(10, mapStrokePx(8, 1)),
               zIndex: 55
             });
@@ -10901,7 +10922,7 @@
         lines.forEach(function(line, index) {
           const config = stack[index];
           line.setPath(path);
-          line.setOptions({
+          setMapOptionsIfChanged(line, {
             strokeColor: getRoadLayerDisplayColor(road.styleKey, config),
             strokeWeight: mapStrokePx(
               road.statusKey === "UNOPENED"
@@ -10927,7 +10948,7 @@
             return Math.max(max, Number(item.width) || 1);
           }, 1);
 
-          road.hitLine.setOptions({
+          setMapOptionsIfChanged(road.hitLine, {
             strokeWeight: Math.max(10, maxWidth + 5),
             zIndex: 60
           });
@@ -11802,30 +11823,35 @@
       }
 
       function shouldAutoShowTownshipBoundary() {
-        // 최초 읍면 선택 화면에서는 항상 표시.
-        if (townshipStartMode && !townshipStartCompleted) return true;
+        return map.getLevel() === INITIAL_MAP_LEVEL;
+      }
 
-        // 초기 화면을 벗어난 뒤에는 최초 화면과 정확히 같은 축척(level)으로
-        // 돌아왔을 때만 자동 표시. 그 외에는 기타기능 수동 설정만 따른다.
-        return (
-          townshipStartCompleted &&
-          Number.isFinite(townshipInitialMapLevel) &&
-          map.getLevel() === townshipInitialMapLevel
-        );
+      function setMapOptionsIfChanged(shape, options) {
+        const previous = shape._lastMapOptions || {};
+        const changed = Object.keys(options).some(function(key) {
+          return previous[key] !== options[key];
+        });
+        if (!changed) return;
+        shape.setOptions(options);
+        shape._lastMapOptions = Object.assign({}, previous, options);
+      }
+
+      function setOverlayMapIfChanged(overlay, target) {
+        if (overlay.getMap() !== target) overlay.setMap(target);
       }
 
       function syncTownshipBoundaryDisplay() {
         const showTownshipBoundary =
           BOUNDARY_LAYERS.townshipBoundary.visible ||
-          shouldAutoShowTownshipBoundary();
+          (!mapInteracting && shouldAutoShowTownshipBoundary());
 
         townshipSelectGroups.forEach(function(group) {
           group.polygons.forEach(function(poly) {
-            poly.setMap(showTownshipBoundary ? map : null);
+            setOverlayMapIfChanged(poly, showTownshipBoundary ? map : null);
           });
 
           (group.skyBackPolygons || []).forEach(function(poly) {
-            poly.setMap(
+            setOverlayMapIfChanged(poly,
               showTownshipBoundary && isSkyViewMode ? map : null
             );
           });
@@ -11833,14 +11859,14 @@
           // 클릭용 hit polygon은 실제 최초 선택화면에서만 유지.
           // 같은 축척으로 돌아왔을 때는 경계선만 표시하고 선택용 hit 영역은 붙이지 않음.
           (group.hitPolygons || []).forEach(function(poly) {
-            poly.setMap(
-              townshipStartMode && !townshipStartCompleted ? map : null
+            setOverlayMapIfChanged(poly,
+              showTownshipBoundary && townshipStartMode && !townshipStartCompleted && !group.hoverDismissed && !mapInteracting ? map : null
             );
           });
         });
 
         // 초기화면이 아니면 면 채우기/강조 없이 경계선만 보이도록 정리
-        resetTownshipStyles();
+        if (!mapInteracting) resetTownshipStyles();
       }
 
       function updateBoundaryVisibility() {
@@ -11850,8 +11876,8 @@
             !Number.isFinite(currentScaleDenominator) ||
             currentScaleDenominator <= layer.maxScale;
 
-          // 읍면동계는 최초 읍면 선택 화면에서만 자동 표시.
-          // 초기 화면 이후에는 기타기능의 읍면동 경계 체크 상태만 따름.
+          // 읍면동계는 level 7 자동 표시, 메뉴 ON은 모든 축척에서 우선 표시.
+          // 리 경계 등 다른 경계는 레이어 메뉴 체크 상태를 따름.
           const show =
             scaleVisible &&
             (
@@ -11863,7 +11889,8 @@
             );
 
           layer.shapes.forEach(function(shape) {
-            shape.setMap(show ? map : null);
+            const visible = show && (!mapInteracting || (layerId === "townshipBoundary" && layer.visible));
+            setOverlayMapIfChanged(shape, visible ? map : null);
           });
         });
 
@@ -12573,7 +12600,7 @@
       }
 
       function applyRoadVisibility() {
-        if (windowsZoomFastMode || windowsDragFastMode) return;
+        if (mapInteracting || windowsZoomFastMode || windowsDragFastMode) return;
 
         const viewport = getBufferedViewportBox();
         const visualTier = getRoadScaleTier(currentScaleDenominator);
@@ -12799,7 +12826,8 @@
         const labelEnabled = !TOWNSHIP_LABEL_STYLES || TOWNSHIP_LABEL_STYLES.VISIBLE !== false;
         townshipSelectGroups.forEach(function(group) {
           if (!group.label) return;
-          group.label.setMap(labelEnabled && shouldShowTownshipLabel(group.name) ? map : null);
+          const visible = !mapInteracting && labelEnabled && shouldShowTownshipLabel(group.name) && map.getBounds().contain(group.label.getPosition());
+          setOverlayMapIfChanged(group.label, visible ? map : null);
         });
       }
 
@@ -13380,7 +13408,7 @@
               selectedKey !== groupKey &&
               selectedRoadGroupKey !== groupKey
             ) {
-              roadLine.setOptions({
+              setMapOptionsIfChanged(roadLine, {
                 strokeColor: isSkyViewMode ? "#FFFFFF" : "#FFFF00",
                 strokeWeight: getRoadStrokeWeight(road) + mapStrokePx(2, 1)
               });
@@ -13423,7 +13451,7 @@
         }
 
         if (road.hitLine) {
-          road.hitLine.setOptions({
+          setMapOptionsIfChanged(road.hitLine, {
             zIndex: 50
           });
         }
@@ -13610,7 +13638,7 @@
           removeSelectedRouteBalloon();
           return;
         }
-        if (windowsZoomFastMode || windowsDragFastMode) return;
+        if (mapInteracting || windowsZoomFastMode || windowsDragFastMode) return;
 
         const bounds = map.getBounds();
         const labelsEnabled = LABEL_STYLES.VISIBLE !== false;
@@ -13630,7 +13658,8 @@
               scaleVisible &&
               labelGroup &&
               !hiddenRoadGroups.has(labelItem.groupKey) &&
-              isRoadGroupKindVisible(labelGroup)
+              isRoadGroupKindVisible(labelGroup) &&
+              (!labelGroup || labelGroup.roads.some(function(road) { return road._visible; }))
             ) {
               displayPosition = getVisibleLabelPosition(labelItem, bounds);
               eligible =
@@ -13641,8 +13670,11 @@
             }
 
             if (eligible && displayPosition) {
+              const oldPosition = labelItem.overlay.getPosition();
               labelItem.position = displayPosition;
-              labelItem.overlay.setPosition(displayPosition);
+              if (!oldPosition || !oldPosition.equals(displayPosition)) {
+                labelItem.overlay.setPosition(displayPosition);
+              }
 
               const group = groups.get(labelItem.groupKey);
               candidates.push({
@@ -13694,11 +13726,9 @@
           }
         });
 
-        // 지도 이동/확대축소 후에도 현재 라벨 스타일을 다시 적용함.
-        requestAnimationFrame(function() {
-          applyLabelScale();
-          applyLabelAppearance();
-        });
+        // 새로 붙은 라벨만 현재 스타일 적용. 조작 종료 프레임 안에서 처리함.
+        applyLabelScale();
+        applyLabelAppearance();
       }
 
       /*
@@ -14223,7 +14253,7 @@
               line.setMap(map);
             }
 
-            line.setOptions({
+            setMapOptionsIfChanged(line, {
               strokeColor: enabled
                 ? highlightColor
                 : getRoadLayerDisplayColor(road.styleKey, config),
@@ -14263,7 +14293,7 @@
               if (road._visible && !road.hitLine.getMap()) {
                 road.hitLine.setMap(map);
               }
-              road.hitLine.setOptions({
+              setMapOptionsIfChanged(road.hitLine, {
                 zIndex: enabled ? 110 : 60
               });
             }
@@ -14281,7 +14311,7 @@
           const layer = BOUNDARY_LAYERS[key];
           (layer.shapes || []).forEach(function(shape) {
             if (shape && typeof shape.setOptions === "function") {
-              shape.setOptions({ strokeWeight: mapStrokePx(layer.strokeWeight, 1) });
+              setMapOptionsIfChanged(shape, { strokeWeight: mapStrokePx(layer.strokeWeight, 1) });
             }
           });
         });
