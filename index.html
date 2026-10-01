@@ -4719,8 +4719,6 @@
 
 <body>
   <div id="map"></div>
-  <button id="cityOverviewBtn" type="button" title="사천시 전체 읍면동 보기">사천시 전체보기</button>
-  <div id="townshipStartGuide">읍면동을 선택해 도로현황을 확인하세요.</div>
 
 
   <div id="appError" role="alertdialog" aria-live="assertive">
@@ -6012,7 +6010,8 @@
         }
 
         document.body.classList.add("township-selected");
-        document.getElementById("cityOverviewBtn").style.display = "block";
+        const cityOverviewBtn = document.getElementById("cityOverviewBtn");
+        if (cityOverviewBtn) cityOverviewBtn.style.display = "block";
 
         // 초기 선택용 면/클릭영역은 제거하고 읍면 경계와 라벨만 유지함.
         townshipSelectGroups.forEach(function(otherGroup) {
@@ -6098,7 +6097,8 @@
           townshipFillTimer = null;
         }
         document.body.classList.remove("township-selected");
-        document.getElementById("cityOverviewBtn").style.display = "none";
+        const cityOverviewBtn = document.getElementById("cityOverviewBtn");
+        if (cityOverviewBtn) cityOverviewBtn.style.display = "none";
         resetTownshipStyles();
         syncTownshipBoundaryDisplay();
         applyRoadVisibility();
@@ -6107,7 +6107,8 @@
         if (!townshipAllBounds.isEmpty()) map.setBounds(townshipAllBounds);
       }
 
-      document.getElementById("cityOverviewBtn").onclick = showTownshipOverview;
+      const cityOverviewButton = document.getElementById("cityOverviewBtn");
+      if (cityOverviewButton) cityOverviewButton.onclick = showTownshipOverview;
 
       let currentScaleDenominator = null;
       let lastRoadScaleTier = null;
