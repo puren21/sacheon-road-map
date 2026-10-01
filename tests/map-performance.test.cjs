@@ -17,7 +17,7 @@ function overlay() {
 function setup(windows = false) {
   const jobs = new Map(), frames = new Map(); let id = 0;
   const group = { polygons: [overlay()], skyBackPolygons: [overlay()], hitPolygons: [overlay()], label: overlay(), hoverDismissed: false };
-  const c = { mapStrokePx: x=>x, INITIAL_MAP_LEVEL: 7, mapInteracting: false, mapIdleTimer: null, mapRefreshFrame: null,
+  const c = { mapStrokePx: x=>x, INITIAL_MAP_LEVEL: 7, overviewMapLevel: 7, mapInteracting: false, mapIdleTimer: null, mapRefreshFrame: null,
     deferredRoadRestoreToken: 0, windowsDragFastMode: false, windowsZoomFastMode: false,
     zoomLightMode: false, zoomRestoreTimer: null, windowsPanPrepared: false, IS_WINDOWS: windows,
     townshipStartMode: true, townshipStartCompleted: false, isSkyViewMode: false,
@@ -243,4 +243,13 @@ test('legend follows edited colors, line visibility and skyview without rebuildi
   c.updateLegendStyles();assert.equal(elements.legendCity.writes,1);
   c.isSkyViewMode=true;c.updateLegendStyles();assert.equal(elements.legendCity.children[0].attrs.stroke,'#ffffff');
   stack[0].visible=false;c.updateLegendStyles();assert.equal(elements.legendCity.style.opacity,'0.35');
+});
+for(const [width,height,fitLevel] of [[1440,900,8],[390,650,10],[800,400,9]])test(`whole-city fitting uses bounds and padded viewport ${width}x${height}`,()=>{
+  const {c}=setup();let call,scheduled=0;
+  c.townshipAllBounds={isEmpty:()=>false};c.document.getElementById=id=>id==='map'?{getBoundingClientRect:()=>({width,height,top:0,left:0,right:width,bottom:height})}:null;
+  c.map.relayout=()=>{};c.map.setBounds=(...args)=>{call=args;c.map.level=fitLevel};c.map.setLevel=level=>{c.map.level=level};c.scheduleMapRefresh=()=>scheduled++;
+  vm.runInContext(source('fitTownshipOverview'),c);vm.runInContext(source('isRoadLayerVisibleAtScale'),c);c.fitTownshipOverview();
+  assert.equal(call[0],c.townshipAllBounds);assert.ok(call[1]+call[3]<height);assert.ok(call[2]+call[4]<width);assert.equal(c.overviewMapLevel,fitLevel);assert.equal(scheduled,1);
+  assert.equal(c.isRoadLayerVisibleAtScale('city'),false);assert.equal(c.shouldAutoShowTownshipBoundary(),true);
+  c.map.level--;assert.equal(c.isRoadLayerVisibleAtScale('city'),true);assert.equal(c.isRoadLayerVisibleAtScale('rural'),true);assert.equal(c.shouldAutoShowTownshipBoundary(),false);
 });

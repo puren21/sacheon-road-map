@@ -7476,6 +7476,7 @@
       };
 
       const INITIAL_MAP_LEVEL = 7;
+      let overviewMapLevel = INITIAL_MAP_LEVEL;
       let mapInteracting = false;
       let mapIdleTimer = null;
       let mapRefreshFrame = null;
@@ -8178,6 +8179,32 @@
         updateRiLabelVisibility();
       }
 
+      function fitTownshipOverview() {
+        if (townshipAllBounds.isEmpty()) return;
+        const element = document.getElementById("map");
+        const rect = element.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        map.relayout();
+        const top = Math.min(80, rect.height * 0.15);
+        let bottom = Math.min(96, rect.height * 0.20);
+        let left = Math.min(40, rect.width * 0.10);
+        const right = Math.min(40, rect.width * 0.10);
+        const panel = document.getElementById("listPanel");
+        const panelRect = panel && panel.getBoundingClientRect();
+        if (panelRect && panelRect.width && panelRect.height) {
+          if (panelRect.top > rect.top + rect.height / 3 && panelRect.bottom >= rect.bottom - 24) {
+            bottom = Math.max(bottom, Math.min(rect.height * 0.55, rect.bottom - panelRect.top + 24));
+          } else if (panelRect.left <= rect.left + 24 && panelRect.right > rect.left) {
+            left = Math.max(left, Math.min(rect.width * 0.35, panelRect.right - rect.left + 24));
+          }
+        }
+        // 중심/고정 축척 대신 전체 행정경계와 여백으로 화면 크기에 맞춤.
+        map.setBounds(townshipAllBounds, top, right, bottom, left);
+        overviewMapLevel = Math.max(INITIAL_MAP_LEVEL, map.getLevel());
+        if (map.getLevel() < overviewMapLevel) map.setLevel(overviewMapLevel);
+        scheduleMapRefresh();
+      }
+
       function showTownshipOverview() {
         clearSelectedRoadHighlight();
         selectedTownshipName = null;
@@ -8235,10 +8262,7 @@
         applyRoadVisibility();
         updateLabels();
         updateRiLabelVisibility();
-        if (!townshipAllBounds.isEmpty()) {
-          map.setCenter(midpointOfBounds(townshipAllBounds));
-          map.setLevel(INITIAL_MAP_LEVEL);
-        }
+        fitTownshipOverview();
       }
 
       const cityOverviewButton = document.getElementById("cityOverviewBtn");
@@ -8780,7 +8804,7 @@
         beginMapInteraction();
         // 축척 이탈 즉시 실제 Polygon/Polyline을 제거하며 수동 ON은 유지함.
         syncTownshipBoundaryDisplay();
-        if (map.getLevel() >= INITIAL_MAP_LEVEL) {
+        if (map.getLevel() >= overviewMapLevel) {
           allRoads.forEach(function(road) {
             if (road._visible) setRoadObjectMap(road, false);
           });
@@ -11865,7 +11889,7 @@
       }
 
       function shouldAutoShowTownshipBoundary() {
-        return map.getLevel() >= INITIAL_MAP_LEVEL;
+        return map.getLevel() >= overviewMapLevel;
       }
 
       function setMapOptionsIfChanged(shape, options) {
@@ -12468,30 +12492,9 @@
       // 미확장 dash, 미개설 shortdash
 
       function isRoadLayerVisibleAtScale(layerId) {
-        // 기본 화면과 더 축소한 화면은 읍면 경계/명칭만 표시.
-        if (map.getLevel() >= INITIAL_MAP_LEVEL) return false;
-        if (layerId === "rural") {
-          const scale = Number(currentScaleDenominator);
-          if (Number.isFinite(scale) && scale > 0) {
-            return scale <= 61000;
-          }
-          // 축척값을 아직 계산하지 못했을 때는 너무 일찍 숨지 않도록 허용
-          return true;
-        }
-        const scale = Number(currentScaleDenominator);
+        // 화면에 맞춘 전체 보기보다 한 단계 확대하면 도로 표시.
+        return map.getLevel() < overviewMapLevel;
 
-        // 축척값이 아직 계산되지 않은 초기 순간에는 표시하지 않음.
-        if (!Number.isFinite(scale)) return false;
-
-        // 1:100,000 이상에서는 모든 도로와 도로 라벨을 숨김.
-        if (scale >= 100000) return false;
-
-        // 1:60,000보다 더 축소된 상태에서는 시도만 표시.
-        // 정확히 1:60,000에서는 농어촌도로까지 표시함.
-        if (scale > 60000) return layerId === "city";
-
-        // 1:60,000 이하에서는 시도 + 농어촌도로 모두 표시.
-        return true;
       }
 
       function getRoadDisplayOpacity(styleKey) {
@@ -12964,9 +12967,6 @@
       // 리 경계도 위상 보존 단순화 파일을 사용하므로 읍면 선택 후 화면과 확대/축소 화면에서도
       // 인접 리 경계가 서로 어긋나지 않는 동일한 경계를 사용함.
       const townshipBoundaryReadyPromise = loadBoundaryGeoJSON("townshipBoundary")
-        .then(function() {
-          if (!townshipAllBounds.isEmpty()) showTownshipOverview();
-        })
         .catch(function(error) {
           console.error("읍면동 경계를 불러오지 못했습니다.", error);
         });
@@ -12996,7 +12996,6 @@
         applyRoadVisibility();
         if (townshipAllBounds.isEmpty() && !allBounds.isEmpty()) map.setBounds(allBounds);
         updateLabels();
-        if (townshipStartMode && !townshipAllBounds.isEmpty()) showTownshipOverview();
       })
       .catch(function (error) {
         console.error(error);
@@ -14178,7 +14177,7 @@
       }
 
       function updateSelectedRouteBalloon() {
-        if (mapInteracting || map.getLevel() >= INITIAL_MAP_LEVEL) {
+        if (mapInteracting || map.getLevel() >= overviewMapLevel) {
           removeSelectedRouteBalloon();
           return;
         }
