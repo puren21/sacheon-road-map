@@ -6630,6 +6630,36 @@
     object-fit: contain !important;
   }
 
+
+  /* ===== 2026-10-01: 제목/메뉴 글자 실제 크기 통일 ===== */
+  #listPanel {
+    --road-main-label-size: 20px;
+  }
+
+  #listPanel .list-header-main-title,
+  #listPanel .list-header-main-title > span,
+  #listPanel .road-ios-menu-text {
+    font-size: var(--road-main-label-size) !important;
+    line-height: 1.2 !important;
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+  }
+
+  #listPanel .list-header-main-title,
+  #listPanel .list-header-main-title > span {
+    font-weight: 650 !important;
+  }
+
+  #listPanel .road-ios-menu-text {
+    font-weight: 400 !important;
+  }
+
+  @media (max-width:700px) {
+    #listPanel {
+      --road-main-label-size: 19px;
+    }
+  }
+
 </style>
 
 </head>
