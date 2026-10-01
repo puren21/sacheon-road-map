@@ -4622,6 +4622,97 @@
     }
   }
 
+
+  /* ===== 2026-10-01: 좌측 글자 확대 + 주소검색 지도라벨 ===== */
+  @media (min-width: 701px) {
+    #listPanel .list-header-main-title {
+      font-size: 19px !important;
+      font-weight: 750 !important;
+    }
+
+    #listPanel #roadSearch {
+      height: 39px !important;
+      font-size: 13.5px !important;
+      line-height: 39px !important;
+    }
+
+    .road-category-select-label {
+      font-size: 12px !important;
+      font-weight: 700 !important;
+    }
+
+    #roadCategorySelect {
+      height: 44px !important;
+      font-size: 15px !important;
+      font-weight: 700 !important;
+    }
+
+    .road-category-detail .list-item {
+      min-height: 46px !important;
+      padding: 11px 14px !important;
+    }
+
+    .road-category-detail .list-item .road-list-main,
+    .road-category-detail .list-item.selected .road-list-main {
+      font-size: 16px !important;
+      font-weight: 650 !important;
+    }
+
+    .address-result-title {
+      font-size: 13px !important;
+      font-weight: 700 !important;
+    }
+
+    .address-result-item {
+      font-size: 14px !important;
+      line-height: 1.45 !important;
+    }
+
+    .address-result-item small {
+      margin-top: 3px;
+      font-size: 12px !important;
+    }
+  }
+
+  /* 주소검색 마커 위 주소표시: 기존 road-popup 스타일과 완전히 분리 */
+  .address-search-map-label {
+    max-width: 320px;
+    padding: 8px 12px;
+    color: #202124;
+    background: #fff;
+    border: 1px solid #b9c2d0;
+    border-radius: 2px;
+    box-shadow: 0 2px 7px rgba(0,0,0,.14);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  .address-search-map-label::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -7px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-right: 1px solid #b9c2d0;
+    border-bottom: 1px solid #b9c2d0;
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  @media (max-width: 700px) {
+    .address-search-map-label {
+      max-width: min(280px, calc(100vw - 48px));
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+  }
+
 </style>
 
 </head>
@@ -5771,7 +5862,6 @@
               '<div class="base-place-popup-body">' +
                 basePlaceRow("지번", fullJibunAddress) +
                 basePlaceRow("도로명", fullRoadAddress) +
-                basePlaceRow("법정동", jibun.region_3depth_name) +
                 '<div class="address-view-actions">' +
                   '<button class="address-view-action copy-address" type="button">' +
                     '<span class="address-view-action-icon" aria-hidden="true">' +
@@ -9799,16 +9889,18 @@
 
         addressMarker.setPosition(position);
         addressMarker.setMap(map);
-        addressInfo.setContent(`
-          <div class="road-popup">
-            <button class="popup-close" onclick="closeAddressPopup()">×</button>
-            <div class="popup-title">${escapeHTML(result.place_name || "주소 정보")}</div>
-            ${row("지번주소", result.address_name || "정보 없음")}
-            ${row("도로명주소", result.road_address_name || "정보 없음")}
-            ${row("위도", position.getLat().toFixed(7))}
-            ${row("경도", position.getLng().toFixed(7))}
-          </div>
-        `);
+
+        const selectedAddress =
+          result.road_address_name ||
+          result.address_name ||
+          result.place_name ||
+          "주소 정보";
+
+        addressInfo.setContent(
+          '<div class="address-search-map-label">' +
+            escapeHTML(selectedAddress) +
+          '</div>'
+        );
         addressInfo.open(map, addressMarker);
       }
 
