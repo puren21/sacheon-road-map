@@ -4198,7 +4198,7 @@
 
     #listContent .list-item .road-list-main {
       font-size: 11px !important;
-      font-weight: 600 !important;
+      font-weight: 400 !important;
     }
 
     #listBottomResizeHandle {
@@ -4351,7 +4351,7 @@
     .road-category-detail .list-item.selected .road-list-main {
       color: #1c1c1e !important;
       font-size: 12.5px !important;
-      font-weight: 600 !important;
+      font-weight: 400 !important;
       line-height: 1.3 !important;
     }
   }
@@ -4617,7 +4617,7 @@
     .road-category-detail .list-item .road-list-main,
     .road-category-detail .list-item.selected .road-list-main {
       font-size: 14.5px !important;
-      font-weight: 600 !important;
+      font-weight: 400 !important;
       line-height: 1.35 !important;
     }
   }
@@ -4714,18 +4714,18 @@
   }
 
 
-  /* ===== 2026-10-01: 노선목록 글자 20px ===== */
+  /* ===== 2026-10-01: 노선목록 글자 18px ===== */
   @media (min-width: 701px) {
     .road-category-detail .list-item {
-      min-height: 54px !important;
-      padding: 13px 14px !important;
+      min-height: 50px !important;
+      padding: 11px 14px !important;
     }
 
     .road-category-detail .list-item .road-list-main,
     .road-category-detail .list-item.selected .road-list-main {
-      font-size: 20px !important;
+      font-size: 18px !important;
       line-height: 1.3 !important;
-      font-weight: 600 !important;
+      font-weight: 400 !important;
     }
   }
 
@@ -4793,21 +4793,21 @@
   }
 
 
-  /* ===== 2026-10-01: 노선목록 20px 최종강제 ===== */
+  /* ===== 2026-10-01: 노선목록 18px 최종강제 ===== */
   #listPanel #listContent .road-category-detail .list-item .road-list-main,
   #listPanel #listContent .road-category-detail .list-item.selected .road-list-main,
   #listPanel #listContent #cityList .list-item .road-list-main,
   #listPanel #listContent #ruralList .list-item .road-list-main {
-    font-size: 20px !important;
+    font-size: 18px !important;
     line-height: 1.3 !important;
-    font-weight: 600 !important;
+    font-weight: 400 !important;
   }
 
   #listPanel #listContent #cityList .list-item,
   #listPanel #listContent #ruralList .list-item {
-    min-height: 54px !important;
-    padding-top: 13px !important;
-    padding-bottom: 13px !important;
+    min-height: 50px !important;
+    padding-top: 11px !important;
+    padding-bottom: 11px !important;
   }
 
 </style>
@@ -6453,7 +6453,6 @@
 
       function roadShouldBeVisibleNow(road, viewport) {
         return (
-          !hiddenRoadGroups.has(road.groupKey) &&
           LAYERS[road.layerId].visible &&
           roadStatusFilters[road.statusKey] &&
           isRoadLayerVisibleAtScale(road.layerId) &&
@@ -6487,15 +6486,7 @@
           applyRoadNormalVisualStyle(road);
           road._visualTier = visualTier;
 
-          visualLines.forEach(function(line, index) {
-            const config = getRoadLayerStack(road.styleKey)[index];
-            const enabled = !config || config.visible !== false;
-
-            if (line) {
-              if (enabled && !line.getMap()) line.setMap(map);
-              if (!enabled && line.getMap()) line.setMap(null);
-            }
-          });
+          applyRoadLineVisibility(road);
 
           visibleRoads.push(road);
         });
@@ -6551,20 +6542,7 @@
           if (!road._visible) return;
 
           applyRoadNormalVisualStyle(road);
-
-          getRoadVisualLines(road).forEach(function(line, index) {
-            const config = getRoadLayerStack(road.styleKey)[index];
-            const enabled = !config || config.visible !== false;
-
-            if (line) {
-              if (enabled && !line.getMap()) line.setMap(map);
-              if (!enabled && line.getMap()) line.setMap(null);
-            }
-          });
-
-          if (road.hitLine && !road.hitLine.getMap()) {
-            road.hitLine.setMap(map);
-          }
+          applyRoadLineVisibility(road);
         });
       }
 
@@ -8736,6 +8714,34 @@
         const lines = getRoadVisualLines(road);
         const roadVisible = !!road._visible;
         const statusHidden = isRoadStatusHidden(road.statusKey);
+        const isOff = hiddenRoadGroups.has(road.groupKey);
+
+        if (roadVisible && !statusHidden && isOff) {
+          lines.forEach(function(line, index) {
+            if (!line) return;
+            if (index === 0) {
+              if (!line.getMap()) line.setMap(map);
+              line.setOptions({
+                strokeColor: "#6f7f95",
+                strokeWeight: mapStrokePx(2, 1),
+                strokeOpacity: 0.5,
+                strokeStyle: "solid",
+                zIndex: 35
+              });
+            } else if (line.getMap()) {
+              line.setMap(null);
+            }
+          });
+
+          if (road.hitLine) {
+            if (!road.hitLine.getMap()) road.hitLine.setMap(map);
+            road.hitLine.setOptions({
+              strokeWeight: Math.max(10, mapStrokePx(8, 1)),
+              zIndex: 55
+            });
+          }
+          return;
+        }
 
         lines.forEach(function(line, index) {
           if (!line) return;
@@ -8749,7 +8755,6 @@
           }
         });
 
-        // 클릭용 hitLine은 도로 자체가 표시될 때 유지
         if (road.hitLine) {
           const hitShown = !!road.hitLine.getMap();
           const hitShouldShow = roadVisible && !statusHidden;
@@ -10166,31 +10171,8 @@
 
       function setRoadObjectMap(road, visible) {
         road._visible = visible;
-
-        const stack = getRoadLayerStack(road.styleKey);
-        const lines = getRoadVisualLines(road);
-        const statusHidden = isRoadStatusHidden(road.statusKey);
-
-        lines.forEach(function(line, index) {
-          if (!line) return;
-
-          const config = stack[index];
-          const enabled = !config || config.visible !== false;
-          const shouldShow = visible && enabled && !statusHidden;
-
-          if (!!line.getMap() !== shouldShow) {
-            line.setMap(shouldShow ? map : null);
-          }
-        });
-
-        if (road.hitLine) {
-          const hitShouldShow = visible && !statusHidden;
-          if (!!road.hitLine.getMap() !== hitShouldShow) {
-            road.hitLine.setMap(hitShouldShow ? map : null);
-          }
-        }
+        applyRoadLineVisibility(road);
       }
-
 
       // 농어촌도로는 1:61,000까지 표시
       function shouldShowRuralRoadsByScale() {
@@ -10266,6 +10248,14 @@
         if (selectedRoadGroupKey) {
           setRoadGroupHighlight(selectedRoadGroupKey, true);
         }
+
+        hiddenRoadGroups.forEach(function(groupKey) {
+          const group = groups.get(groupKey);
+          if (!group) return;
+          group.roads.forEach(function(road) {
+            applyRoadLineVisibility(road);
+          });
+        });
       }
 
       /*
@@ -11331,13 +11321,13 @@
 
             const roadListMain = button.querySelector(".road-list-main");
             if (roadListMain) {
-              roadListMain.style.setProperty("font-size", "20px", "important");
+              roadListMain.style.setProperty("font-size", "18px", "important");
               roadListMain.style.setProperty("line-height", "1.3", "important");
-              roadListMain.style.setProperty("font-weight", "600", "important");
+              roadListMain.style.setProperty("font-weight", "400", "important");
             }
-            button.style.setProperty("min-height", "54px", "important");
-            button.style.setProperty("padding-top", "13px", "important");
-            button.style.setProperty("padding-bottom", "13px", "important");
+            button.style.setProperty("min-height", "50px", "important");
+            button.style.setProperty("padding-top", "11px", "important");
+            button.style.setProperty("padding-bottom", "11px", "important");
 
             button.onclick = function () {
               selectGroup(group.key);
@@ -11668,6 +11658,14 @@
       function setRoadGroupHighlight(groupKey, enabled) {
         const group = groups.get(groupKey);
         if (!group || !group.roads) return;
+
+        if (hiddenRoadGroups.has(groupKey)) {
+          group.roads.forEach(function(road) {
+            applyRoadLineVisibility(road);
+          });
+          removeSelectedRouteBalloon();
+          return;
+        }
 
         // 선형 편집 중에는 기존 선택 강조(굵은 파랑/빨강)를 표시하지 않음.
         // 편집 대상 구간은 원본 선을 숨기고 1px 편집선만 별도로 표시함.
@@ -13363,14 +13361,14 @@
         else hiddenRoadGroups.add(groupKey);
 
         group.roads.forEach(function(road) {
-          if (!visible) {
-            road._visible = false;
-            getRoadVisualLines(road)
-              .concat(road.hitLine ? [road.hitLine] : [])
-              .forEach(function(line) {
-                if (line && line.getMap()) line.setMap(null);
-              });
-          }
+          road._visualTier = null;
+        });
+
+        applyRoadVisibility();
+
+        group.roads.forEach(function(road) {
+          syncRoadLayerStackForRoad(road);
+          applyRoadLineVisibility(road);
         });
 
         Object.values(LAYERS).forEach(function(layer) {
@@ -13383,16 +13381,13 @@
           });
         });
 
-        if (!visible && selectedRoadGroupKey === groupKey) {
-          removeSelectedRouteBalloon();
-        }
-
-        applyRoadVisibility();
         updateLabels();
 
         if (visible && selectedRoadGroupKey === groupKey) {
           setRoadGroupHighlight(groupKey, true);
           updateSelectedRouteBalloon();
+        } else if (!visible && selectedRoadGroupKey === groupKey) {
+          removeSelectedRouteBalloon();
         }
       }
 
