@@ -253,3 +253,29 @@ for(const [width,height,fitLevel] of [[1440,900,8],[390,650,10],[800,400,9]])tes
   assert.equal(c.isRoadLayerVisibleAtScale('city'),false);assert.equal(c.shouldAutoShowTownshipBoundary(),true);
   c.map.level--;assert.equal(c.isRoadLayerVisibleAtScale('city'),true);assert.equal(c.isRoadLayerVisibleAtScale('rural'),true);assert.equal(c.shouldAutoShowTownshipBoundary(),false);
 });
+
+test('legend collapse restores preference and toggles accessibly even when storage is blocked', () => {
+  const script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].at(-1)[1];
+  for (const blocked of [false, true]) {
+    const attrs = {}, classes = new Set(); let click, saved = 'true';
+    const legend = { style: {}, classList: { toggle(key, value) { value ? classes.add(key) : classes.delete(key); } } };
+    const content = { hidden: false };
+    const toggle = { setAttribute(k, v) { attrs[k] = v; }, addEventListener(_, fn) { click = fn; } };
+    const elements = { roadMapLegend: legend, listPanel: {}, roadLegendToggle: toggle, roadLegendContent: content };
+    vm.runInNewContext(script, {
+      document: { getElementById: id => elements[id], body: { classList: { contains: () => false } } },
+      window: { innerWidth: 1200, addEventListener() {} },
+      localStorage: { getItem() { if (blocked) throw Error('denied'); return saved; }, setItem(_, value) { if (blocked) throw Error('denied'); saved = value; } },
+      MutationObserver: class { observe() {} }, requestAnimationFrame: () => 1
+    });
+    assert.equal(content.hidden, !blocked);
+    click({ stopPropagation() {} });
+    assert.equal(content.hidden, blocked);
+    assert.equal(attrs['aria-expanded'], String(!blocked));
+    assert.equal(toggle.textContent, blocked ? '+' : '−');
+    assert.equal(classes.has('is-collapsed'), blocked);
+    click({ stopPropagation() {} });
+    assert.equal(content.hidden, !blocked);
+    if (!blocked) assert.equal(saved, 'true');
+  }
+});
