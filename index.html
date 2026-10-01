@@ -6329,7 +6329,13 @@
 
   /* ===== 2026-10-01: 숫자 선택 드롭다운 + 상세헤더 정리 ===== */
   .layer-editor-detail-heading {
-    padding-left: 4px !important;
+    display: none !important;
+  }
+
+  .road-layer-group,
+  .road-layer-list,
+  .road-layer-item {
+    overflow: visible !important;
   }
 
   .road-layer-width-wrap {
@@ -6337,15 +6343,80 @@
     display: block !important;
     width: 100% !important;
     min-width: 0 !important;
+    z-index: 20;
   }
 
   .road-layer-width {
-    appearance: auto !important;
-    -webkit-appearance: auto !important;
+    appearance: textfield !important;
+    -moz-appearance: textfield !important;
+    -webkit-appearance: none !important;
     width: 100% !important;
     min-width: 0 !important;
     padding: 0 8px !important;
     cursor: text !important;
+  }
+
+  .road-layer-width::-webkit-outer-spin-button,
+  .road-layer-width::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+
+  .road-layer-width-picker {
+    position: absolute !important;
+    top: calc(100% + 4px) !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    width: 100% !important;
+    min-width: 78px !important;
+    max-height: 220px !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    padding: 4px !important;
+    border: 1px solid rgba(60,60,67,.24) !important;
+    border-radius: 10px !important;
+    background: rgba(67,67,70,.96) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,.24) !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .road-layer-width-picker[hidden] {
+    display: none !important;
+  }
+
+  .road-layer-width-option {
+    display: block !important;
+    width: 100% !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    color: #ffffff !important;
+    text-align: left !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    line-height: 32px !important;
+    cursor: pointer !important;
+  }
+
+  .road-layer-width-option:hover,
+  .road-layer-width-option.selected {
+    background: rgba(255,255,255,.14) !important;
+  }
+
+  .road-layer-width-option.selected::before {
+    content: "✓";
+    display: inline-block;
+    width: 18px;
+    margin-right: 2px;
+  }
+
+  .road-layer-width-option:not(.selected)::before {
+    content: "";
+    display: inline-block;
+    width: 18px;
+    margin-right: 2px;
   }
 
   /* ===== 2026-10-01: 메모 저장 버튼 강조 ===== */
@@ -10776,19 +10847,18 @@
       }
 
       function renderEditorBackbar(body, title, note) {
-        const bar = document.createElement("div");
-        bar.className = "layer-editor-backbar layer-editor-detail-heading";
-        bar.innerHTML =
-          '<div><div class="layer-editor-detail-title">' + escapeHTML(title) + '</div>' +
-          '<div class="layer-editor-detail-note">' + escapeHTML(note || '') + '</div></div>';
-        body.appendChild(bar);
+        // 상단 메뉴 제목과 중복되는 상세 제목/설명은 표시하지 않음.
       }
 
-      function roadWidthOptions() {
-        const presets = [0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,24,30];
-        return presets.map(function(value) {
-          return '<option value="' + value + '"></option>';
-        }).join('');
+      function roadWidthPickerOptions(currentValue) {
+        const current = Number(currentValue);
+        let html = '';
+        for (let value = 0.5; value <= 30.0001; value += 0.5) {
+          const fixed = Math.round(value * 10) / 10;
+          const selected = Number.isFinite(current) && Math.abs(fixed - current) < 0.001;
+          html += '<button type="button" class="road-layer-width-option' + (selected ? ' selected' : '') + '" data-width-value="' + fixed + '">' + fixed + '</button>';
+        }
+        return html;
       }
 
       function renderRoadStyleDetail(body, styleKey) {
@@ -10815,8 +10885,8 @@
               '<span class="road-layer-field-label">색상</span><span class="road-layer-field-label">두께(px)</span>' +
               '<span class="road-layer-color-wrap"><input class="road-layer-color" type="color" value="' + layerConfig.color + '"><input class="road-layer-color-code" type="text" maxlength="7" spellcheck="false" value="' + String(layerConfig.color || '').toUpperCase() + '"></span>' +
               '<span class="road-layer-width-wrap">' +
-                '<input class="road-layer-width" type="number" inputmode="decimal" min="0.5" max="30" step="0.1" list="roadWidthPresets-' + styleKey + '-' + index + '" value="' + layerConfig.width + '" aria-label="라인 두께">' +
-                '<datalist id="roadWidthPresets-' + styleKey + '-' + index + '">' + roadWidthOptions() + '</datalist>' +
+                '<input class="road-layer-width" type="number" inputmode="decimal" min="0.5" max="30" step="0.1" value="' + layerConfig.width + '" aria-label="라인 두께">' +
+                '<div class="road-layer-width-picker" hidden>' + roadWidthPickerOptions(layerConfig.width) + '</div>' +
               '</span>' +
               '<span class="road-layer-field-label" style="grid-column:1/-1">투명도</span>' +
               '<span class="road-layer-opacity-wrap"><input class="road-layer-opacity" type="range" min="0" max="100" step="1" value="' + (Number.isFinite(Number(layerConfig.opacity)) ? layerConfig.opacity : 100) + '"><input class="road-layer-opacity-number" type="number" min="0" max="100" step="1" value="' + (Number.isFinite(Number(layerConfig.opacity)) ? layerConfig.opacity : 100) + '"></span>' +
@@ -10827,6 +10897,8 @@
           const colorInput = item.querySelector('.road-layer-color');
           const colorCodeInput = item.querySelector('.road-layer-color-code');
           const widthInput = item.querySelector('.road-layer-width');
+          const widthWrap = item.querySelector('.road-layer-width-wrap');
+          const widthPicker = item.querySelector('.road-layer-width-picker');
           const opacityInput = item.querySelector('.road-layer-opacity');
           const opacityNumber = item.querySelector('.road-layer-opacity-number');
           const upBtn = item.querySelector('.road-layer-up');
@@ -10864,7 +10936,40 @@
             stack[index].width = value;
             if (normalizeField) widthInput.value = value;
             syncRoadLayerStackForStyle(styleKey);
+
+            if (widthPicker) {
+              widthPicker.querySelectorAll('.road-layer-width-option').forEach(function(button) {
+                button.classList.toggle(
+                  'selected',
+                  Math.abs(Number(button.dataset.widthValue) - value) < 0.001
+                );
+              });
+            }
           }
+
+          function openRoadWidthPicker() {
+            if (!widthPicker) return;
+            document.querySelectorAll('.road-layer-width-picker').forEach(function(picker) {
+              if (picker !== widthPicker) picker.hidden = true;
+            });
+            widthPicker.hidden = false;
+            const selected = widthPicker.querySelector('.road-layer-width-option.selected');
+            if (selected) {
+              setTimeout(function() {
+                selected.scrollIntoView({ block:'center' });
+              }, 0);
+            }
+          }
+
+          function closeRoadWidthPicker() {
+            if (widthPicker) widthPicker.hidden = true;
+          }
+
+          widthInput.addEventListener('focus', openRoadWidthPicker);
+          widthInput.addEventListener('click', function(event) {
+            event.stopPropagation();
+            openRoadWidthPicker();
+          });
 
           widthInput.addEventListener('input', function() {
             applyRoadWidth(this.value, false);
@@ -10878,9 +10983,41 @@
             if (event.key === 'Enter') {
               event.preventDefault();
               applyRoadWidth(this.value, true);
+              closeRoadWidthPicker();
+              this.blur();
+            } else if (event.key === 'Escape') {
+              closeRoadWidthPicker();
               this.blur();
             }
           });
+
+          widthInput.addEventListener('wheel', function(event) {
+            event.preventDefault();
+            const current = Number(this.value) || Number(stack[index].width) || 1;
+            const direction = event.deltaY < 0 ? 0.5 : -0.5;
+            const next = Math.min(30, Math.max(0.5, Math.round((current + direction) * 2) / 2));
+            this.value = next;
+            applyRoadWidth(next, true);
+          }, { passive:false });
+
+          if (widthPicker) {
+            widthPicker.addEventListener('click', function(event) {
+              event.stopPropagation();
+              const option = event.target.closest('.road-layer-width-option');
+              if (!option) return;
+              const value = Number(option.dataset.widthValue);
+              widthInput.value = value;
+              applyRoadWidth(value, true);
+              closeRoadWidthPicker();
+              widthInput.focus();
+            });
+          }
+
+          if (widthWrap) {
+            widthWrap.addEventListener('click', function(event) {
+              event.stopPropagation();
+            });
+          }
           function applyOpacity(raw) {
             const value = Math.min(100, Math.max(0, Number(raw) || 0));
             stack[index].opacity = value; opacityInput.value = value; opacityNumber.value = value;
@@ -10904,6 +11041,15 @@
           renderRoadLayerEditor();
         });
         group.appendChild(head); group.appendChild(list); body.appendChild(group);
+      }
+
+      if (!document.body.dataset.roadWidthPickerCloseBound) {
+        document.body.dataset.roadWidthPickerCloseBound = "1";
+        document.addEventListener('click', function() {
+          document.querySelectorAll('.road-layer-width-picker').forEach(function(picker) {
+            picker.hidden = true;
+          });
+        });
       }
 
       function normalizeLabelHex(value, fallback) {
