@@ -3883,6 +3883,43 @@
     transform-origin: 50% 50%;
   }
 
+  /* 지도 하단 도로 구분 범례 */
+  #roadMapLegend {
+    position: fixed;
+    left: max(14px, env(safe-area-inset-left));
+    bottom: max(36px, env(safe-area-inset-bottom));
+    z-index: 1000;
+    width: 190px;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid rgba(0,0,0,.10);
+    border-radius: 12px;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 3px 12px rgba(0,0,0,.16);
+    color: #263442;
+    pointer-events: none;
+  }
+  #roadMapLegend h2 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1565c0;
+  }
+  #roadMapLegend ul {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  #roadMapLegend li { display: flex; align-items: center; gap: 7px; font-size: 14px; white-space: nowrap; }
+  #roadMapLegend svg { width: 32px; height: 16px; flex: 0 0 32px; overflow: visible; }
+  @media (max-width:700px) {
+    #roadMapLegend { left: max(8px, env(safe-area-inset-left)); width: 176px; padding: 10px 12px; }
+    #roadMapLegend li { font-size: 13px; }
+  }
+
 </style>
 
 <style id="mobileViewportContainmentFix">
@@ -6830,6 +6867,17 @@
 
 <body>
   <div id="map"></div>
+
+  <aside id="roadMapLegend" aria-label="도로 구분 범례">
+    <h2>도로 범례</h2>
+    <ul>
+      <li><svg id="legendCity" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#007F86" stroke-width="5"/></svg><span>시도</span></li>
+      <li><svg id="legendMyeon" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#D94A3A" stroke-width="5"/></svg><span>면도</span></li>
+      <li><svg id="legendRi" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#3659C9" stroke-width="5"/></svg><span>리도</span></li>
+      <li><svg id="legendFarm" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#C88700" stroke-width="5"/></svg><span>농도</span></li>
+    </ul>
+  </aside>
+
 
 
   <div id="appError" role="alertdialog" aria-live="assertive">
@@ -10719,6 +10767,7 @@
           "roadLayerStacks",
           JSON.stringify(ROAD_LAYER_STACKS)
         );
+        updateLegendStyles();
       }
 
       function getRoadVisualLines(road) {
@@ -11735,15 +11784,29 @@
       }
 
       function updateLegendStyles() {
-        const legendStyles = {
-          legendCity: ROAD_STYLES.CITY.color,
-          legendMyeon: ROAD_STYLES.MYEON.color,
-          legendRi: ROAD_STYLES.RI.color,
-          legendFarm: ROAD_STYLES.FARM.color
-        };
-        Object.keys(legendStyles).forEach(function (id) {
-          const element = document.getElementById(id);
-          if (element) element.style.setProperty("--legend-color", legendStyles[id]);
+        const keys = { legendCity:"CITY", legendMyeon:"MYEON", legendRi:"RI", legendFarm:"FARM" };
+        Object.entries(keys).forEach(function(entry) {
+          const element = document.getElementById(entry[0]);
+          if (!element) return;
+          const stack = getRoadLayerStack(entry[1]);
+          const enabled = stack.filter(function(item) { return item.visible !== false; });
+          const preview = enabled.length ? enabled : stack;
+          const signature = JSON.stringify([preview, isSkyViewMode, enabled.length > 0]);
+          if (element._legendSignature === signature) return;
+          element._legendSignature = signature;
+          element.replaceChildren();
+          preview.slice().reverse().forEach(function(config) {
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", "2"); line.setAttribute("x2", "46");
+            line.setAttribute("y1", "12"); line.setAttribute("y2", "12");
+            line.setAttribute("stroke", getRoadLayerDisplayColor(entry[1], config));
+            line.setAttribute("stroke-width", String(Math.min(16, Math.max(1, Number(config.width) || 1))));
+            line.setAttribute("stroke-opacity", String(Math.max(0, Math.min(100, Number(config.opacity) || 0)) / 100));
+            const dash = { dash:"8 5", shortdash:"4 3", dot:"1 3", shortdot:"1 3", dashdot:"8 3 1 3" }[config.lineStyle];
+            if (dash) line.setAttribute("stroke-dasharray", dash);
+            element.appendChild(line);
+          });
+          element.style.opacity = enabled.length ? "1" : "0.35";
         });
       }
 
@@ -12488,6 +12551,7 @@
         }
 
         renderRoadLayerEditor();
+        updateLegendStyles();
       }
 
       function applyRoadNormalVisualStyle(road) {
@@ -17448,6 +17512,40 @@
   });
 
   updateClearButton();
+})();
+</script>
+
+
+<script>
+(function() {
+  const legend = document.getElementById("roadMapLegend");
+  const panel = document.getElementById("listPanel");
+  if (!legend || !panel) return;
+  let frame = null;
+  function positionLegend() {
+    frame = null;
+    legend.style.bottom = "";
+    if (window.innerWidth > 700) return;
+    const panelBox = panel.getBoundingClientRect();
+    const legendBox = legend.getBoundingClientRect();
+    if (panelBox.width && panelBox.height && panelBox.top > window.innerHeight / 3 &&
+        panelBox.left < legendBox.right && panelBox.right > legendBox.left &&
+        panelBox.bottom > legendBox.top) {
+      legend.style.bottom = (window.innerHeight - panelBox.top + 10) + "px";
+    }
+  }
+  function schedule() {
+    if (frame === null) frame = requestAnimationFrame(positionLegend);
+  }
+  if ("ResizeObserver" in window) new ResizeObserver(schedule).observe(panel);
+  new MutationObserver(schedule).observe(panel, { attributes:true, attributeFilter:["style", "class"] });
+  let collapsed = document.body.classList.contains("list-collapsed");
+  new MutationObserver(function() {
+    const next = document.body.classList.contains("list-collapsed");
+    if (next !== collapsed) { collapsed = next; schedule(); }
+  }).observe(document.body, { attributes:true, attributeFilter:["class"] });
+  window.addEventListener("resize", schedule);
+  schedule();
 })();
 </script>
 

@@ -234,3 +234,13 @@ test('generated lines have no duplicate segments and manual detail preserves eve
   const names=data=>new Set(data.features.filter(f=>f.geometry.type.includes('Polygon')).map(f=>JSON.stringify(f.properties)));
   assert.deepEqual(names(overview),names(original));
 });
+test('legend follows edited colors, line visibility and skyview without rebuilding unchanged samples',()=>{
+  const elements=Object.fromEntries(['legendCity','legendMyeon','legendRi','legendFarm'].map(id=>[id,{style:{},children:[],writes:0,replaceChildren(){this.children=[];this.writes++},appendChild(node){this.children.push(node)}}]));
+  const stack=[{color:'#123456',skyColor:'#ffffff',width:4,opacity:80,visible:true,lineStyle:'dash'}];
+  const c={isSkyViewMode:false,getRoadLayerStack:()=>stack,document:{getElementById:id=>elements[id],createElementNS:()=>({attrs:{},setAttribute(k,v){this.attrs[k]=v}})}};
+  vm.createContext(c);for(const name of ['getRoadLayerDisplayColor','updateLegendStyles'])vm.runInContext(source(name),c);
+  c.updateLegendStyles();assert.equal(elements.legendCity.children[0].attrs.stroke,'#123456');assert.equal(elements.legendCity.children[0].attrs['stroke-dasharray'],'8 5');
+  c.updateLegendStyles();assert.equal(elements.legendCity.writes,1);
+  c.isSkyViewMode=true;c.updateLegendStyles();assert.equal(elements.legendCity.children[0].attrs.stroke,'#ffffff');
+  stack[0].visible=false;c.updateLegendStyles();assert.equal(elements.legendCity.style.opacity,'0.35');
+});
