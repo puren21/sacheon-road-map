@@ -10853,7 +10853,7 @@
       function roadWidthPickerOptions(currentValue) {
         const current = Number(currentValue);
         let html = '';
-        for (let value = 0.5; value <= 30.0001; value += 0.5) {
+        for (let value = 1; value <= 30; value += 1) {
           const fixed = Math.round(value * 10) / 10;
           const selected = Number.isFinite(current) && Math.abs(fixed - current) < 0.001;
           html += '<button type="button" class="road-layer-width-option' + (selected ? ' selected' : '') + '" data-width-value="' + fixed + '">' + fixed + '</button>';
@@ -10885,7 +10885,7 @@
               '<span class="road-layer-field-label">색상</span><span class="road-layer-field-label">두께(px)</span>' +
               '<span class="road-layer-color-wrap"><input class="road-layer-color" type="color" value="' + layerConfig.color + '"><input class="road-layer-color-code" type="text" maxlength="7" spellcheck="false" value="' + String(layerConfig.color || '').toUpperCase() + '"></span>' +
               '<span class="road-layer-width-wrap">' +
-                '<input class="road-layer-width" type="number" inputmode="decimal" min="0.5" max="30" step="0.1" value="' + layerConfig.width + '" aria-label="라인 두께">' +
+                '<input class="road-layer-width" type="number" inputmode="decimal" min="1" max="30" step="1" value="' + layerConfig.width + '" aria-label="라인 두께">' +
                 '<div class="road-layer-width-picker" hidden>' + roadWidthPickerOptions(layerConfig.width) + '</div>' +
               '</span>' +
               '<span class="road-layer-field-label" style="grid-column:1/-1">투명도</span>' +
@@ -10932,7 +10932,7 @@
             if (String(raw).trim() === '') return;
             const numeric = Number(raw);
             if (!Number.isFinite(numeric)) return;
-            const value = Math.min(30, Math.max(0.5, numeric));
+            const value = Math.min(30, Math.max(1, numeric));
             stack[index].width = value;
             if (normalizeField) widthInput.value = value;
             syncRoadLayerStackForStyle(styleKey);
@@ -10994,8 +10994,8 @@
           widthInput.addEventListener('wheel', function(event) {
             event.preventDefault();
             const current = Number(this.value) || Number(stack[index].width) || 1;
-            const direction = event.deltaY < 0 ? 0.5 : -0.5;
-            const next = Math.min(30, Math.max(0.5, Math.round((current + direction) * 2) / 2));
+            const direction = event.deltaY < 0 ? 1 : -1;
+            const next = Math.min(30, Math.max(1, Math.round(current + direction)));
             this.value = next;
             applyRoadWidth(next, true);
           }, { passive:false });
