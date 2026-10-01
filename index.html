@@ -6672,12 +6672,21 @@
     display: none !important;
   }
 
+  #roadviewBtn {
+    overflow: hidden !important;
+    background: rgba(255,255,255,.98) !important;
+    border: 1px solid #d9dde3 !important;
+    border-radius: 7px !important;
+    box-shadow: 0 2px 7px rgba(0,0,0,.25) !important;
+  }
+
   #roadviewBtn .roadview-custom-icon {
-    width: 38px !important;
-    height: 38px !important;
+    width: 40px !important;
+    height: 40px !important;
     display: block !important;
-    object-fit: contain !important;
+    object-fit: cover !important;
     border-radius: 50% !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.14) !important;
   }
 
   #roadMenuOtherPage .other-load-card {
@@ -6720,6 +6729,7 @@
     #roadviewBtn .roadview-custom-icon {
       width: 34px !important;
       height: 34px !important;
+      box-shadow: 0 1px 2px rgba(0,0,0,.14) !important;
     }
     #roadMenuOtherPage .other-load-button {
       min-height: 56px;
@@ -6861,7 +6871,7 @@
     </div>
 
     <button id="roadviewBtn" class="top-square-button" type="button" title="로드뷰" aria-label="로드뷰">
-      <img class="roadview-custom-icon" src="data:image/webp;base64,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" alt="" aria-hidden="true">
+      <img class="roadview-custom-icon" src="data:image/webp;base64,UklGRrwIAABXRUJQVlA4ILAIAACwKgCdASpgAGAAPjkWiUMiISEY6zc8IAOEtQBl7xBuryW+q/l3zzW53evnW6A87zkvnJeYB+kn6u9ZnzAfr5+1Xuv/y3/b/zP3JfYB/ZvkA/uH+R6wD0AP1c9Nj2P/7L/vPSP//+sveK/7N2if4/o6e9/sdyqIh3xb6lfevyi/MP4d/wHgDwAvxr+Vf4D8rPN32c0t3qBezH1D/J/mlzI9x//ouNvoCfnL/b+yr/Mf8T/N/kj7Yvy3+2/7/+/fAJ/Jv6b/oP7t+9n+P+Yr2gei1+szCtgQjj1mpreiXKKeH0edgZB60Nb0e9QsOGioiFv4fNRWr/AHJIDvBf5Y/fUpAIUdX7pxLnC1MQo67I39jacOwBksofpjJaqohwkNq1ha43JeJLWE6h27tgH9mUNef3XlzO/KiNo8SY0FGC0bQUOy1XWtWatmOLJ6JtMlqSmOf1cicWjWEM3hYVJAgAD+/t159UIPznjztFAkZGsxnwh0kdMJ67h9N+S7g/z7Z//QQ085q0agrP07iJ9leFSoP5nqfFbV0Y/WsyPsTuIODDQ7slWfMwuS5J/SGQqyYcfhP6zrApAiAjuLrGLtFdfOxjfI26Ijhuv2HRm/y71MfhiDDJ2/zsC76J4c4xDfF7Jb2ASNGqUEo5haNjArbwUTDg7PPpkbSYg7ra7WOAKX9PPfvSA5a4c835IsXYL1qgd/6FWbKPFIgsyJ33z+W1jfbN5oO4/4w2jkjH4Xi0pwz3pu8e1+5Bw/Pv/Fyam2MK+dtXr75IlbM/NhqqS6fVujrT1MfvAl29r/vnm3jSIDLX5W2tvGl+C9GNEtL7K6ia6PTW6sHOBnYCcc5fl+dca2NBYfGvruV+xWDujIL5V1pw6OXE/sXzZDqKHA/OYFl/aR1EOZff70kHQpPADEdGWOPCFsUisr323nCUpe1XEcgzKkfsXwgGSfMGYK5md58NTAPwvy/4ShrcG7ZEZh2bMVtcF8OGHt9vGpRIyxkjn2Mwb+EoGrWoycQIj1Y1+VuuvDzPOtZv9JFrORmk8b7MIJz0Qa7PL1NW4Cm4katixyucMksEojT6c9IFZnrRSIofzAtPMGnMmMbmdYtrlAsV1AKG2XUpjISpxJQZ/1k+0fNtBJ2xtkZEfkxlZ9hmZTfo1mnvktS9pTlJBAMoE1iwnXfuIfxusOfwIij+h3LzMfVKjM3dpDmQWwmxOU3Wvf2kWgPA8jOqt3LTd7WGDrDH8bbwwDUIqX7xC+/xk1zwnDP2s2fHyFTZ8NTWwqG8PXNkQkNEOToqiVVB19YL840jgKDr75jnsYQ+934a6eCeCyIuCNL/83XQuSinwbFwaSA7KJrQSwyyTKud8ipsr2jdaC0Jhhw0N7ZZJdDgKo58TnkUvxg3+TKCxOl3UYJ9GWINlaj+H7W0B0GxQyflTJ/dC7xEWAfZYrbaNAXk0o3G9pIWfLRrBZoaKvTLN+uHWfIFtat4u3oX5d59ekY+gSBiBYhPTR2rlTckVLTEruRa2L92MulmsHk3xWnV9SRgF/vWdZu6rsS9DBoA453e2Zb+U+m5ZSm/UEN6RS9onotEqH/6XRj2i/OiM+wx3Ds0UcBO/BImaQpa5f4611NK4ZWS6GLQAj1pThluwmFu1uFcxod7t/C51Sl2khPvcCX0alrllUXAEf/x2tI4oOX+cFnuTSXideVJrb1wLIhto7xHdhUTaVSvl6ZXz+X8jeWwgTYWc8U8quX9DQY5Km51o/Brb6F+Qlj/2j/dfqP/tzqaJfGG4CQqyuZgxjR3rrdD7aRm+15QOMX9cHQGC/APrMvtPEQaC4xZotup7u8fEwIMzSnWpRJeZWBJILe6ZrHDvwRM60ewk+Gutps3AWr1HmX/Z/qXOaBnOdKwNRxTBU2GnpMo64Gwg/XMea5+8wCifnXOcKkkGNiId6TCCh0+TlTd2laT3gHeI7j5vVF4zBwcesd8Zypwmug/x8jtFzjiN5Tl/TSEzaK45lkDUjfQs2D5tt6VULrFE+cjyWDkBnv8sM2vU1YavdNb13nMtFHksT1+it0V8dOmL04dZIr7lkhegv7yyE6VOh7xIwsK3eLywl2n+fnXoATiGYOb/mqHMeUmYFUT4KYCH//LfE1N260DoJby3JzTfkSOnbKfqTVrRKjZ9Rcou2ujI5XEeYNnLwSUkE+4GbQ5je8pvmOY1Mn/KW2EuXM+f7st4AjyYK9QSCFXMeTSG1JuMdIXPZScNsmH8sACuFFNrCHBXIn5fRWqveM9g9L4p2vyLA7dAFJZv8T27S+mBOKkOWr5+o5N5rttaViLDdAp8mP+I6/Ni5b8oq7RCkxpl/FUN/axUA/muEwhTIT5VxKzPJTyXZc8q89r001mMSt5ikaT6qlAmwKhcnxMawPBROR5f36SHvF2tbQoRsBHyEQ/88alfronQ0fbMWtjKdpoufInZPLC0DpDH8qSGOal4q24MzVHQnhA/I3We9SXtpOk0IZ5VEPwfYnXIi6aBttZiQRpVFWKnTuKTfS0dWL7yNXqprDHT/hmWh5ey0JTnSUF//xablONtyH1l3FR72T2mbiSEAYCCY6MEtqbSnbHr6zx+yKqeOzUNAH5/+DOCtM509wnlXcutC1W5VcemAPCDmaE/u9x1nkF4s9yAfGKUre+uPrM0cnTu9h9jOe4nxqyG+n3yJhQnE+/nuCKbn/vPzAxLPdvSEeoA1kX5W5Rna3bYn87HSjPqxo6Us8bq69CcoV8P/s6UAL7XuxpGT2pz4JmItyBJ32fsoKbptugA71J2oPE+aV8CW4VEg+CMAbCRaF9cMScCbIDk3fYVyDj6US5gULgIEtrTWe3Z53vdB9mZ5cUsXNPQzJPFrzUX/0/VnVuCefNZ4ftoJHa6Qm3OR6XUHpNTx7zR7nj8WBzafrxr8+La2863t/FeEqF96kLCVpTTg7gxySolT/G14fA0uOWz50x6AAAAA" alt="" aria-hidden="true">
     </button>
 
     <button id="roadLayerEditorBtn" class="top-square-button" type="button" title="레이어" aria-label="레이어">
