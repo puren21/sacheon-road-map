@@ -12592,10 +12592,12 @@
       function showAllRoadList() {
         let cityCount = 0;
         let ruralCount = 0;
+        const activeCategory = window.sacheonRoadCategoryMode || "rural";
 
         document.querySelectorAll(".list-item").forEach(function(item) {
           const group = groups.get(item.dataset.key);
-          const visible = isRoadGroupKindVisible(group);
+          const categoryMatch = !!group && (activeCategory === "city" ? group.layerId === "city" : group.layerId !== "city");
+          const visible = categoryMatch && isRoadGroupKindVisible(group);
           item.style.display = visible ? "block" : "none";
 
           if (visible && group) {
@@ -12615,9 +12617,11 @@
 
       function updateRoadSearchCount(count) {
         if (count == null) {
+          const activeCategory = window.sacheonRoadCategoryMode || "rural";
           count = Array.from(document.querySelectorAll(".list-item")).filter(function(item) {
             const group = groups.get(item.dataset.key);
-            return isRoadGroupKindVisible(group);
+            const categoryMatch = !!group && (activeCategory === "city" ? group.layerId === "city" : group.layerId !== "city");
+            return categoryMatch && isRoadGroupKindVisible(group);
           }).length;
         }
         const resultCount = document.getElementById("searchResultCount");
@@ -12628,10 +12632,12 @@
         const query = String(value || "").trim();
         let cityCount = 0;
         let ruralCount = 0;
+        const activeCategory = window.sacheonRoadCategoryMode || "rural";
 
         document.querySelectorAll(".list-item").forEach(function(item) {
           const group = groups.get(item.dataset.key);
-          const visible = roadNumberMatches(group, query) && isRoadGroupKindVisible(group);
+          const categoryMatch = !!group && (activeCategory === "city" ? group.layerId === "city" : group.layerId !== "city");
+          const visible = categoryMatch && roadNumberMatches(group, query) && isRoadGroupKindVisible(group);
           item.style.display = visible ? "block" : "none";
 
           if (visible && group) {
@@ -17731,9 +17737,12 @@
 
   function setCategoryMode(mode) {
     categoryMode = mode === "city" ? "city" : "rural";
+    window.sacheonRoadCategoryMode = categoryMode;
     home.classList.add("is-visible");
     cityDetail.classList.toggle("is-visible", categoryMode === "city");
     ruralDetail.classList.toggle("is-visible", categoryMode === "rural");
+    cityDetail.style.setProperty("display", categoryMode === "city" ? "block" : "none", "important");
+    ruralDetail.style.setProperty("display", categoryMode === "rural" ? "block" : "none", "important");
     if (categorySelect && categorySelect.value !== categoryMode) {
       categorySelect.value = categoryMode;
     }
