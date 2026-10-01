@@ -4729,6 +4729,69 @@
     }
   }
 
+
+  /* ===== 2026-10-01: 노선 표시 스위치 ===== */
+  .road-visibility-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 10px 0 4px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #f7f7f9;
+  }
+
+  .road-visibility-label {
+    color: #171719;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .road-visibility-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 30px;
+    flex: 0 0 auto;
+  }
+
+  .road-visibility-switch input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .road-visibility-slider {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: #c7c7cc;
+    transition: background .18s ease;
+    cursor: pointer;
+  }
+
+  .road-visibility-slider::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.28);
+    transition: transform .18s ease;
+  }
+
+  .road-visibility-switch input:checked + .road-visibility-slider {
+    background: #34c759;
+  }
+
+  .road-visibility-switch input:checked + .road-visibility-slider::after {
+    transform: translateX(22px);
+  }
+
 </style>
 
 </head>
@@ -6372,6 +6435,7 @@
 
       function roadShouldBeVisibleNow(road, viewport) {
         return (
+          !hiddenRoadGroups.has(road.groupKey) &&
           LAYERS[road.layerId].visible &&
           roadStatusFilters[road.statusKey] &&
           isRoadLayerVisibleAtScale(road.layerId) &&
@@ -7579,6 +7643,7 @@
       });
 
       const groups = new Map();
+      const hiddenRoadGroups = new Set();
       const ruralTotalLengths = new Map();
       const allBounds = new kakao.maps.LatLngBounds();
       const allRoads = [];
@@ -11132,6 +11197,8 @@
               labelsEnabled &&
               layer.visible &&
               scaleVisible &&
+              labelGroup &&
+              !hiddenRoadGroups.has(labelItem.groupKey) &&
               isRoadGroupKindVisible(labelGroup)
             ) {
               displayPosition = getVisibleLabelPosition(labelItem, bounds);
@@ -13150,6 +13217,14 @@
       function bindRoadPopupEditActions(popup) {
         if (!popup) return;
 
+        const visibilityToggle = popup.querySelector(".road-visibility-toggle");
+        if (visibilityToggle) {
+          visibilityToggle.onchange = function() {
+            const groupKey = decodeURIComponent(this.dataset.groupKey || "");
+            setRoadGroupDisplay(groupKey, this.checked);
+          };
+        }
+
         const editBtn = popup.querySelector(".road-edit-btn");
         if (editBtn) {
           editBtn.onclick = function() {
@@ -13240,6 +13315,59 @@
       }
 
 
+      function roadPopupVisibilityToggle(group) {
+        const encodedKey = encodeURIComponent(group.key);
+        const checked = !hiddenRoadGroups.has(group.key);
+        return '<div class="road-visibility-row">' +
+          '<span class="road-visibility-label">노선 표시</span>' +
+          '<label class="road-visibility-switch">' +
+            '<input type="checkbox" class="road-visibility-toggle" data-group-key="' + encodedKey + '"' + (checked ? ' checked' : '') + '>' +
+            '<span class="road-visibility-slider"></span>' +
+          '</label>' +
+        '</div>';
+      }
+
+      function setRoadGroupDisplay(groupKey, visible) {
+        const group = groups.get(groupKey);
+        if (!group) return;
+
+        if (visible) hiddenRoadGroups.delete(groupKey);
+        else hiddenRoadGroups.add(groupKey);
+
+        group.roads.forEach(function(road) {
+          if (!visible) {
+            road._visible = false;
+            getRoadVisualLines(road)
+              .concat(road.hitLine ? [road.hitLine] : [])
+              .forEach(function(line) {
+                if (line && line.getMap()) line.setMap(null);
+              });
+          }
+        });
+
+        Object.values(LAYERS).forEach(function(layer) {
+          (layer.labels || []).forEach(function(labelItem) {
+            if (labelItem.groupKey !== groupKey) return;
+            if (!visible && labelItem.overlay && labelItem.overlay.getMap()) {
+              labelItem.overlay.setMap(null);
+              labelItem._visible = false;
+            }
+          });
+        });
+
+        if (!visible && selectedRoadGroupKey === groupKey) {
+          removeSelectedRouteBalloon();
+        }
+
+        applyRoadVisibility();
+        updateLabels();
+
+        if (visible && selectedRoadGroupKey === groupKey) {
+          setRoadGroupHighlight(groupKey, true);
+          updateSelectedRouteBalloon();
+        }
+      }
+
       function roadPopupActions(group) {
         const encodedKey = encodeURIComponent(group.key);
         return '<div class="road-popup-actions">' +
@@ -13258,6 +13386,7 @@
               '<div class="popup-eyebrow">노선 정보</div>' +
               '<div class="popup-title">시도 ' + escapeHTML(group.number) + '</div>' +
             '</div>' +
+            roadPopupVisibilityToggle(group) +
             '<div class="road-attributes">' +
               row("도로구분", "시도") + row("노선번호", group.number) +
               row("구간상태", statusLengthSummary(group), "", "wrap-status") +
@@ -13280,6 +13409,7 @@
             '<div class="popup-eyebrow">농어촌도로</div>' +
             '<div class="popup-title">' + escapeHTML(group.number) + '</div>' +
           '</div>' +
+          roadPopupVisibilityToggle(group) +
           '<div class="road-attributes">' +
             row("노선번호", group.number) +
             row("구분", joinValues(uniqueValues(list, "GUBUN"))) +
