@@ -10856,7 +10856,31 @@
           colorInput.addEventListener('input', function() { applyColor(this.value); });
           colorCodeInput.addEventListener('change', function() { if (!applyColor(this.value)) this.value = String(colorInput.value || '').toUpperCase(); });
           colorCodeInput.addEventListener('keydown', function(event) { if (event.key === 'Enter') { event.preventDefault(); this.dispatchEvent(new Event('change')); this.blur(); } });
-          widthInput.addEventListener('change', function() { stack[index].width = Math.min(30, Math.max(.5, Number(this.value) || 1)); this.value = stack[index].width; syncRoadLayerStackForStyle(styleKey); });
+          function applyRoadWidth(raw, normalizeField) {
+            if (String(raw).trim() === '') return;
+            const numeric = Number(raw);
+            if (!Number.isFinite(numeric)) return;
+            const value = Math.min(30, Math.max(0.5, numeric));
+            stack[index].width = value;
+            if (normalizeField) widthInput.value = value;
+            syncRoadLayerStackForStyle(styleKey);
+          }
+
+          widthInput.addEventListener('input', function() {
+            applyRoadWidth(this.value, false);
+          });
+
+          widthInput.addEventListener('change', function() {
+            applyRoadWidth(this.value, true);
+          });
+
+          widthInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              applyRoadWidth(this.value, true);
+              this.blur();
+            }
+          });
           function applyOpacity(raw) {
             const value = Math.min(100, Math.max(0, Number(raw) || 0));
             stack[index].opacity = value; opacityInput.value = value; opacityNumber.value = value;
