@@ -4884,6 +4884,28 @@
     }
   }
 
+
+  /* ===== 2026-10-01: 노선표시 스위치 클릭 보정 ===== */
+  .road-popup .road-visibility-inline,
+  .road-popup .road-visibility-inline * {
+    cursor: pointer !important;
+  }
+
+  .road-popup .road-visibility-inline {
+    position: relative;
+    z-index: 5;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+
+  .road-popup .road-visibility-switch,
+  .road-popup .road-visibility-slider {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+
 </style>
 
 </head>
@@ -11562,7 +11584,7 @@
         handle.style.touchAction = "none";
         handle.addEventListener("pointerdown", function(event) {
           if (event.button !== undefined && event.button !== 0) return;
-          if (event.target.closest("button, input, select, textarea, a")) return;
+          if (event.target.closest("button, input, label, select, textarea, a, .road-visibility-inline")) return;
           const rect = popup.getBoundingClientRect();
           dragging = true;
           pointerId = event.pointerId;
@@ -13316,6 +13338,16 @@
 
       function bindRoadPopupEditActions(popup) {
         if (!popup) return;
+
+        const visibilityControl = popup.querySelector(".road-visibility-inline");
+        if (visibilityControl && visibilityControl.dataset.pointerBound !== "1") {
+          ["pointerdown", "mousedown", "touchstart"].forEach(function(type) {
+            visibilityControl.addEventListener(type, function(event) {
+              event.stopPropagation();
+            });
+          });
+          visibilityControl.dataset.pointerBound = "1";
+        }
 
         const visibilityToggle = popup.querySelector(".road-visibility-toggle");
         if (visibilityToggle) {
