@@ -3971,6 +3971,264 @@
       max-width: calc(100dvw - 16px) !important;
     }
   }
+
+  /* ===== 플로팅 계층형 노선메뉴 ===== */
+  #roadCategoryHome,
+  .road-category-detail-head {
+    display: none;
+  }
+
+  @media (min-width: 701px) {
+    #listPanel {
+      position: fixed !important;
+      top: 16px !important;
+      right: auto !important;
+      bottom: auto !important;
+      left: 16px !important;
+      width: 150px !important;
+      height: min(48vh, 500px) !important;
+      min-width: 140px !important;
+      max-width: 210px !important;
+      min-height: 230px !important;
+      max-height: calc(100vh - 24px) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      border: 1px solid rgba(0,0,0,.14) !important;
+      border-radius: 12px !important;
+      background: rgba(255,255,255,.98) !important;
+      box-shadow: 0 6px 22px rgba(0,0,0,.24) !important;
+    }
+
+    body.list-collapsed #listPanel {
+      display: none !important;
+    }
+
+    #listPanel .list-header {
+      position: relative !important;
+      min-height: 46px !important;
+      padding: 9px 34px 8px 10px !important;
+      flex: 0 0 auto !important;
+      border-radius: 11px 11px 0 0 !important;
+      cursor: move !important;
+      touch-action: none !important;
+      user-select: none !important;
+    }
+
+    #listPanel .list-header-main-title {
+      font-size: 14px !important;
+      letter-spacing: -.2px !important;
+    }
+
+    #listPanel .list-header-subtitle {
+      margin-top: 2px !important;
+      font-size: 9px !important;
+    }
+
+    #listClose {
+      top: 8px !important;
+      right: 7px !important;
+      width: 27px !important;
+      height: 27px !important;
+      border-radius: 7px !important;
+      transform: none !important;
+      box-shadow: none !important;
+      font-size: 0 !important;
+    }
+
+    #listClose::after {
+      content: "×";
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    #listResizeHandle {
+      display: none !important;
+    }
+
+    #listOpen {
+      position: fixed !important;
+      top: 16px !important;
+      right: auto !important;
+      bottom: auto !important;
+      left: 16px !important;
+      width: 34px !important;
+      height: 42px !important;
+      border-radius: 0 8px 8px 0 !important;
+      transform: none !important;
+      box-shadow: 0 3px 12px rgba(0,0,0,.22) !important;
+    }
+
+    #listPanel .road-search-wrap {
+      gap: 4px !important;
+      padding: 7px !important;
+      flex: 0 0 auto !important;
+    }
+
+    #listPanel #roadSearch {
+      min-width: 0 !important;
+      padding: 7px 6px !important;
+      font-size: 10.5px !important;
+    }
+
+    #listPanel #addressSearchBtn {
+      padding: 0 7px !important;
+      font-size: 10px !important;
+    }
+
+    #listPanel .road-kind-filters,
+    #listPanel .search-result-summary {
+      display: none !important;
+    }
+
+    #listContent {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      height: auto !important;
+      padding: 6px !important;
+      overflow-y: auto !important;
+    }
+
+    #roadCategoryHome {
+      display: grid;
+      gap: 7px;
+      padding: 2px 0;
+    }
+
+    #roadCategoryHome.is-visible {
+      display: grid;
+    }
+
+    .road-category-button {
+      width: 100%;
+      min-height: 54px;
+      padding: 9px 8px;
+      border: 1px solid #dfe5ec;
+      border-radius: 9px;
+      background: #fff;
+      color: #273039;
+      text-align: left;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+
+    .road-category-button:hover {
+      border-color: #9fcdf8;
+      background: #f3f9ff;
+    }
+
+    .road-category-name {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .road-category-count {
+      display: block;
+      margin-top: 4px;
+      color: #7d8791;
+      font-size: 9.5px;
+      font-weight: 600;
+    }
+
+    .road-category-arrow {
+      float: right;
+      color: #2f91f2;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .road-category-detail {
+      display: none;
+    }
+
+    .road-category-detail.is-visible {
+      display: block;
+    }
+
+    .road-category-detail-head {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 0 6px;
+      background: rgba(255,255,255,.98);
+    }
+
+    .road-category-back {
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border: 1px solid #d8e0e8;
+      border-radius: 7px;
+      background: #fff;
+      color: #2f91f2;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .road-category-detail-title {
+      min-width: 0;
+      flex: 1;
+      font-size: 12px;
+      font-weight: 800;
+      color: #273039;
+    }
+
+    .road-category-detail .list-title {
+      display: none !important;
+    }
+
+    #listContent .list-item {
+      min-height: 27px !important;
+      padding: 5px 5px 5px 8px !important;
+      border-radius: 5px !important;
+    }
+
+    #listContent .list-item .road-list-main {
+      font-size: 11px !important;
+      font-weight: 600 !important;
+    }
+
+    #listBottomResizeHandle {
+      position: absolute;
+      right: 0;
+      bottom: -5px;
+      left: 0;
+      z-index: 40;
+      height: 12px;
+      cursor: ns-resize;
+      touch-action: none;
+    }
+
+    #listBottomResizeHandle::after {
+      content: "";
+      position: absolute;
+      bottom: 3px;
+      left: 50%;
+      width: 42px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(47,145,242,.58);
+      transform: translateX(-50%);
+    }
+
+    body.list-window-dragging,
+    body.list-window-resizing {
+      user-select: none !important;
+    }
+
+    body.list-window-dragging {
+      cursor: move !important;
+    }
+
+    body.list-window-resizing {
+      cursor: ns-resize !important;
+    }
+  }
+
 </style>
 
 </head>
@@ -12956,5 +13214,240 @@
   }
 })();
 </script>
+
+<script>
+(function() {
+  "use strict";
+  // ===== 플로팅 계층형 노선메뉴 =====
+  const panel = document.getElementById("listPanel");
+  const header = panel && panel.querySelector(".list-header");
+  const listContent = document.getElementById("listContent");
+  const cityTitle = document.getElementById("cityListTitle");
+  const cityList = document.getElementById("cityList");
+  const ruralTitle = document.getElementById("ruralListTitle");
+  const ruralList = document.getElementById("ruralList");
+  const searchInput = document.getElementById("roadSearch");
+  const listOpen = document.getElementById("listOpen");
+  if (!panel || !header || !listContent || !cityTitle || !cityList || !ruralTitle || !ruralList) return;
+
+  const home = document.createElement("div");
+  home.id = "roadCategoryHome";
+  home.innerHTML =
+    '<button class="road-category-button" type="button" data-road-category="city">' +
+      '<span class="road-category-arrow">›</span>' +
+      '<span class="road-category-name">시도</span>' +
+      '<span class="road-category-count" data-count-for="city">노선 보기</span>' +
+    '</button>' +
+    '<button class="road-category-button" type="button" data-road-category="rural">' +
+      '<span class="road-category-arrow">›</span>' +
+      '<span class="road-category-name">농어촌도로</span>' +
+      '<span class="road-category-count" data-count-for="rural">노선 보기</span>' +
+    '</button>';
+
+  const cityDetail = document.createElement("div");
+  cityDetail.className = "road-category-detail";
+  cityDetail.dataset.category = "city";
+  cityDetail.innerHTML =
+    '<div class="road-category-detail-head">' +
+      '<button class="road-category-back" type="button" aria-label="도로 종류로 돌아가기">‹</button>' +
+      '<div class="road-category-detail-title">시도 상세 노선</div>' +
+    '</div>';
+
+  const ruralDetail = document.createElement("div");
+  ruralDetail.className = "road-category-detail";
+  ruralDetail.dataset.category = "rural";
+  ruralDetail.innerHTML =
+    '<div class="road-category-detail-head">' +
+      '<button class="road-category-back" type="button" aria-label="도로 종류로 돌아가기">‹</button>' +
+      '<div class="road-category-detail-title">농어촌도로 상세 노선</div>' +
+    '</div>';
+
+  cityDetail.appendChild(cityTitle);
+  cityDetail.appendChild(cityList);
+  ruralDetail.appendChild(ruralTitle);
+  ruralDetail.appendChild(ruralList);
+  listContent.insertBefore(home, listContent.firstChild);
+  listContent.insertBefore(cityDetail, document.getElementById("searchEmpty"));
+  listContent.insertBefore(ruralDetail, document.getElementById("searchEmpty"));
+
+  let categoryMode = "home";
+
+  function setCategoryMode(mode) {
+    categoryMode = mode;
+    const searching = mode === "search";
+    home.classList.toggle("is-visible", mode === "home");
+    cityDetail.classList.toggle("is-visible", mode === "city" || searching);
+    ruralDetail.classList.toggle("is-visible", mode === "rural" || searching);
+    if (mode === "home") listContent.scrollTop = 0;
+  }
+
+  function updateCategoryCounts() {
+    const cityCount = cityList.querySelectorAll(".list-item").length;
+    const ruralCount = ruralList.querySelectorAll(".list-item").length;
+    const cityCountNode = home.querySelector('[data-count-for="city"]');
+    const ruralCountNode = home.querySelector('[data-count-for="rural"]');
+    if (cityCountNode) cityCountNode.textContent = cityCount ? cityCount + "개 노선" : "노선 보기";
+    if (ruralCountNode) ruralCountNode.textContent = ruralCount ? ruralCount + "개 노선" : "노선 보기";
+  }
+
+  home.addEventListener("click", function(event) {
+    const button = event.target.closest("[data-road-category]");
+    if (!button) return;
+    setCategoryMode(button.dataset.roadCategory);
+  });
+
+  panel.querySelectorAll(".road-category-back").forEach(function(button) {
+    button.addEventListener("click", function() {
+      if (searchInput) searchInput.value = "";
+      setCategoryMode("home");
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener("input", function() {
+      setCategoryMode(searchInput.value.trim() ? "search" : "home");
+    });
+    searchInput.addEventListener("search", function() {
+      setCategoryMode(searchInput.value.trim() ? "search" : "home");
+    });
+  }
+
+  const listObserver = new MutationObserver(updateCategoryCounts);
+  listObserver.observe(cityList, { childList: true });
+  listObserver.observe(ruralList, { childList: true });
+  updateCategoryCounts();
+  setCategoryMode("home");
+
+  const bottomHandle = document.createElement("div");
+  bottomHandle.id = "listBottomResizeHandle";
+  bottomHandle.title = "아래로 드래그하여 메뉴 높이 조절";
+  bottomHandle.setAttribute("aria-label", "메뉴 높이 조절");
+  panel.appendChild(bottomHandle);
+
+  const desktopMedia = window.matchMedia("(min-width: 701px)");
+  let dragState = null;
+  let resizeState = null;
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function applyPanelPosition(left, top, save) {
+    if (!desktopMedia.matches) return;
+    const width = panel.offsetWidth || 150;
+    const height = panel.offsetHeight || 360;
+    const nextLeft = clamp(left, 6, Math.max(6, window.innerWidth - width - 6));
+    const nextTop = clamp(top, 6, Math.max(6, window.innerHeight - height - 6));
+    panel.style.setProperty("left", nextLeft + "px", "important");
+    panel.style.setProperty("top", nextTop + "px", "important");
+    panel.style.setProperty("right", "auto", "important");
+    panel.style.setProperty("bottom", "auto", "important");
+    if (save) {
+      try {
+        localStorage.setItem("roadListFloatLeft", String(Math.round(nextLeft)));
+        localStorage.setItem("roadListFloatTop", String(Math.round(nextTop)));
+      } catch (e) {}
+    }
+  }
+
+  function applyPanelHeight(height, save) {
+    if (!desktopMedia.matches) return;
+    const rect = panel.getBoundingClientRect();
+    const maxHeight = Math.max(230, window.innerHeight - rect.top - 8);
+    const nextHeight = clamp(height, 230, maxHeight);
+    panel.style.setProperty("height", nextHeight + "px", "important");
+    if (save) {
+      try { localStorage.setItem("roadListFloatHeight", String(Math.round(nextHeight))); } catch (e) {}
+    }
+  }
+
+  function restoreFloatingPanel() {
+    if (!desktopMedia.matches) return;
+    let left = 16, top = 16, height = Math.min(window.innerHeight * .48, 500);
+    try {
+      const savedLeft = Number(localStorage.getItem("roadListFloatLeft"));
+      const savedTop = Number(localStorage.getItem("roadListFloatTop"));
+      const savedHeight = Number(localStorage.getItem("roadListFloatHeight"));
+      if (Number.isFinite(savedLeft)) left = savedLeft;
+      if (Number.isFinite(savedTop)) top = savedTop;
+      if (Number.isFinite(savedHeight) && savedHeight > 0) height = savedHeight;
+    } catch (e) {}
+    applyPanelHeight(height, false);
+    applyPanelPosition(left, top, false);
+  }
+
+  header.addEventListener("pointerdown", function(event) {
+    if (!desktopMedia.matches || event.button !== 0) return;
+    if (event.target.closest("button,input,a")) return;
+    const rect = panel.getBoundingClientRect();
+    dragState = {
+      pointerId: event.pointerId,
+      dx: event.clientX - rect.left,
+      dy: event.clientY - rect.top
+    };
+    header.setPointerCapture(event.pointerId);
+    document.body.classList.add("list-window-dragging");
+    event.preventDefault();
+  });
+
+  header.addEventListener("pointermove", function(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+    applyPanelPosition(event.clientX - dragState.dx, event.clientY - dragState.dy, false);
+  });
+
+  function finishDrag(event) {
+    if (!dragState || (event && event.pointerId !== dragState.pointerId)) return;
+    const rect = panel.getBoundingClientRect();
+    applyPanelPosition(rect.left, rect.top, true);
+    dragState = null;
+    document.body.classList.remove("list-window-dragging");
+  }
+  header.addEventListener("pointerup", finishDrag);
+  header.addEventListener("pointercancel", finishDrag);
+
+  bottomHandle.addEventListener("pointerdown", function(event) {
+    if (!desktopMedia.matches || event.button !== 0) return;
+    resizeState = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startHeight: panel.getBoundingClientRect().height
+    };
+    bottomHandle.setPointerCapture(event.pointerId);
+    document.body.classList.add("list-window-resizing");
+    event.preventDefault();
+    event.stopPropagation();
+  });
+
+  bottomHandle.addEventListener("pointermove", function(event) {
+    if (!resizeState || event.pointerId !== resizeState.pointerId) return;
+    applyPanelHeight(resizeState.startHeight + (event.clientY - resizeState.startY), false);
+  });
+
+  function finishResize(event) {
+    if (!resizeState || (event && event.pointerId !== resizeState.pointerId)) return;
+    applyPanelHeight(panel.getBoundingClientRect().height, true);
+    resizeState = null;
+    document.body.classList.remove("list-window-resizing");
+  }
+  bottomHandle.addEventListener("pointerup", finishResize);
+  bottomHandle.addEventListener("pointercancel", finishResize);
+
+  window.addEventListener("resize", function() {
+    if (!desktopMedia.matches) return;
+    const rect = panel.getBoundingClientRect();
+    applyPanelHeight(rect.height, false);
+    applyPanelPosition(rect.left, rect.top, false);
+  });
+
+  if (listOpen) {
+    listOpen.addEventListener("click", function() {
+      setTimeout(restoreFloatingPanel, 0);
+    });
+  }
+
+  restoreFloatingPanel();
+})();
+</script>
+
 </body>
 </html>
