@@ -11621,13 +11621,9 @@
       }
 
       function shouldAutoShowTownshipBoundary() {
-        return (
-          townshipStartMode ||
-          (
-            Number.isFinite(currentScaleDenominator) &&
-            currentScaleDenominator >= 55000
-          )
-        );
+        // 읍면동 경계 자동표시는 최초 읍면 선택 화면에서만 사용.
+        // 초기 화면 이후에는 확대/축소와 무관하게 기타기능의 수동 설정만 따른다.
+        return townshipStartMode;
       }
 
       function syncTownshipBoundaryDisplay() {
@@ -11663,8 +11659,8 @@
             !Number.isFinite(currentScaleDenominator) ||
             currentScaleDenominator <= layer.maxScale;
 
-          // 읍면동계는 초기화면 또는 축척 분모 55,000 이상에서 자동 표시.
-          // 리 경계 등 다른 경계는 레이어 메뉴 체크 상태를 따름.
+          // 읍면동계는 최초 읍면 선택 화면에서만 자동 표시.
+          // 초기 화면 이후에는 기타기능의 읍면동 경계 체크 상태만 따름.
           const show =
             scaleVisible &&
             (
