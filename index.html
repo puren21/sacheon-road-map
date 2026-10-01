@@ -5079,6 +5079,309 @@
     color: #4f5358 !important;
   }
 
+
+  /* ===== 2026-10-01: flight-route형 도로메뉴 ===== */
+  @media (min-width: 701px) {
+    #listPanel {
+      width: 340px !important;
+      min-width: 340px !important;
+      max-width: 340px !important;
+      padding: 0 12px 14px !important;
+      box-sizing: border-box !important;
+      background: #f2f2f7 !important;
+      border: 0 !important;
+      border-radius: 22px !important;
+      box-shadow: 0 12px 36px rgba(0,0,0,.18) !important;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      overflow: hidden !important;
+    }
+    #listResizeHandle { display:none !important; }
+  }
+
+  #listPanel .list-header {
+    min-height: 58px !important;
+    margin: 0 -12px 14px !important;
+    padding: 8px 12px 6px !important;
+    box-sizing: border-box !important;
+    display: grid !important;
+    grid-template-columns: 40px minmax(0,1fr) 40px !important;
+    align-items: center !important;
+    gap: 4px !important;
+    border: 0 !important;
+    background: rgba(242,242,247,.96) !important;
+    color: #000 !important;
+    cursor: move;
+  }
+
+  #listPanel .list-header-title-wrap {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    text-align: center;
+  }
+
+  #listPanel .list-header-main-title {
+    color: #000 !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    letter-spacing: -.35px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #listPanel .list-header-subtitle { display:none !important; }
+
+  #listPanel .list-menu-back,
+  #listPanel #listClose {
+    position: static !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 18px !important;
+    background: rgba(255,255,255,.9) !important;
+    color: #1c1c1e !important;
+    box-shadow: 0 0 0 .5px rgba(60,60,67,.18) !important;
+    transform: none !important;
+    font-size: 27px !important;
+    font-weight: 300 !important;
+    line-height: 34px !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #listPanel .list-menu-back {
+    grid-column: 1;
+    grid-row: 1;
+    display: none;
+  }
+
+  #listPanel #listClose {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    display: inline-flex !important;
+    font-size: 24px !important;
+  }
+
+  .road-main-menu-home {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 0;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 0 0 .5px rgba(60,60,67,.08);
+  }
+
+  .road-ios-menu-row {
+    position: relative;
+    width: 100%;
+    min-height: 54px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .road-ios-menu-row:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 55px;
+    right: 0;
+    bottom: 0;
+    height: .5px;
+    background: rgba(60,60,67,.18);
+  }
+
+  .road-ios-menu-row:hover,
+  .road-ios-menu-row:active { background:#f6f6f8; }
+
+  .road-ios-menu-left {
+    display:flex;
+    align-items:center;
+    gap:11px;
+    min-width:0;
+    flex:1;
+  }
+
+  .road-ios-menu-text {
+    font-size:16px;
+    font-weight:400;
+    letter-spacing:-.2px;
+    white-space:nowrap;
+  }
+
+  .road-ios-menu-icon,
+  .road-menu-memo-note {
+    width:29px;
+    height:29px;
+    flex:0 0 29px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:7px;
+    overflow:hidden;
+    box-shadow:0 0 0 .5px rgba(60,60,67,.10);
+  }
+
+  .road-ios-route-icon img {
+    display:block;
+    width:29px;
+    height:29px;
+    object-fit:cover;
+  }
+
+  .road-ios-memo-icon svg,
+  .road-menu-memo-note svg {
+    display:block;
+    width:29px;
+    height:29px;
+  }
+
+  .road-ios-chevron {
+    flex:0 0 auto;
+    color:#c7c7cc;
+    font-size:28px;
+    font-weight:300;
+    line-height:1;
+  }
+
+  .road-menu-page { display:none; min-height:0; }
+  .road-menu-page.active {
+    display:flex;
+    flex:1 1 auto;
+    min-height:0;
+    flex-direction:column;
+  }
+
+  #roadMenuRoadPage .road-search-wrap {
+    margin:0 0 10px;
+    border:0 !important;
+    border-radius:12px;
+    background:#fff !important;
+  }
+
+  #roadMenuRoadPage .road-kind-filters,
+  #roadMenuRoadPage .search-result-summary {
+    background:transparent !important;
+  }
+
+  #roadMenuRoadPage #listContent {
+    flex:1 1 auto;
+    min-height:0;
+    height:auto !important;
+    margin-top:4px;
+    padding:0 !important;
+  }
+
+  .road-menu-memo-card {
+    width:100%;
+    overflow:hidden;
+    border-radius:14px;
+    background:#fff;
+    box-shadow:0 0 0 .5px rgba(60,60,67,.10);
+  }
+
+  .road-menu-memo-list {
+    width:100%;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .road-menu-memo-row {
+    position:relative;
+    width:100%;
+    min-height:58px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:7px 14px;
+    border:0;
+    border-radius:0;
+    background:#fff;
+    color:#1c1c1e;
+    text-align:left;
+    cursor:pointer;
+  }
+
+  .road-menu-memo-row:not(:last-child)::after {
+    content:"";
+    position:absolute;
+    left:55px;
+    right:0;
+    bottom:0;
+    height:.5px;
+    background:rgba(60,60,67,.18);
+  }
+
+  .road-menu-memo-row:active { background:#f2f2f7; }
+
+  .road-menu-memo-left {
+    min-width:0;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex:1;
+  }
+
+  .road-menu-memo-copy {
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+
+  .road-menu-memo-copy strong {
+    font-size:16px;
+    font-weight:400;
+    letter-spacing:-.2px;
+  }
+
+  .road-menu-memo-copy small {
+    display:block;
+    max-width:230px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    color:#8e8e93;
+    font-size:12px;
+    font-weight:400;
+  }
+
+  .road-menu-memo-empty {
+    padding:20px 14px;
+    color:#8e8e93;
+    font-size:14px;
+    text-align:center;
+  }
+
+  @media (max-width:700px) {
+    #listPanel {
+      padding:0 10px 14px !important;
+      background:#f2f2f7 !important;
+    }
+    #listPanel .list-header {
+      margin:0 -10px 14px !important;
+      padding:8px 10px 6px !important;
+      border-radius:16px 16px 0 0;
+    }
+    .road-ios-menu-row { min-height:56px; }
+    .road-ios-menu-text { font-size:17px; }
+    .road-menu-memo-copy strong { font-size:17px; }
+  }
+
 </style>
 
 </head>
@@ -5145,11 +5448,12 @@
 
   <div id="listPanel">
     <div class="list-header">
+      <button id="listMenuBack" class="list-menu-back" type="button" aria-label="이전 메뉴">‹</button>
       <div class="list-header-title-wrap">
         <div class="list-header-main-title">사천시 도로현황</div>
         <div class="list-header-subtitle" aria-hidden="true"></div>
       </div>
-      <button id="listClose" title="노선목록 접기" aria-label="노선목록 접기">◀</button>
+      <button id="listClose" title="노선목록 접기" aria-label="노선목록 접기">×</button>
     </div>
     <div id="listResizeHandle" title="드래그하여 메뉴 폭 조절" aria-label="메뉴 폭 조절"></div>
 
@@ -11834,6 +12138,60 @@
         }
       }
 
+      async function loadSacheonMemoMenuItems() {
+        const response = await fetch(
+          SACHEON_MEMO_REST_URL + "/route_memos?select=route_number,memo,updated_at",
+          { headers: SACHEON_MEMO_HEADERS, cache: "no-store" }
+        );
+        if (!response.ok) throw new Error("메모 목록 불러오기 실패 (" + response.status + ")");
+        const rows = await response.json();
+        return (rows || [])
+          .filter(function(row) {
+            return row && typeof row.route_number === "string" &&
+              row.route_number.indexOf("sacheon:") === 0 &&
+              String(row.memo || "").trim();
+          })
+          .map(function(row) {
+            const key = String(row.route_number);
+            const parts = key.split(":");
+            const kind = parts[1] || "";
+            const number = parts.slice(2).join(":");
+            return {
+              key: key,
+              kind: kind,
+              number: number,
+              memo: String(row.memo || ""),
+              updated: row.updated_at || ""
+            };
+          })
+          .sort(function(a,b) {
+            return String(a.number).localeCompare(String(b.number), "ko", { numeric: true });
+          });
+      }
+
+      function openSacheonMemoRoute(memoKey) {
+        let matchedGroup = null;
+        groups.forEach(function(group) {
+          if (!matchedGroup && sacheonMemoKey(group) === memoKey) matchedGroup = group;
+        });
+        if (!matchedGroup) return false;
+
+        selectGroup(matchedGroup.key);
+
+        const road = matchedGroup.roads && matchedGroup.roads[0] ? matchedGroup.roads[0] : null;
+        const path = road ? (roadCurrentPath(road) || road.pathFine || []) : [];
+        const position = path && path.length ? path[Math.floor(path.length / 2)] : null;
+        if (position) {
+          setTimeout(function() {
+            showInfo(position, matchedGroup.key, road);
+          }, 80);
+        }
+        return true;
+      }
+
+      window.loadSacheonMemoMenuItems = loadSacheonMemoMenuItems;
+      window.openSacheonMemoRoute = openSacheonMemoRoute;
+
       window.closeRoadPopup = closeRoadPopup;
 
 
@@ -14399,6 +14757,170 @@
   if (loadBtn) {
     loadBtn.setAttribute('aria-label', '공간파일 불러오기');
   }
+})();
+</script>
+
+<script id="roadMainMenuScript">
+(function() {
+  "use strict";
+  const panel = document.getElementById("listPanel");
+  if (!panel || panel.dataset.mainMenuReady === "1") return;
+
+  const header = panel.querySelector(".list-header");
+  const title = panel.querySelector(".list-header-main-title");
+  const backBtn = document.getElementById("listMenuBack");
+  const resizeHandle = document.getElementById("listResizeHandle");
+  const searchWrap = panel.querySelector(".road-search-wrap");
+  const kindFilters = panel.querySelector(".road-kind-filters");
+  const resultSummary = panel.querySelector(".search-result-summary");
+  const listContent = document.getElementById("listContent");
+  if (!header || !title || !backBtn || !searchWrap || !kindFilters || !resultSummary || !listContent) return;
+
+  const roadPage = document.createElement("div");
+  roadPage.id = "roadMenuRoadPage";
+  roadPage.className = "road-menu-page";
+
+  [searchWrap, kindFilters, resultSummary, listContent].forEach(function(el) {
+    roadPage.appendChild(el);
+  });
+
+  const memoPage = document.createElement("div");
+  memoPage.id = "roadMenuMemoPage";
+  memoPage.className = "road-menu-page";
+  memoPage.innerHTML =
+    '<div class="road-menu-memo-card">' +
+      '<div id="roadMenuMemoList" class="road-menu-memo-list">' +
+        '<div class="road-menu-memo-empty">메모를 불러오는 중입니다.</div>' +
+      '</div>' +
+    '</div>';
+
+  const home = document.createElement("div");
+  home.id = "roadMainMenuHome";
+  home.className = "road-main-menu-home";
+  home.innerHTML =
+    '<button type="button" class="road-ios-menu-row" data-road-page="roads">' +
+      '<span class="road-ios-menu-left">' +
+        '<span class="road-ios-menu-icon road-ios-route-icon" aria-hidden="true"><img src="data:image/webp;base64,UklGRhYFAABXRUJQVlA4WAoAAAAQAAAAPwAAPwAAQUxQSIUBAAABkKNtkyI3f3UL78CnYZkZ7iOWTmFmpmxzM7NTMcNMVf0G4VTqICImAFtnAG1HBi88e/F9asW5x7Yy9f3Fs4tDR9sAZOw8of7UzUVWdunWmQaknYig/zlJqpq574e7mSpJvjgAkW0EMkSaOivrquSIQLYQabhEM1bclFebRABIwmUWDFjwGpIAGcMsGbLgODIyulgyaMleZGl8R4ti/rFZcIrGsMqzwD0vA/kjaVmix3Eutx9haOfJQWok5dDFaFef0SIZay/okZzvvkf7NRVtZoXBVy2a8b/fFs1Woq1O0SM5Z75H+/Ui2rtntEjG2kVqJOXVoWjDRxnaeap1iR7Hudwh913jqD8SnGYknoc0vXeLYv6pWTJ6WEYp2Y+MjFGWMQpOIgOScI1FhII3kQSASNM1qlXNlDeaRfCvQMZIVa+Oq5ITCYKtRXDgFUmqmrvvh7ubqpN8fRgi2F4SGs7dXWJll++db0QS7DgD6Dg5dKX29tfMqu+Vr878ele7OnyqE0DG1gBWUDggagMAAJARAJ0BKkAAQAA+MRSIQyIhIRYKrmQgAwSgDJe+MCA6Kl0D+q5AB0unsV/sB/gPVVuhMjoXaNwkxnn1emfRl31X9gEdbMeT7+QA66MnoDODUJlEHPBjI/5eSBwS1HXWxvfSIgAIXM7dt0xfR1GFKhV+P6B79BG3spJBlEAIQH54ELgVzlwEnybn+ajcjJnE5PUB+zkAAP7//g1oKwD03ZsWQspB6KdB15MIRJDDJRrcPgjsiW07eQnlZVarpwp6dKH6Fc7UY7r0X5GRzJfkY7ZPC76B5hZ22q5l94uwS5s6zIX4xvoVUqyk3wYaFElKrSTCeeLeuAYCyeNHQ+bJNPq2f6f2cuXM82561X+Bvhyxl219AOfq3G92Ms7ApH/7mlDQwIyTlFTj9+qUl/npHK+IEw1or3bDzjeOv/2S3/bs0/a1Hz5OV6Wl5LC3Xjjyh8K3MZVvwPpeUEHuPxRJ+YKBbTeW8vfZDNeK+Vkh1HYmP5l9m2ILuYhmc2GvF0KI3eJ4SFSdDU/MX39sVcVJl+kLOk7p4H9wrOm+A8MbE8dKFTT6Uu/p2IXhNuf4/yuFrD65hnPFLpjcxZzaRCHGs2oSH1lzAKNjO22hYKn+969TmFY5xaCTO2bqI7U0tPRWw8f/UXeVrTAzfY3YGDoLv/rSsfqZM4R3+tiqbF1wJ+ivdcLkWieRlI6P4XJUuTlAuTXKyJHH0lxR8LfkWA+/He1orzLtcj4pRRtoMCwETcWhCnWE2WCL9p1bh0kx6s/U7eXxADZbxCPbLDmWcXczeIIdpWYjyi+nbBsKitTN9nvI+11GsJyR0Ppit+5xgsZP6+hodJRl/m8yHv3HeHJzXCkrcvPMLcnvM5Dql0odAgn9RdpArXBNicWFWK0pQBd/6SVqpXv9A0frRvlpccZU5AZ1PN5Y4nYBzz7oHUK3ZP8zWc/mM6p13VP4xdOjiQOMk9kWRGI3kbOib/hLA3eXz/T1lc7wgK3dckm+dSjOO8PKH7PzvUHNIl5dt6opsTUfAtt0IhM7Uz1sH1xgQq3jYppyBQnYua68CZGQpk7w2puZWTBCGzy2FEinTiid4/T6bw6kyrT1iuc4kBEXbXvSKtaj7d+xH10v+LmplsQH5FrRTx/+b7xAdIWXupbvEkHkOP/zlTstZ3DOGAA=" alt=""></span>' +
+        '<span class="road-ios-menu-text">도로목록</span>' +
+      '</span>' +
+      '<span class="road-ios-chevron">›</span>' +
+    '</button>' +
+    '<button type="button" class="road-ios-menu-row" data-road-page="memos">' +
+      '<span class="road-ios-menu-left">' +
+        '<span class="road-ios-menu-icon road-ios-memo-icon" aria-hidden="true">' +
+          '<svg viewBox="0 0 29 29">' +
+            '<rect x="1" y="1" width="27" height="27" rx="6.5" fill="#ffffff"/>' +
+            '<path d="M7.5 1h14A6.5 6.5 0 0 1 28 7.5V9H1V7.5A6.5 6.5 0 0 1 7.5 1Z" fill="#ffd60a"/>' +
+            '<path d="M6 13.5h17M6 17.5h17M6 21.5h12" stroke="#c7c7cc" stroke-width="1.15" stroke-linecap="round"/>' +
+            '<rect x="1" y="1" width="27" height="27" rx="6.5" fill="none" stroke="rgba(0,0,0,.08)" stroke-width=".7"/>' +
+          '</svg>' +
+        '</span>' +
+        '<span class="road-ios-menu-text">메모</span>' +
+      '</span>' +
+      '<span class="road-ios-chevron">›</span>' +
+    '</button>';
+
+  header.insertAdjacentElement("afterend", home);
+  home.insertAdjacentElement("afterend", roadPage);
+  roadPage.insertAdjacentElement("afterend", memoPage);
+
+  async function renderMemoMenu() {
+    const list = document.getElementById("roadMenuMemoList");
+    if (!list) return;
+    list.innerHTML = '<div class="road-menu-memo-empty">메모를 불러오는 중입니다.</div>';
+    try {
+      const items = typeof window.loadSacheonMemoMenuItems === "function"
+        ? await window.loadSacheonMemoMenuItems()
+        : [];
+      list.innerHTML = "";
+      if (!items.length) {
+        list.innerHTML = '<div class="road-menu-memo-empty">저장된 메모가 없습니다.</div>';
+        return;
+      }
+
+      items.forEach(function(item) {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "road-menu-memo-row";
+        const kindLabel = item.kind === "city" ? "시도" : "농어촌도로";
+        row.innerHTML =
+          '<span class="road-menu-memo-left">' +
+            '<span class="road-menu-memo-note" aria-hidden="true">' +
+              '<svg viewBox="0 0 29 29">' +
+                '<rect x="1" y="1" width="27" height="27" rx="6.5" fill="#ffffff"/>' +
+                '<path d="M7.5 1h14A6.5 6.5 0 0 1 28 7.5V9H1V7.5A6.5 6.5 0 0 1 7.5 1Z" fill="#ffd60a"/>' +
+                '<path d="M6 13.5h17M6 17.5h17M6 21.5h12" stroke="#c7c7cc" stroke-width="1.15" stroke-linecap="round"/>' +
+                '<rect x="1" y="1" width="27" height="27" rx="6.5" fill="none" stroke="rgba(0,0,0,.08)" stroke-width=".7"/>' +
+              '</svg>' +
+            '</span>' +
+            '<span class="road-menu-memo-copy">' +
+              '<strong>' + escapeHtmlMenu(item.number) + '</strong>' +
+              '<small>' + escapeHtmlMenu(kindLabel + " · " + item.memo) + '</small>' +
+            '</span>' +
+          '</span>' +
+          '<span class="road-ios-chevron">›</span>';
+
+        row.addEventListener("click", function(event) {
+          event.stopPropagation();
+          if (typeof window.openSacheonMemoRoute === "function") {
+            window.openSacheonMemoRoute(item.key);
+          }
+        });
+        list.appendChild(row);
+      });
+    } catch (error) {
+      console.error(error);
+      list.innerHTML = '<div class="road-menu-memo-empty">메모를 불러오지 못했습니다.</div>';
+    }
+  }
+
+  function escapeHtmlMenu(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function showHome() {
+    panel.classList.remove("road-menu-detail");
+    home.style.display = "flex";
+    roadPage.classList.remove("active");
+    memoPage.classList.remove("active");
+    backBtn.style.display = "none";
+    title.textContent = "사천시 도로현황";
+  }
+
+  function openPage(name) {
+    panel.classList.add("road-menu-detail");
+    home.style.display = "none";
+    roadPage.classList.toggle("active", name === "roads");
+    memoPage.classList.toggle("active", name === "memos");
+    backBtn.style.display = "inline-flex";
+    title.textContent = name === "memos" ? "메모" : "도로목록";
+    if (name === "memos") renderMemoMenu();
+  }
+
+  home.querySelectorAll("[data-road-page]").forEach(function(button) {
+    button.addEventListener("click", function(event) {
+      event.stopPropagation();
+      openPage(this.dataset.roadPage);
+    });
+  });
+
+  backBtn.addEventListener("click", function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    showHome();
+  });
+
+  window.refreshSacheonMemoMenu = renderMemoMenu;
+  window.openSacheonRoadMenuPage = openPage;
+  window.showSacheonRoadMenuHome = showHome;
+
+  showHome();
+  panel.dataset.mainMenuReady = "1";
 })();
 </script>
 
