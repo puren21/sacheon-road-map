@@ -3579,7 +3579,7 @@
   /* ===== 도로노선 편집 ===== */
   .road-popup-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 7px;
     padding-top: 10px;
     margin-top: 8px;
@@ -3601,6 +3601,37 @@
     color: #176fc1;
     border-color: #9dc8ef;
     background: #eef7ff;
+  }
+
+  /* 긴 속성표를 스크롤하지 않아도 두 도로의 편집 기능에 접근 가능 */
+  body > .road-popup .popup-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 5 !important;
+  }
+
+  .road-popup .road-popup-edit-bar {
+    display: flex;
+    margin: 7px 0 0;
+    padding: 0 0 3px;
+  }
+
+  .road-popup .road-popup-edit-bar .road-edit-btn {
+    width: 100%;
+    min-height: 40px;
+    border: 0;
+    border-radius: 9px;
+    background: #007aff;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .road-popup .road-popup-edit-bar .road-edit-btn:focus-visible {
+    outline: 2px solid #004eab;
+    outline-offset: 2px;
   }
 
   .road-edit-panel {
@@ -15090,7 +15121,7 @@
         panel.dataset.groupKey = groupKey;
         panel.innerHTML =
           '<div class="road-edit-header">' +
-            '<div class="road-edit-title">도로노선 편집</div>' +
+            '<div class="road-edit-title">' + (group.layerId === "city" ? "시도" : "농어촌도로") + ' 편집</div>' +
             '<button type="button" class="road-edit-close" onclick="closeRoadEditPanel()">×</button>' +
           '</div>' +
           '<div class="road-edit-body">' +
@@ -16894,11 +16925,9 @@
       }
 
       function roadPopupActions(group) {
-        const encodedKey = encodeURIComponent(group.key);
         return '<div class="road-popup-actions">' +
-            '<button type="button" class="road-edit-btn" data-group-key="' + encodedKey + '">속성·선형 편집</button>' +
-            '<button type="button" class="road-export-btn">GeoJSON 저장</button>' +
-          '</div>';
+          '<button type="button" class="road-export-btn">GeoJSON 저장</button>' +
+        '</div>';
       }
 
       function groupPopup(group, road) {
@@ -16916,6 +16945,9 @@
             '<div class="popup-title-line">' +
               '<div class="popup-title">' + (isCity ? '시도 ' : '') + escapeHTML(group.number) + '</div>' +
               roadPopupVisibilityToggle(group) +
+            '</div>' +
+            '<div class="road-popup-edit-bar">' +
+              '<button type="button" class="road-edit-btn" data-group-key="' + encodeURIComponent(group.key) + '" aria-label="' + (isCity ? '시도' : '농어촌도로') + ' ' + escapeHTML(group.number) + ' 속성 및 선형 편집">속성·선형 편집</button>' +
             '</div>' +
           '</div>' +
           '<div class="road-attributes">' +

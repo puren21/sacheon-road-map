@@ -101,3 +101,25 @@ test('saving city km input persists metres and keeps previous online edits', asy
   assert.deepEqual(saved.geometries['1'], [[34, 128], [35, 129]]);
   assert.equal(applied, true);
 });
+
+for (const layerId of ['city', 'rural']) {
+  test(`${layerId}: the editing button is inside the visible popup header`, () => {
+    const road = { properties: { 연장: layerId === 'city' ? 1000 : '1', 차선: '2', 도로폭: '8' }, statusKey: 'NORMAL' };
+    const group = { layerId, number: '3', key: `${layerId}::3`, propertiesList: [road.properties] };
+    const c = context(['roadPopupActions', 'groupPopup'], {
+      roadPopupVisibilityToggle: () => '', row: label => `<p>${label}</p>`,
+      statusLengthSummary: () => '개설 1 km', rangeValues: () => '2',
+      uniqueValues: () => [], joinValues: () => '-', getRoadStatusKey: () => 'NORMAL',
+      roadStatusLabel: () => '개설', formatRoadLength: value => String(value),
+      roadLengthKm: () => 1, roadLengthInputValue: () => '1',
+      escapeHTML: value => String(value), safe: value => value == null ? '-' : String(value),
+      routeMemoBlock: () => ''
+    });
+    const markup = c.groupPopup(group, road);
+    const buttonIndex = markup.indexOf('class="road-edit-btn"');
+    const attributesIndex = markup.indexOf('class="road-attributes"');
+    assert.ok(buttonIndex > 0 && buttonIndex < attributesIndex);
+    assert.equal(markup.match(/class="road-edit-btn"/g).length, 1);
+    assert.ok(markup.includes('GeoJSON 저장'));
+  });
+}
