@@ -51,7 +51,7 @@ for (const layerId of ['city', 'rural']) {
     let notified = false;
     const formData = { status: '개설', lane: '2', width: '8', length: '4.154', start: '새 기점', end: '새 종점', remark: '비고', extra: '기타', gubun: '면도' };
     const c = context(['saveRoadAttributes'], {
-      groups: new Map([['road', group]]), getEditableRoad: () => group.roads[0],
+      groups: new Map([['road', group]]), getEditableRoad: () => group.roads[0], roadGeometryEditState: null,
       document: { getElementById: id => id === 'roadEditForm' ? {} : saveButton, body: { contains: () => true } },
       FormData: class { get(key) { return formData[key] || ''; } },
       fetchOnlineRoadEdits: async () => null,
@@ -77,7 +77,7 @@ test('structural line edits save a complete model only after server acknowledgem
   const c = context(['saveRoadGeometryEdit'], {
     roadGeometryEditState: state, selectedRoadPopupState: null, selectedRoadObject: null,
     document: { getElementById: () => button, querySelector: () => null },
-    roadGeometrySyncWorkingPath: () => {}, fetchOnlineRoadEdits: async () => ({ roads: { 0: { review: '이전 값' } }, geometries: { 0: [[35, 128], [35, 129]] } }),
+    roadGeometrySyncWorkingPath: () => {}, roadGeometryCommitForm: () => {}, fetchOnlineRoadEdits: async () => ({ roads: { 0: { review: '이전 값' } }, geometries: { 0: [[35, 128], [35, 129]] } }),
     saveOnlineRoadEdits: async (_, payload) => { assert.equal(changed, false); persisted = structuredClone(payload); },
     clearRoadGeometryEdit: () => { cleared = true; c.roadGeometryEditState = null; },
     applyOnlineRoadEdits: () => { assert.equal(cleared, true); changed = true; return true; },
@@ -102,7 +102,7 @@ test('failed line save keeps the editable draft and leaves map segments untouche
   const c = context(['saveRoadGeometryEdit'], {
     roadGeometryEditState: state,
     document: { getElementById: () => ({ disabled: false, textContent: '' }) },
-    roadGeometrySyncWorkingPath: () => {}, fetchOnlineRoadEdits: async () => null,
+    roadGeometrySyncWorkingPath: () => {}, roadGeometryCommitForm: () => {}, fetchOnlineRoadEdits: async () => null,
     saveOnlineRoadEdits: async () => { throw new Error('offline'); },
     clearRoadGeometryEdit: () => { cancelled = true; },
     applyOnlineRoadEdits: () => { applied = true; },
@@ -231,10 +231,10 @@ test('choosing another route switches editors only when the draft is saved', () 
   const steps = [];
   const target = { road: true };
   const c = context(['roadGeometrySelectTarget'], {
-    roadGeometryEditState: state, roadGeometrySyncWorkingPath() {},
+    roadGeometryEditState: state, roadGeometrySyncWorkingPath() {}, roadGeometryCommitForm() {},
     clearRoadGeometryEdit() { steps.push('close'); },
     showInfo(_position, _key, road) { assert.equal(road, target); steps.push('select'); },
-    startRoadGeometryEdit() { steps.push('start'); }, roadGeometryHelp() { steps.push('blocked'); }
+    openRoadEditor() { steps.push('start'); }, roadGeometryHelp() { steps.push('blocked'); }
   });
   c.roadGeometrySelectTarget('city::4', target, {});
   assert.deepEqual(steps, ['close', 'select', 'start']);
@@ -262,6 +262,45 @@ test('vertex dragging snaps to a nearby route endpoint', () => {
   const state = { snapEnabled: true, roadIndex: 0, draft: { segments: model }, workingPath };
   assert.equal(c.roadGeometrySnapVertex(state, 1, marker), true);
   assert.deepEqual([current.getLat(), current.getLng()], point(10));
+});
+
+test('one edit action opens both the line tools and the attribute inputs', async () => {
+  const calls = [];
+  const c = context(['openRoadEditor'], {
+    roadGeometryEditState: { groupKey: 'city::3' },
+    startRoadGeometryEdit: async key => { calls.push('line:' + key); },
+    showRoadAttributePanel: key => { calls.push('attributes:' + key); }
+  });
+  await c.openRoadEditor('city::3');
+  assert.deepEqual(calls, ['line:city::3', 'attributes:city::3']);
+});
+
+test('roadview opens its own map window', () => {
+  let opened;
+  const c = context(['openRoadview'], {
+    roadviewMode: true, roadviewClient: {},
+    window: { open(url, name) { opened = { url, name }; return { focus() {} }; } }
+  });
+  c.openRoadview({ getLat: () => 34.93, getLng: () => 128.07 });
+  assert.equal(opened.name, 'sacheonRoadview');
+  assert.match(opened.url, /^roadview\.html\?lat=34\.93&lng=128\.07$/);
+  assert.match(fs.readFileSync(path.join(__dirname, '../roadview.html'), 'utf8'), /new kakao\.maps\.Roadview\(/);
+});
+
+test('unified editor saves input fields into the selected line draft', () => {
+  const panel = { dataset: { groupKey: 'city::3', dirty: 'true' } };
+  const state = { groupKey: 'city::3', group: { layerId: 'city' },
+    draft: { selected: 1, segments: roadSegments(true), checkpoint() {} } };
+  const c = context(['roadGeometryCommitForm', 'applyRoadEditValuesToRoad',
+    'setPropertyValue', 'getExistingPropertyKey'], {
+    document: { getElementById: id => id === 'roadEditPanel' ? panel : {} },
+    FormData: class { get(key) { return ({ length: '2.75', lane: '4', start: '새 기점', status: '개설' })[key] || ''; } }
+  });
+  c.roadGeometryCommitForm(state);
+  assert.equal(state.draft.segments[1].properties.연장, 2750);
+  assert.equal(state.draft.segments[1].properties.차선, '4');
+  assert.equal(state.draft.segments[0].properties.연장, 1000);
+  assert.equal(panel.dataset.dirty, 'false');
 });
 
 for (const layerId of ['city', 'rural']) {
@@ -311,7 +350,7 @@ test('saving city km input persists metres and keeps previous online edits', asy
   let saved;
   let applied = false;
   const c = context(['saveRoadAttributes'], {
-    groups: new Map([['road', group]]), getEditableRoad: () => group.roads[0],
+    groups: new Map([['road', group]]), getEditableRoad: () => group.roads[0], roadGeometryEditState: null,
     document: { getElementById: id => id === 'roadEditForm' ? {} : saveButton, body: { contains: () => true }, querySelector: () => null },
     FormData: class { get(key) { return ({ status: '개설', length: '4.154', start: '기점', end: '종점' })[key] || ''; } },
     fetchOnlineRoadEdits: async () => previous,
@@ -344,8 +383,8 @@ for (const layerId of ['city', 'rural']) {
     const attributesIndex = markup.indexOf('class="road-attributes"');
     assert.ok(buttonIndex > 0 && buttonIndex < attributesIndex);
     assert.equal(markup.match(/class="road-edit-btn"/g).length, 1);
-    assert.ok(markup.includes('class="road-line-edit-btn"'));
-    assert.ok(markup.indexOf('class="road-line-edit-btn"') < attributesIndex);
+    assert.ok(markup.includes('✎ 편집'));
+    assert.ok(!markup.includes('class="road-line-edit-btn"'));
     assert.ok(markup.includes('GeoJSON 저장'));
   });
 }
