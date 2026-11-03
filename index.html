@@ -3612,12 +3612,14 @@
 
   .road-popup .road-popup-edit-bar {
     display: flex;
+    gap: 8px;
     margin: 7px 0 0;
     padding: 0 0 3px;
   }
 
-  .road-popup .road-popup-edit-bar .road-edit-btn {
-    width: 100%;
+  .road-popup .road-popup-edit-bar button {
+    flex: 1 1 0;
+    min-width: 0;
     min-height: 40px;
     border: 0;
     border-radius: 9px;
@@ -3632,6 +3634,10 @@
   .road-popup .road-popup-edit-bar .road-edit-btn:focus-visible {
     outline: 2px solid #004eab;
     outline-offset: 2px;
+  }
+
+  .road-popup .road-popup-edit-bar .road-line-edit-btn {
+    background: #176b3a;
   }
 
   .road-edit-panel {
@@ -3798,6 +3804,70 @@
     background: #2f91f2;
   }
 
+  .geometry-edit-toolbar.sacheon-line-tools {
+    max-width: calc(100vw - 16px);
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow: visible;
+  }
+
+  .sacheon-line-tools .geometry-edit-label {
+    flex: 1 0 100%;
+    margin: 0;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .sacheon-line-tools .geometry-icon-btn {
+    position: relative;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    padding: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sacheon-line-tools .geometry-icon-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+  }
+
+  .sacheon-line-tools .geometry-icon-btn.active {
+    color: #fff;
+    background: #258fff;
+    border-color: #258fff;
+  }
+
+  .sacheon-line-tools .geometry-icon-btn[title]:hover::after,
+  .sacheon-line-tools .geometry-icon-btn[title]:focus-visible::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    z-index: 2;
+    padding: 5px 8px;
+    border-radius: 5px;
+    background: #272b30;
+    color: #fff;
+    white-space: nowrap;
+    font-size: 11px;
+    transform: translateX(-50%);
+  }
+
+  .sacheon-line-tools #saveRoadGeometryBtn {
+    min-width: 75px;
+    height: 38px;
+    font-size: 12px;
+  }
+
   @media (max-width:700px) {
     .road-edit-panel {
       top: auto;
@@ -3819,6 +3889,16 @@
 
     .geometry-edit-toolbar .geometry-edit-label {
       display: none;
+    }
+
+    .sacheon-line-tools .geometry-edit-label {
+      display: block;
+      font-size: 11px;
+    }
+
+    .sacheon-line-tools .geometry-icon-btn {
+      width: 36px;
+      min-width: 36px;
     }
   }
 
@@ -7601,6 +7681,8 @@
   </script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
+  <script src="road-line-geometry.js?v=20261103-1"></script>
+  <script src="road-line-draft.js?v=20261103-1"></script>
 
   <script>
     if (!window.kakao || !window.kakao.maps) {
@@ -8512,7 +8594,7 @@
       }
 
       kakao.maps.event.addListener(map, "rightclick", function(mouseEvent) {
-        if (measureMode) return;
+        if (measureMode || roadGeometryEditState) return;
         showParcelContextMenu(mouseEvent.latLng);
       });
 
@@ -13803,6 +13885,11 @@
           hitLine,
           "click",
           function(event) {
+            if (roadGeometryEditState) {
+              kakao.maps.event.preventMap();
+              roadGeometrySelectTarget(groupKey, road, event.latLng);
+              return;
+            }
             if (measureMode) {
               kakao.maps.event.preventMap();
               addMeasurePoint(event.latLng);
@@ -15266,6 +15353,71 @@
         });
       }
 
+      function roadGroupSegmentModel(group) {
+        return group.roads.map(function(road, index) {
+          return {
+            properties: Object.assign({}, road.properties || {}),
+            geometry: serializeRoadGeometryPath(group.paths[index] || road.pathFine)
+          };
+        });
+      }
+
+      function removeRoadSegmentVisuals(road) {
+        if (!road) return;
+        getRoadVisualLines(road).concat(road.hitLine ? [road.hitLine] : []).forEach(function(line) {
+          if (!line) return;
+          line.setMap(null);
+          const shapes = LAYERS[road.layerId].shapes;
+          const index = shapes.indexOf(line);
+          if (index >= 0) shapes.splice(index, 1);
+        });
+        if (road.selectionInnerLine) road.selectionInnerLine.setMap(null);
+        const index = allRoads.indexOf(road);
+        if (index >= 0) allRoads.splice(index, 1);
+      }
+
+      function replaceRoadGroupSegments(group, segments) {
+        if (!group || !Array.isArray(segments) || !segments.length) return false;
+        const previousSelection = selectedRoadObject && selectedRoadObject.groupKey === group.key
+          ? group.roads.indexOf(selectedRoadObject)
+          : selectedRoadPopupState && selectedRoadPopupState.groupKey === group.key
+            ? group.roads.indexOf(selectedRoadPopupState.road) : 0;
+        const validated = segments.map(function(item) {
+          if (!item || !Array.isArray(item.geometry)) return null;
+          const coordinates = item.geometry.map(function(coord) {
+            if (!Array.isArray(coord) || coord.length !== 2) return null;
+            const lat = Number(coord[0]), lng = Number(coord[1]);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+            return new kakao.maps.LatLng(lat, lng);
+          });
+          return coordinates.length >= 2 && coordinates.every(Boolean) ? {
+            path: coordinates, properties: Object.assign({}, item.properties || {})
+          } : null;
+        });
+        if (validated.some(function(item) { return !item; })) return false;
+
+        group.roads.forEach(removeRoadSegmentVisuals);
+        group.roads = [];
+        group.paths = [];
+        group.propertiesList = [];
+        validated.forEach(function(item) {
+          item.properties.number = group.number;
+          if (group.layerId === "city") item.properties.GUBUN = "시도";
+          const road = drawRoad(item.path, item.properties, group.layerId, group.key,
+            getColor(item.properties, group.layerId), getRoadStatusKey(item.properties, group.layerId));
+          group.roads.push(road);
+          group.paths.push(item.path);
+          group.propertiesList.push(item.properties);
+        });
+        recalcGroupBounds(group);
+        if (selectedRoadPopupState && selectedRoadPopupState.groupKey === group.key) {
+          const selected = group.roads[Math.max(0, Math.min(previousSelection, group.roads.length - 1))];
+          selectedRoadPopupState.road = selected;
+          selectedRoadObject = selected;
+        }
+        return true;
+      }
+
       function applyOnlineRoadGeometry(group, roadIndex, coordinates) {
         if (!group || !Array.isArray(coordinates)) return false;
         if (!Number.isInteger(roadIndex) || roadIndex < 0 || roadIndex >= group.roads.length) return false;
@@ -15304,7 +15456,13 @@
 
       function applyOnlineRoadEdits(group, payload) {
         if (!group || !payload || typeof payload !== "object") return false;
+        if (roadGeometryEditState && roadGeometryEditState.groupKey === group.key) return false;
         let changed = false;
+
+        if (Array.isArray(payload.segmentModel)) {
+          changed = replaceRoadGroupSegments(group, payload.segmentModel);
+          if (!changed) return false;
+        }
 
         if (group.layerId !== "city" && payload.gubun) {
           group.propertiesList.forEach(function(p) {
@@ -15313,7 +15471,7 @@
           changed = true;
         }
 
-        const roadValues = payload.roads && typeof payload.roads === "object"
+        const roadValues = !Array.isArray(payload.segmentModel) && payload.roads && typeof payload.roads === "object"
           ? payload.roads
           : {};
 
@@ -15324,7 +15482,7 @@
           changed = true;
         });
 
-        const geometries = payload.geometries && typeof payload.geometries === "object"
+        const geometries = !Array.isArray(payload.segmentModel) && payload.geometries && typeof payload.geometries === "object"
           ? payload.geometries
           : {};
 
@@ -15416,7 +15574,16 @@
           payload.version = payload.geometries && Object.keys(payload.geometries).length ? 2 : 1;
           payload.layerId = group.layerId;
           payload.number = String(group.number || "");
-          payload.roads[String(roadIndex)] = values;
+          if (Array.isArray(payload.segmentModel)) {
+            const segment = payload.segmentModel[roadIndex];
+            if (!segment) throw new Error("저장된 라인 구간을 찾을 수 없습니다. 노선을 다시 선택해 주세요.");
+            const editedRoad = { properties: Object.assign({}, segment.properties || {}) };
+            applyRoadEditValuesToRoad(group, editedRoad, values);
+            segment.properties = editedRoad.properties;
+            payload.version = 3;
+          } else {
+            payload.roads[String(roadIndex)] = values;
+          }
 
           await saveOnlineRoadEdits(group, payload);
           applyOnlineRoadEdits(group, payload);
@@ -15424,7 +15591,7 @@
           // 팝업 내용 즉시 갱신
           const existingPopup = document.querySelector("body > .road-popup");
           if (existingPopup) existingPopup.remove();
-          createFixedRoadPopup(groupPopup(group, road));
+          createFixedRoadPopup(groupPopup(group, getEditableRoad(groupKey) || road));
 
           closeRoadEditPanel();
         } catch (error) {
@@ -15471,6 +15638,11 @@
         const state = roadGeometryEditState;
         if (!state) return;
 
+        if (state.lineMapClick) kakao.maps.event.removeListener(map, "click", state.lineMapClick);
+        if (state.lineMapRightClick) kakao.maps.event.removeListener(map, "rightclick", state.lineMapRightClick);
+        if (state.lineKeydown) document.removeEventListener("keydown", state.lineKeydown);
+        (state.draftOverlays || []).forEach(function(line) { line.setMap(null); });
+
         geometryEditingGroupKey = null;
 
         state.markers.forEach(function(marker) {
@@ -15500,6 +15672,7 @@
 
         map.setCursor("");
         roadGeometryEditState = null;
+        updateLabels();
       }
 
 
@@ -15618,6 +15791,7 @@
           position
         );
 
+        if (state.draft) state.draft.checkpoint();
         state.workingPath.splice(
           segmentIndex + 1,
           0,
@@ -15783,6 +15957,7 @@
               state.hoverPlusPosition.getLng()
             );
 
+            if (state.draft) state.draft.checkpoint();
             state.workingPath.splice(
               state.hoverPlusSegmentIndex + 1,
               0,
@@ -16113,6 +16288,7 @@
           });
 
           kakao.maps.event.addListener(marker, "dragstart", function() {
+            if (state.draft) state.draft.checkpoint();
             map.setCursor("move");
 
             const isEndpoint =
@@ -16147,6 +16323,7 @@
               mouseEvent.domEvent.stopPropagation();
             }
 
+            if (state.draft) state.draft.checkpoint();
             state.workingPath.splice(index, 1);
             state.previewLine.setPath(state.workingPath);
 
@@ -16205,14 +16382,225 @@
         });
       }
 
-      function startRoadGeometryEdit(groupKey) {
+      function roadGeometrySyncWorkingPath(state) {
+        if (!state || !state.draft || state.mode !== "vertex") return;
+        const geometry = serializeRoadGeometryPath(state.workingPath);
+        if (JSON.stringify(state.draft.segments[state.roadIndex].geometry) !== JSON.stringify(geometry)) {
+          state.draft.segments[state.roadIndex].geometry = geometry;
+          const meters = state.workingPath.slice(1).reduce(function(sum, point, i) {
+            return sum + roadEditDistanceMeters(state.workingPath[i], point);
+          }, 0);
+          state.draft.segments[state.roadIndex].properties["연장"] = Math.round(meters *
+            (state.group.layerId === "city" ? 1000 : 1)) / 1000;
+        }
+        state.group.roads.forEach(function(road, index) {
+          if (index === state.roadIndex) return;
+          const old = state.groupRoadSnapshots[index];
+          const path = state.group.paths[index];
+          if (old && path && JSON.stringify(serializeRoadGeometryPath(old.path)) !== JSON.stringify(serializeRoadGeometryPath(path))) {
+            state.draft.segments[index].geometry = serializeRoadGeometryPath(path);
+            const meters = path.slice(1).reduce(function(sum, point, i) { return sum + roadEditDistanceMeters(path[i], point); }, 0);
+            state.draft.segments[index].properties["연장"] = Math.round(meters *
+              (state.group.layerId === "city" ? 1000 : 1)) / 1000;
+          }
+        });
+      }
+
+      function roadGeometryShowDraft(state) {
+        (state.draftOverlays || []).forEach(function(line) { line.setMap(null); });
+        state.draftOverlays = [];
+        if (!state.draft || state.mode === "vertex") return;
+        state.draft.segments.forEach(function(segment) {
+          const path = segment.geometry.map(function(coord) { return new kakao.maps.LatLng(coord[0], coord[1]); });
+          const line = new kakao.maps.Polyline({ map:map, path:path, strokeWeight:4,
+            strokeColor:"#e60012", strokeOpacity:0.9, strokeStyle:"dash", zIndex:190, clickable:false });
+          state.draftOverlays.push(line);
+        });
+        if (state.capture && state.capture.length >= 2) {
+          state.draftOverlays.push(new kakao.maps.Polyline({ map:map, path:state.capture,
+            strokeWeight:3, strokeColor:"#258fff", strokeOpacity:0.9, strokeStyle:"dash", zIndex:195, clickable:false }));
+        }
+      }
+
+      function roadGeometryHelp(message) {
+        const label = document.getElementById("geometryEditHelp");
+        if (label) label.textContent = message;
+      }
+
+      function roadGeometryFinishCapture() {
+        const state = roadGeometryEditState;
+        if (!state || (state.mode !== "add" && state.mode !== "split")) return;
+        const capture = state.capture || [];
+        if (capture.length < 2) {
+          roadGeometryHelp("서로 다른 점 두 개 이상을 클릭하세요. 취소는 Esc를 누릅니다.");
+          return;
+        }
+        try {
+          if (state.mode === "add") {
+            state.draft.add(serializeRoadGeometryPath(capture));
+            roadGeometryHelp("라인을 추가했습니다. 저장 전 실행 취소할 수 있습니다.");
+          } else {
+            state.draft.split(serializeRoadGeometryPath(capture));
+            roadGeometryHelp("라인을 나눴습니다. 저장하면 두 구간으로 복원됩니다.");
+          }
+          state.structuralPending = true;
+          state.capture = [];
+          roadGeometryShowDraft(state);
+        } catch (error) {
+          roadGeometryHelp(error.message);
+        }
+      }
+
+      function roadGeometryCapture(position) {
+        const state = roadGeometryEditState;
+        if (!state || !position || (state.mode !== "add" && state.mode !== "split")) return;
+        let captured = new kakao.maps.LatLng(position.getLat(), position.getLng());
+        const projection = state.snapEnabled && map.getProjection();
+        if (projection) {
+          const entries = state.draft.segments.map(function(segment, index) {
+            return { id:String(index), part:0, path:segment.geometry.map(function(c) { return [c[1], c[0]]; }) };
+          });
+          const snap = window.SacheonLineGeometry.snapToPaths(entries,
+            [captured.getLng(), captured.getLat()], function(coord) {
+              const pixel = projection.containerPointFromCoords(new kakao.maps.LatLng(coord[1], coord[0]));
+              return [pixel.x, pixel.y];
+            }, 12);
+          if (snap) captured = new kakao.maps.LatLng(snap.coordinate[1], snap.coordinate[0]);
+        }
+        state.capture.push(captured);
+        roadGeometryShowDraft(state);
+        roadGeometryHelp((state.mode === "add" ? "새 라인" : "자르기 선") + " 점 " + state.capture.length + "개 · 완료를 누르세요.");
+      }
+
+      function roadGeometrySelectTarget(groupKey, road, position) {
+        const state = roadGeometryEditState;
+        if (!state) return false;
+        if (groupKey !== state.groupKey) return true;
+        if (state.mode === "add" || state.mode === "split") {
+          roadGeometryCapture(position);
+          return true;
+        }
+        if (state.mode !== "multi" && state.mode !== "merge" && state.mode !== "join") return true;
+        const index = state.group.roads.indexOf(road);
+        if (index < 0) return true;
+        if (state.selectedIndices.has(index)) state.selectedIndices.delete(index);
+        else state.selectedIndices.add(index);
+        roadGeometryHelp("선택한 라인 " + state.selectedIndices.size + "개 · 병합하거나 연결할 수 있습니다.");
+        return true;
+      }
+
+      function setRoadGeometryEditMode(mode) {
+        const state = roadGeometryEditState;
+        if (!state) return;
+        if (state.structuralPending && mode !== state.mode) {
+          roadGeometryHelp("먼저 저장하거나 실행 취소 후 다른 도구를 선택하세요.");
+          return;
+        }
+        roadGeometrySyncWorkingPath(state);
+        state.mode = mode;
+        state.capture = [];
+        hideGeometryHoverPlus(state, true);
+        state.markers.forEach(function(marker) { marker.setMap(null); });
+        state.markers = [];
+        document.querySelectorAll("#geometryEditToolbar [data-line-mode]").forEach(function(button) {
+          button.classList.toggle("active", button.dataset.lineMode === mode);
+          button.setAttribute("aria-pressed", String(button.dataset.lineMode === mode));
+        });
+        state.previewLine.setMap(mode === "vertex" ? map : null);
+        state.previewHitLine.setMap(mode === "vertex" || mode === "split" ? map : null);
+        if (mode === "vertex") {
+          rebuildRoadGeometryEditMarkers(state);
+          roadGeometryHelp("꼭짓점을 드래그하고 중간 +로 추가합니다. 중간점 우클릭은 삭제입니다.");
+        } else if (mode === "add" || mode === "split") {
+          roadGeometryHelp(mode === "add" ? "지도에서 새 라인의 점을 클릭한 뒤 완료를 누르세요." : "선택한 라인을 가로지르는 선을 그린 뒤 완료를 누르세요.");
+        } else {
+          roadGeometryHelp("같은 노선의 라인을 지도에서 선택하세요. " +
+            ((mode === "merge" || mode === "join") ? "선택 후 도구 버튼을 다시 누르면 실행됩니다. " : "") +
+            "선택 " + state.selectedIndices.size + "개.");
+        }
+        roadGeometryShowDraft(state);
+      }
+
+      function roadGeometryApplyTool(mode) {
+        const state = roadGeometryEditState;
+        if (!state) return;
+        if (mode === "add" || mode === "split") return roadGeometryFinishCapture();
+        if (state.structuralPending) {
+          roadGeometryHelp("먼저 저장하거나 실행 취소해 주세요.");
+          return;
+        }
+        roadGeometrySyncWorkingPath(state);
+        try {
+          const ids = Array.from(state.selectedIndices);
+          if (mode === "merge" || mode === "join") state.draft.combine(ids, mode === "join");
+          else if (mode === "delete") state.draft.delete(ids);
+          state.structuralPending = true;
+          roadGeometryShowDraft(state);
+          roadGeometryHelp("변경한 라인을 확인한 뒤 저장하세요. 실행 취소로 되돌릴 수 있습니다.");
+        } catch (error) { roadGeometryHelp(error.message); }
+      }
+
+      function roadGeometryHistory(redo) {
+        const state = roadGeometryEditState;
+        if (!state || !state.draft) return;
+        if (state.mode === "vertex") roadGeometrySyncWorkingPath(state);
+        if (!(redo ? state.draft.redo() : state.draft.undo())) {
+          roadGeometryHelp(redo ? "다시 실행할 내용이 없습니다." : "취소할 내용이 없습니다.");
+          return;
+        }
+        state.structuralPending = state.draft.segments.length !== state.group.roads.length ||
+          state.draft.segments.some(function(item, index) {
+            return !state.groupRoadSnapshots[index] ||
+              JSON.stringify(item.geometry) !== JSON.stringify(serializeRoadGeometryPath(state.groupRoadSnapshots[index].path));
+          }) && state.mode !== "vertex";
+        if (state.mode === "vertex") {
+          state.workingPath = state.draft.segments[state.roadIndex].geometry.map(function(c) { return new kakao.maps.LatLng(c[0], c[1]); });
+          state.previewLine.setPath(state.workingPath);
+          state.previewHitLine.setPath(state.workingPath);
+          state.group.roads.forEach(function(road, index) {
+            if (index !== state.roadIndex && state.draft.segments[index]) {
+              applyOnlineRoadGeometry(state.group, index, state.draft.segments[index].geometry);
+            }
+          });
+          rebuildRoadGeometryEditMarkers(state);
+        }
+        roadGeometryShowDraft(state);
+        roadGeometryHelp(redo ? "다시 실행했습니다." : "실행을 취소했습니다.");
+      }
+
+      async function startRoadGeometryEdit(groupKey) {
         const group = groups.get(groupKey);
-        const road = getEditableRoad(groupKey);
-        if (!group || !road) return;
+        if (!group) return;
 
         if (roadGeometryEditState) {
-          clearRoadGeometryEdit(false);
+          if (roadGeometryEditState.groupKey === groupKey) return;
+          alert("현재 라인 편집을 저장하거나 취소한 뒤 다른 노선을 선택해 주세요.");
+          return;
         }
+
+        try { await syncOnlineRoadEdits(groupKey); }
+        catch (error) {
+          alert("최신 라인 자료를 불러오지 못했습니다. 다시 시도해 주세요.\\n\\n" + error.message);
+          return;
+        }
+        if (roadGeometryEditState) return;
+        const road = getEditableRoad(groupKey);
+        if (!road) return;
+
+        const roadIndex = group.roads.indexOf(road);
+        if (roadIndex < 0) return;
+        const originalPath = (group.paths[roadIndex] || road.pathFine || []).slice();
+        if (originalPath.length < 2) {
+          alert("편집할 수 있는 라인 좌표가 없습니다.");
+          return;
+        }
+        if (!window.SacheonLineGeometry || !window.SacheonLineDraft) {
+          alert("라인 편집 도구를 불러오지 못했습니다. 페이지를 새로고침해 주세요.");
+          return;
+        }
+        let draft;
+        try { draft = new window.SacheonLineDraft(roadGroupSegmentModel(group), group.layerId, roadIndex); }
+        catch (error) { alert(error.message); return; }
 
         // 선형 편집 시작 순간부터 기존 굵은 선택 강조를 차단함.
         geometryEditingGroupKey = groupKey;
@@ -16224,14 +16612,9 @@
         // 일반지도와 동일한 확대/이동 방식을 사용하면서 선택 구간을 유지
         focusSelectedRoadForEditing(groupKey, road);
 
-        const roadIndex = group.roads.indexOf(road);
-        if (roadIndex < 0) return;
-
         closeRoadEditPanel();
 
-        // 화면 표시용 세밀 경로를 편집 경로로 사용
-        const originalPath = (road.pathFine || []).slice();
-        if (originalPath.length < 2) return;
+        // 화면 간략선 대신 원래 구간 좌표를 사용한다.
 
         const workingPath = originalPath.map(function(point) {
           return new kakao.maps.LatLng(point.getLat(), point.getLng());
@@ -16271,6 +16654,14 @@
           group: group,
           road: road,
           roadIndex: roadIndex,
+          mode: "vertex",
+          draft: draft,
+          baselineModel: JSON.stringify(draft.segments),
+          structuralPending: false,
+          selectedIndices: new Set([roadIndex]),
+          snapEnabled: true,
+          capture: [],
+          draftOverlays: [],
           selectedSegmentOnly: true,
           originalPath: originalPath,
           workingPath: workingPath,
@@ -16297,7 +16688,43 @@
           })
         };
 
+        updateLabels();
         rebuildRoadGeometryEditMarkers(roadGeometryEditState);
+
+        roadGeometryEditState.lineMapClick = function(event) {
+          if (!roadGeometryEditState || !event || !event.latLng) return;
+          if (roadGeometryEditState.mode === "add" || roadGeometryEditState.mode === "split") {
+            kakao.maps.event.preventMap();
+            roadGeometryCapture(event.latLng);
+          }
+        };
+        kakao.maps.event.addListener(map, "click", roadGeometryEditState.lineMapClick);
+        roadGeometryEditState.lineMapRightClick = function(event) {
+          if (!roadGeometryEditState) return;
+          if (roadGeometryEditState.mode === "add" || roadGeometryEditState.mode === "split") {
+            if (event && event.domEvent) event.domEvent.preventDefault();
+            kakao.maps.event.preventMap();
+            roadGeometryFinishCapture();
+          }
+        };
+        kakao.maps.event.addListener(map, "rightclick", roadGeometryEditState.lineMapRightClick);
+        roadGeometryEditState.lineKeydown = function(event) {
+          const current = roadGeometryEditState;
+          if (!current || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName || "")) return;
+          const shortcut = event.ctrlKey || event.metaKey;
+          if (shortcut && event.key.toLowerCase() === "s") {
+            event.preventDefault(); saveRoadGeometryEdit();
+          } else if (shortcut && event.key.toLowerCase() === "z") {
+            event.preventDefault(); roadGeometryHistory(event.shiftKey);
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            if (current.capture.length) { current.capture = []; roadGeometryShowDraft(current); roadGeometryHelp("그리기를 취소했습니다."); }
+            else cancelRoadGeometryEdit();
+          } else if (event.key === "Delete" && (current.mode === "multi" || current.mode === "merge" || current.mode === "join")) {
+            event.preventDefault(); roadGeometryApplyTool("delete");
+          }
+        };
+        document.addEventListener("keydown", roadGeometryEditState.lineKeydown);
 
         kakao.maps.event.addListener(previewHitLine, "mouseover", function(mouseEvent) {
           const state = roadGeometryEditState;
@@ -16332,122 +16759,113 @@
         });
 
         kakao.maps.event.addListener(previewHitLine, "click", function(mouseEvent) {
-          // 꼭지점 추가는 각 선분의 중간점에 표시되는 + 아이콘 클릭으로만 수행함.
+          if (mouseEvent && mouseEvent.latLng) roadGeometryCapture(mouseEvent.latLng);
         });
 
         const toolbar = document.createElement("div");
         toolbar.id = "geometryEditToolbar";
-        toolbar.className = "geometry-edit-toolbar";
-        toolbar.innerHTML =
-          '<span class="geometry-edit-label">꼭지점 사이 중간의 +를 클릭하면 꼭지점 추가 · 우클릭 삭제</span>' +
-          '<button type="button" onclick="cancelRoadGeometryEdit()">취소</button>' +
-          '<button type="button" class="save" id="saveRoadGeometryBtn" onclick="saveRoadGeometryEdit()">선형 저장</button>';
+        toolbar.className = "geometry-edit-toolbar sacheon-line-tools";
+        const icons = {
+          vertex:'<path d="M4 18l7-12 9 12"/><circle cx="4" cy="18" r="2"/><circle cx="11" cy="6" r="2"/><circle cx="20" cy="18" r="2"/>',
+          add:'<path d="M3 18l6-8 6 4"/><path d="M18 5v10M13 10h10"/>',
+          split:'<path d="M4 12h6m4 0h6M9 5l6 14m0-14L9 19"/>',
+          multi:'<path d="M3 4h18v16H3z" stroke-dasharray="3 2"/><path d="M6 15l4-7 5 8 4-7"/>',
+          merge:'<path d="M3 5h5l5 7h8M3 19h5l5-7M17 9l4 3-4 3"/>',
+          join:'<path d="M2 18l6-6m8-2 6-6M8 12l8-2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="10" r="2"/>',
+          delete:'<path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13"/>',
+          undo:'<path d="M9 6l-6 5 6 5M4 11h10a6 6 0 0 1 5 9"/>',
+          redo:'<path d="M15 6l6 5-6 5M20 11H10a6 6 0 0 0-5 9"/>'
+        };
+        const toolButtons = [
+          ["vertex","꼭짓점 편집"], ["add","라인 추가"], ["split","라인 자르기"],
+          ["multi","다중 선택"], ["merge","라인 병합"], ["join","라인 연결"],
+          ["delete","선택 삭제"], ["undo","실행 취소"], ["redo","다시 실행"]
+        ];
+        toolbar.innerHTML = '<span class="geometry-edit-label" id="geometryEditHelp">군산 지도 방식 · 꼭짓점 이동, 라인 추가·자르기·병합·연결</span>' +
+          toolButtons.map(function(item) {
+            return '<button type="button" class="geometry-icon-btn' + (item[0] === "vertex" ? ' active' : '') +
+              '" title="' + item[1] + '" aria-label="' + item[1] + '" data-line-mode="' + item[0] + '">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true">' + icons[item[0]] + '</svg></button>';
+          }).join("") +
+          '<button type="button" class="geometry-icon-btn" id="finishRoadGeometryCaptureBtn" title="그리기 완료" aria-label="그리기 완료">✓</button>' +
+          '<button type="button" class="geometry-icon-btn active" id="roadLineSnapBtn" title="스냅 켜짐" aria-label="스냅 켜짐" aria-pressed="true">⌖</button>' +
+          '<button type="button" class="save" id="saveRoadGeometryBtn" onclick="saveRoadGeometryEdit()">저장</button>' +
+          '<button type="button" id="cancelRoadGeometryBtn" onclick="cancelRoadGeometryEdit()">취소</button>';
         document.body.appendChild(toolbar);
+        toolbar.querySelectorAll("[data-line-mode]").forEach(function(button) {
+          button.onclick = function() {
+            const mode = this.dataset.lineMode;
+            if (mode === "undo" || mode === "redo") roadGeometryHistory(mode === "redo");
+            else if (mode === "delete") roadGeometryApplyTool(mode);
+            else if ((mode === "merge" || mode === "join") && roadGeometryEditState.mode === mode) roadGeometryApplyTool(mode);
+            else setRoadGeometryEditMode(mode);
+          };
+        });
+        document.getElementById("finishRoadGeometryCaptureBtn").onclick = roadGeometryFinishCapture;
+        document.getElementById("roadLineSnapBtn").onclick = function() {
+          const state = roadGeometryEditState;
+          if (!state) return;
+          state.snapEnabled = !state.snapEnabled;
+          this.classList.toggle("active", state.snapEnabled);
+          this.setAttribute("aria-pressed", String(state.snapEnabled));
+          this.setAttribute("aria-label", state.snapEnabled ? "스냅 켜짐" : "스냅 꺼짐");
+          this.title = this.getAttribute("aria-label");
+          roadGeometryHelp(state.snapEnabled ? "스냅이 켜졌습니다. 12px 이내 꼭짓점·선분에 맞춥니다." : "스냅이 꺼졌습니다.");
+        };
       }
 
       window.startRoadGeometryEdit = startRoadGeometryEdit;
 
       async function saveRoadGeometryEdit() {
         const state = roadGeometryEditState;
-        if (!state) return;
-
+        if (!state) return false;
         const group = state.group;
-        const road = state.road;
         const saveButton = document.getElementById("saveRoadGeometryBtn");
-
+        if ((state.mode === "add" || state.mode === "split") && state.capture.length) {
+          roadGeometryFinishCapture();
+          if (state.capture.length) return false;
+        }
+        roadGeometrySyncWorkingPath(state);
+        let segments;
+        try { segments = state.draft.serialize(); }
+        catch (error) { roadGeometryHelp(error.message); return false; }
+        if (JSON.stringify(segments) === state.baselineModel) {
+          cancelRoadGeometryEdit();
+          return true;
+        }
         try {
-          if (saveButton) {
-            saveButton.disabled = true;
-            saveButton.textContent = "저장 중";
-          }
-
-          // 저장 직전에도 같은 노선의 다른 선분 끝점과 가까우면 정확히 같은 좌표로 스냅함.
-          enforceRoadEndpointSnapsBeforeSave(state);
-
-          const path = state.workingPath.slice();
-
-          const tolerance = getDisplaySimplifyTolerance(road.styleKey);
-          road.pathFine = path;
-          road.pathMedium = simplifyLatLngPath(path, tolerance * 3.2);
-          road.pathCoarse = simplifyLatLngPath(path, tolerance * 7.0);
-          road._pathTier = null;
-          recalcRoadExtent(road, path);
-
-          group.paths[state.roadIndex] = path.slice();
-
-          // 연결 라인 끝점 이동까지 포함해 노선 전체 경계를 다시 계산함.
-          recalcGroupBounds(group);
-
-          getRoadVisualLines(road)
-            .concat(road.hitLine ? [road.hitLine] : [])
-            .forEach(function(line) {
-              if (line) setRoadLinePathIfChanged(line, path, true);
-            });
-
-          applyRoadPathTier(road, getRoadPathTier());
-
-          // 해당 노선 라벨의 기준 위치도 새 선형 기준으로 이동
-          const newLabelPosition = midpointAcrossPaths(group.paths);
-          LAYERS[group.layerId].labels.forEach(function(labelItem) {
-            if (labelItem.groupKey === group.key && newLabelPosition) {
-              labelItem.basePosition = newLabelPosition;
-              labelItem.position = newLabelPosition;
-              labelItem.overlay.setPosition(newLabelPosition);
-            }
-          });
-
-          // 기존 온라인 속성 편집정보를 유지한 채 선형 좌표를 함께 저장한다.
-          let payload = await fetchOnlineRoadEdits(group);
-
-          if (!payload || typeof payload !== "object") {
-            payload = { version:1, roads:{} };
-          }
-          if (!payload.roads || typeof payload.roads !== "object") {
-            payload.roads = {};
-          }
-          if (!payload.geometries || typeof payload.geometries !== "object") {
-            payload.geometries = {};
-          }
-
-          payload.version = 2;
+          if (saveButton) { saveButton.disabled = true; saveButton.textContent = "저장 중"; }
+          const payload = await fetchOnlineRoadEdits(group) || {};
+          payload.version = 3;
           payload.layerId = group.layerId;
           payload.number = String(group.number || "");
-
-          // 선형편집 중 연결점이 함께 움직인 다른 구간도 있으므로,
-          // 현재 노선의 전체 구간 좌표를 한 번에 저장한다.
-          group.roads.forEach(function(groupRoad, index) {
-            const currentPath =
-              (group.paths && group.paths[index]) ||
-              groupRoad.pathFine ||
-              [];
-            if (currentPath && currentPath.length >= 2) {
-              payload.geometries[String(index)] = serializeRoadGeometryPath(currentPath);
-            }
-          });
-
+          payload.segmentModel = segments;
+          // The full group model already includes earlier property and geometry edits.
+          payload.roads = {};
+          payload.geometries = {};
           await saveOnlineRoadEdits(group, payload);
 
+          const selectedIndex = state.draft.selected;
           clearRoadGeometryEdit(true);
-          applyRoadVisibility();
-          updateLabels();
-          setRoadGroupHighlight(group.key, true);
-          updateSelectedRouteBalloon();
-
-          // 현재 열린 노선정보도 저장된 선형 기준으로 즉시 다시 표시한다.
+          if (!applyOnlineRoadEdits(group, payload)) {
+            throw new Error("저장된 라인을 화면에 표시하지 못했습니다. 페이지를 새로고침해 주세요.");
+          }
+          const selectedRoad = group.roads[Math.min(selectedIndex, group.roads.length - 1)];
+          selectedRoadObject = selectedRoad;
           if (selectedRoadPopupState && selectedRoadPopupState.groupKey === group.key) {
+            selectedRoadPopupState.road = selectedRoad;
             const existingPopup = document.querySelector("body > .road-popup");
             if (existingPopup) existingPopup.remove();
-            createFixedRoadPopup(groupPopup(group, road));
+            createFixedRoadPopup(groupPopup(group, selectedRoad));
           }
+          return true;
         } catch (error) {
           console.error(error);
-          alert("온라인 선형 저장에 실패했습니다.\n\n" + error.message);
+          alert("온라인 라인 저장에 실패했습니다.\n\n" + error.message);
+          return false;
         } finally {
-          const currentSaveButton = document.getElementById("saveRoadGeometryBtn");
-          if (currentSaveButton) {
-            currentSaveButton.disabled = false;
-            currentSaveButton.textContent = "선형 저장";
-          }
+          const currentButton = document.getElementById("saveRoadGeometryBtn");
+          if (currentButton) { currentButton.disabled = false; currentButton.textContent = "저장"; }
         }
       }
 
@@ -16569,6 +16987,13 @@
           editBtn.onclick = function() {
             const groupKey = decodeURIComponent(this.dataset.groupKey || "");
             openRoadEditor(groupKey);
+          };
+        }
+
+        const lineEditBtn = popup.querySelector(".road-line-edit-btn");
+        if (lineEditBtn) {
+          lineEditBtn.onclick = function() {
+            startRoadGeometryEdit(decodeURIComponent(this.dataset.groupKey || ""));
           };
         }
 
@@ -16947,7 +17372,8 @@
               roadPopupVisibilityToggle(group) +
             '</div>' +
             '<div class="road-popup-edit-bar">' +
-              '<button type="button" class="road-edit-btn" data-group-key="' + encodeURIComponent(group.key) + '" aria-label="' + (isCity ? '시도' : '농어촌도로') + ' ' + escapeHTML(group.number) + ' 속성 및 선형 편집">속성·선형 편집</button>' +
+              '<button type="button" class="road-edit-btn" data-group-key="' + encodeURIComponent(group.key) + '" aria-label="' + (isCity ? '시도' : '농어촌도로') + ' ' + escapeHTML(group.number) + ' 속성 편집">속성 편집</button>' +
+              '<button type="button" class="road-line-edit-btn" data-group-key="' + encodeURIComponent(group.key) + '" aria-label="' + (isCity ? '시도' : '농어촌도로') + ' ' + escapeHTML(group.number) + ' 라인 편집">라인 편집</button>' +
             '</div>' +
           '</div>' +
           '<div class="road-attributes">' +
