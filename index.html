@@ -14346,14 +14346,12 @@
         return values.length ? values.join(" / ") : "-";
       }
 
-      function rangeValues(list, key) {
+      function rangeValues(list, key, skipMissing) {
         const nums = [];
         list.forEach(function(p) {
           const raw = String(p[key] ?? "").replace(/,/g, "").trim();
-          // 기존 동작과 동일하게 값이 없는 구간은 0으로 포함함.
-          // 따라서 3 / 10~14 / 빈 값이 섞인 노선은 0~14로 표시됨.
           if (!raw) {
-            nums.push(0);
+            if (!skipMissing) nums.push(0);
             return;
           }
 
@@ -14375,9 +14373,9 @@
         const totals = { NORMAL:0, UNEXPANDED:0, UNOPENED:0 };
         group.propertiesList.forEach(function(p) {
           const key = getRoadStatusKey(p, group.layerId);
-          totals[key] += parseRoadLength(p["연장"]);
+          totals[key] += roadLengthKm(p, group.layerId);
         });
-        const unit = group.layerId === "city" ? " m" : " km";
+        const unit = " km";
         return [
           totals.NORMAL ? "개설 " + formatRoadLength(totals.NORMAL) + unit : "",
           totals.UNEXPANDED ? "미확장 " + formatRoadLength(totals.UNEXPANDED) + unit : "",
@@ -15070,39 +15068,20 @@
         let fields = "";
 
         fields += buildRoadEditField("노선번호", "number", group.number, "text", null, true);
-
+        fields += group.layerId === "city"
+          ? buildRoadEditField("구분", "gubun", "시도", "text", null, true)
+          : buildRoadEditField("구분", "gubun", String(props.GUBUN || props["구분"] || getRoadGroupTypeLabel(group)), "select", ["면도", "리도", "농도"]);
+        fields += buildRoadEditField("개설상태", "status", statusValueFromKey(currentStatus), "select", ["개설", "미확장", "미개설"]);
+        fields += buildRoadEditField("차선", "lane", safe(props["차선"]) === "-" ? "" : props["차선"]);
+        fields += buildRoadEditField("도로폭 (m)", "width", safe(props["도로폭"]) === "-" ? "" : props["도로폭"]);
+        fields += buildRoadEditField("연장 (km)", "length", roadLengthInputValue(props, group.layerId));
+        fields += buildRoadEditField("기점", "start", safe(props["기점"] || props["시점"]) === "-" ? "" : (props["기점"] || props["시점"]));
+        fields += buildRoadEditField("종점", "end", safe(props["종점"]) === "-" ? "" : props["종점"]);
+        fields += buildRoadEditField("비고", "remark", safe(props["비고"]) === "-" ? "" : props["비고"]);
+        fields += buildRoadEditField("기타", "extra", safe(props["기타"]) === "-" ? "" : props["기타"]);
         if (group.layerId === "city") {
-          fields += buildRoadEditField(
-            "개설상태",
-            "status",
-            statusValueFromKey(currentStatus),
-            "select",
-            ["개설", "미확장", "미개설"]
-          );
-          fields += buildRoadEditField("연장", "length", safe(props["연장"]) === "-" ? "" : props["연장"]);
           fields += buildRoadEditField("검토", "review", safe(props["검토"]) === "-" ? "" : props["검토"]);
-          fields += buildRoadEditField("시점", "start", safe(props["시점"]) === "-" ? "" : props["시점"]);
-          fields += buildRoadEditField("종점", "end", safe(props["종점"]) === "-" ? "" : props["종점"]);
-        } else {
-          fields += buildRoadEditField(
-            "구분",
-            "gubun",
-            String(props.GUBUN || props["구분"] || getRoadGroupTypeLabel(group)),
-            "select",
-            ["면도", "리도", "농도"]
-          );
-          fields += buildRoadEditField(
-            "개설상태",
-            "status",
-            statusValueFromKey(currentStatus),
-            "select",
-            ["개설", "미확장", "미개설"]
-          );
-          fields += buildRoadEditField("차선", "lane", safe(props["차선"]) === "-" ? "" : props["차선"]);
-          fields += buildRoadEditField("도로폭", "width", safe(props["도로폭"]) === "-" ? "" : props["도로폭"]);
-          fields += buildRoadEditField("연장", "length", safe(props["연장"]) === "-" ? "" : props["연장"]);
-          fields += buildRoadEditField("기점", "start", safe(props["기점"]) === "-" ? "" : props["기점"]);
-          fields += buildRoadEditField("종점", "end", safe(props["종점"]) === "-" ? "" : props["종점"]);
+          fields += buildRoadEditField("변경사항", "change", safe(props["변경사항"]) === "-" ? "" : props["변경사항"]);
         }
 
         const panel = document.createElement("div");
@@ -15115,7 +15094,7 @@
             '<button type="button" class="road-edit-close" onclick="closeRoadEditPanel()">×</button>' +
           '</div>' +
           '<div class="road-edit-body">' +
-            '<div class="road-edit-note">수정한 내용은 인터넷에 저장되어 다른 기기에서도 동일하게 표시됨. 속성은 현재 선택한 구간에 적용되며, 구분(면도·리도·농도)은 노선 전체에 적용됨.</div>' +
+            '<div class="road-edit-note">선택한 구간의 속성을 편집합니다. 연장은 km 단위입니다. 농어촌도로 구분은 노선 전체에 적용됩니다. 저장하면 다른 기기에도 반영됩니다.</div>' +
             '<form id="roadEditForm">' + fields + '</form>' +
             '<div class="road-edit-actions">' +
               '<button type="button" class="geometry" id="startGeometryEditBtn">선형 편집</button>' +
@@ -15199,19 +15178,23 @@
         if (!group || !road || !values) return;
         const props = road.properties || {};
 
+        if (values.gubun !== undefined) props.GUBUN = group.layerId === "city" ? "시도" : values.gubun;
+        if (values.lane !== undefined) props["차선"] = values.lane;
+        if (values.width !== undefined) props["도로폭"] = values.width;
+        if (values.length !== undefined) props["연장"] = values.length;
+        if (values.start !== undefined) {
+          props["기점"] = values.start;
+          if (group.layerId === "city") props["시점"] = values.start;
+        }
+        if (values.end !== undefined) props["종점"] = values.end;
+        if (values.remark !== undefined) props["비고"] = values.remark;
+        if (values.extra !== undefined) props["기타"] = values.extra;
         if (group.layerId === "city") {
           if (values.status !== undefined) setPropertyValue(props, ["개설여부","Opened","Opend"], "개설여부", values.status);
-          if (values.length !== undefined) setPropertyValue(props, ["연장"], "연장", values.length);
           if (values.review !== undefined) setPropertyValue(props, ["검토"], "검토", values.review);
-          if (values.start !== undefined) setPropertyValue(props, ["시점"], "시점", values.start);
-          if (values.end !== undefined) setPropertyValue(props, ["종점"], "종점", values.end);
+          if (values.change !== undefined) props["변경사항"] = values.change;
         } else {
           if (values.status !== undefined) setPropertyValue(props, ["Opened","Opend","개설여부"], "Opened", values.status);
-          if (values.lane !== undefined) setPropertyValue(props, ["차선"], "차선", values.lane);
-          if (values.width !== undefined) setPropertyValue(props, ["도로폭"], "도로폭", values.width);
-          if (values.length !== undefined) setPropertyValue(props, ["연장"], "연장", values.length);
-          if (values.start !== undefined) setPropertyValue(props, ["기점"], "기점", values.start);
-          if (values.end !== undefined) setPropertyValue(props, ["종점"], "종점", values.end);
         }
       }
 
@@ -15359,19 +15342,25 @@
         const roadIndex = Math.max(0, group.roads.indexOf(road));
         const values = {};
 
+        const lengthText = String(data.get("length") || "").replace(/,/g, "").trim();
+        if (lengthText && (!Number.isFinite(Number(lengthText)) || Number(lengthText) < 0)) {
+          alert("연장은 0 이상의 숫자를 km 단위로 입력해 주세요.");
+          return;
+        }
+        values.status = data.get("status") || "개설";
+        values.lane = data.get("lane") || "";
+        values.width = data.get("width") || "";
+        values.length = lengthText === "" ? "" : group.layerId === "city"
+          ? Math.round(Number(lengthText) * 1000 * 1000) / 1000
+          : Number(lengthText);
+        values.start = data.get("start") || "";
+        values.end = data.get("end") || "";
+        values.remark = data.get("remark") || "";
+        values.extra = data.get("extra") || "";
+
         if (group.layerId === "city") {
-          values.status = data.get("status") || "개설";
-          values.length = data.get("length") || "";
           values.review = data.get("review") || "";
-          values.start = data.get("start") || "";
-          values.end = data.get("end") || "";
-        } else {
-          values.status = data.get("status") || "개설";
-          values.lane = data.get("lane") || "";
-          values.width = data.get("width") || "";
-          values.length = data.get("length") || "";
-          values.start = data.get("start") || "";
-          values.end = data.get("end") || "";
+          values.change = data.get("change") || "";
         }
 
         try {
@@ -15380,12 +15369,7 @@
             saveButton.textContent = "저장 중";
           }
 
-          let payload = null;
-          try {
-            payload = await fetchOnlineRoadEdits(group);
-          } catch (error) {
-            console.warn(error);
-          }
+          let payload = await fetchOnlineRoadEdits(group);
 
           if (!payload || typeof payload !== "object") {
             payload = { version:1, roads:{} };
@@ -15396,20 +15380,15 @@
 
           if (group.layerId !== "city") {
             payload.gubun = data.get("gubun") || "농도";
-            group.propertiesList.forEach(function(p) {
-              setPropertyValue(p, ["GUBUN","구분"], "GUBUN", payload.gubun);
-            });
           }
 
-          payload.version = 1;
+          payload.version = payload.geometries && Object.keys(payload.geometries).length ? 2 : 1;
           payload.layerId = group.layerId;
           payload.number = String(group.number || "");
           payload.roads[String(roadIndex)] = values;
 
-          applyRoadEditValuesToRoad(group, road, values);
-          refreshEditedRoadGroup(groupKey);
-
           await saveOnlineRoadEdits(group, payload);
+          applyOnlineRoadEdits(group, payload);
 
           // 팝업 내용 즉시 갱신
           const existingPopup = document.querySelector("body > .road-popup");
@@ -16387,12 +16366,7 @@
           });
 
           // 기존 온라인 속성 편집정보를 유지한 채 선형 좌표를 함께 저장한다.
-          let payload = null;
-          try {
-            payload = await fetchOnlineRoadEdits(group);
-          } catch (error) {
-            console.warn(error);
-          }
+          let payload = await fetchOnlineRoadEdits(group);
 
           if (!payload || typeof payload !== "object") {
             payload = { version:1, roads:{} };
@@ -16921,43 +16895,15 @@
 
       function roadPopupActions(group) {
         const encodedKey = encodeURIComponent(group.key);
-        return '<div class="road-advanced-section">' +
-          '<button type="button" class="road-advanced-open">' +
-            '<span>고급기능</span>' +
-            '<span class="road-advanced-chevron">›</span>' +
-          '</button>' +
-          '<div class="road-popup-actions road-advanced-menu" hidden>' +
-            '<button type="button" class="road-edit-btn" data-group-key="' + encodedKey + '">편집</button>' +
+        return '<div class="road-popup-actions">' +
+            '<button type="button" class="road-edit-btn" data-group-key="' + encodedKey + '">속성·선형 편집</button>' +
             '<button type="button" class="road-export-btn">GeoJSON 저장</button>' +
-          '</div>' +
-        '</div>';
+          '</div>';
       }
 
       function groupPopup(group, road) {
         const list = group.propertiesList || [];
-        if (group.layerId === "city") {
-          const total = list.reduce(function(sum,p) { return sum + parseRoadLength(p["연장"]); }, 0);
-          return '<div class="road-popup">' +
-            '<div class="popup-drag-handle popup-header">' +
-              '<button class="popup-close" onclick="closeRoadPopup()">×</button>' +
-              '<div class="popup-eyebrow">노선 정보</div>' +
-              '<div class="popup-title-line">' +
-                '<div class="popup-title">시도 ' + escapeHTML(group.number) + '</div>' +
-                roadPopupVisibilityToggle(group) +
-              '</div>' +
-            '</div>' +
-            '<div class="road-attributes">' +
-              row("도로구분", "시도") + row("노선번호", group.number) +
-              row("구간상태", statusLengthSummary(group), "", "wrap-status") +
-              row("총연장", formatRoadLength(total), " m") +
-              row("검토", joinValues(uniqueValues(list, "검토"))) +
-              row("시점", joinValues(uniqueValues(list, "시점"))) +
-              row("종점", joinValues(uniqueValues(list, "종점"))) +
-            '</div>' +
-          routeMemoBlock(group) +
-              roadPopupActions(group) +
-          '</div>';
-        }
+        const isCity = group.layerId === "city";
         const current = road && road.properties ? road.properties : (list[0] || {});
         const currentStatus = road && road.statusKey
           ? road.statusKey
@@ -16966,24 +16912,27 @@
         return '<div class="road-popup">' +
           '<div class="popup-drag-handle popup-header">' +
             '<button class="popup-close" onclick="closeRoadPopup()">×</button>' +
-            '<div class="popup-eyebrow">농어촌도로</div>' +
+            '<div class="popup-eyebrow">' + (isCity ? '시도' : '농어촌도로') + '</div>' +
             '<div class="popup-title-line">' +
-              '<div class="popup-title">' + escapeHTML(group.number) + '</div>' +
+              '<div class="popup-title">' + (isCity ? '시도 ' : '') + escapeHTML(group.number) + '</div>' +
               roadPopupVisibilityToggle(group) +
             '</div>' +
           '</div>' +
           '<div class="road-attributes">' +
             row("노선번호", group.number) +
-            row("구분", joinValues(uniqueValues(list, "GUBUN"))) +
+            row("구분", isCity ? "시도" : joinValues(uniqueValues(list, "GUBUN"))) +
             row("구간현황", statusLengthSummary(group), "", "wrap-status") +
-            row("차선현황", rangeValues(list, "차선")) +
-            row("도로폭", rangeValues(list, "도로폭"), " m") +
-            row("총연장", formatRoadLength(ruralTotalLengths.get(group.number) || 0), " km") +
+            row("차선현황", rangeValues(list, "차선", isCity)) +
+            row("도로폭", rangeValues(list, "도로폭", isCity), rangeValues(list, "도로폭", isCity) === "-" ? "" : " m") +
+            row("총연장", formatRoadLength(list.reduce(function(sum, p) { return sum + roadLengthKm(p, group.layerId); }, 0)), " km") +
             row("차선현황(선택구간)", current["차선"] !== undefined && current["차선"] !== null && String(current["차선"]).trim() !== "" ? current["차선"] : "-") +
             row("도로폭(선택구간)", current["도로폭"] !== undefined && current["도로폭"] !== null && String(current["도로폭"]).trim() !== "" ? current["도로폭"] : "-", current["도로폭"] !== undefined && current["도로폭"] !== null && String(current["도로폭"]).trim() !== "" ? " m" : "") +
-            row("연장(선택구간)", current["연장"] !== undefined && current["연장"] !== null && String(current["연장"]).trim() !== "" ? formatRoadLength(parseRoadLength(current["연장"])) : "-", current["연장"] !== undefined && current["연장"] !== null && String(current["연장"]).trim() !== "" ? " km" : "") +
-            row("기점", joinValues(uniqueValues(list, "기점"))) +
+            row("연장(선택구간)", roadLengthInputValue(current, group.layerId) === "" ? "-" : formatRoadLength(roadLengthKm(current, group.layerId)), roadLengthInputValue(current, group.layerId) === "" ? "" : " km") +
+            row("기점", joinValues(list.map(function(p) { return safe(p["기점"] || p["시점"]); }).filter(function(value, index, values) { return value !== "-" && values.indexOf(value) === index; }))) +
             row("종점", joinValues(uniqueValues(list, "종점"))) +
+            row("비고", joinValues(uniqueValues(list, "비고"))) +
+            row("기타", joinValues(uniqueValues(list, "기타"))) +
+            (isCity ? row("검토", joinValues(uniqueValues(list, "검토"))) + row("변경사항", joinValues(uniqueValues(list, "변경사항"))) : "") +
             row("노선상태", roadStatusLabel(currentStatus)) +
           '</div>' +
           routeMemoBlock(group) +
@@ -17352,6 +17301,16 @@
       function parseRoadLength(value) {
         const number = Number(String(value ?? "").replace(/,/g, "").trim());
         return Number.isFinite(number) ? number : 0;
+      }
+
+      function roadLengthKm(properties, layerId) {
+        return parseRoadLength(properties && properties["연장"]) / (layerId === "city" ? 1000 : 1);
+      }
+
+      function roadLengthInputValue(properties, layerId) {
+        const value = properties && properties["연장"];
+        if (value === null || value === undefined || String(value).trim() === "") return "";
+        return String(roadLengthKm(properties, layerId));
       }
 
       function formatRoadLength(value) {
