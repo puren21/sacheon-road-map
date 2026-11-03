@@ -25,24 +25,29 @@
       this.segments = copy(segments);
       this.layerId = layerId;
       this.selected = selected;
+      this.structureVersion = 0;
       this.undoStack = [];
       this.redoStack = [];
     }
     checkpoint() {
-      this.undoStack.push({ segments: copy(this.segments), selected: this.selected });
+      this.undoStack.push({ segments: copy(this.segments), selected: this.selected,
+        structureVersion: this.structureVersion });
       if (this.undoStack.length > 60) this.undoStack.shift();
       this.redoStack = [];
     }
-    restore(other) { this.segments = other.segments; this.selected = other.selected; }
+    restore(other) { this.segments = other.segments; this.selected = other.selected;
+      this.structureVersion = other.structureVersion; }
     undo() {
       if (!this.undoStack.length) return false;
-      this.redoStack.push({ segments: copy(this.segments), selected: this.selected });
+      this.redoStack.push({ segments: copy(this.segments), selected: this.selected,
+        structureVersion: this.structureVersion });
       this.restore(this.undoStack.pop());
       return true;
     }
     redo() {
       if (!this.redoStack.length) return false;
-      this.undoStack.push({ segments: copy(this.segments), selected: this.selected });
+      this.undoStack.push({ segments: copy(this.segments), selected: this.selected,
+        structureVersion: this.structureVersion });
       this.restore(this.redoStack.pop());
       return true;
     }
@@ -66,6 +71,7 @@
         return { properties, geometry: path };
       });
       this.segments.splice(this.selected, 1, ...pieces);
+      this.structureVersion++;
       return pieces.length;
     }
     add(path) {
@@ -75,9 +81,10 @@
       properties['연장'] = lengthValue(path, this.layerId);
       this.segments.push({ properties, geometry: copy(path) });
       this.selected = this.segments.length - 1;
+      this.structureVersion++;
     }
     combine(indices, join) {
-      const ids = [...new Set(indices)].sort((a, b) => a - b);
+      const ids = [...new Set(indices)];
       if (ids.length < 2 || ids.some(index => !this.segments[index])) throw new Error('두 개 이상의 라인을 선택해 주세요.');
       const selected = ids.map(index => this.segments[index]);
       const paths = selected.map(item => toLngLat(item.geometry));
@@ -92,6 +99,7 @@
       this.segments = this.segments.filter((_, index) => !ids.includes(index));
       this.selected = this.segments.length;
       this.segments.push(entry);
+      this.structureVersion++;
     }
     delete(indices) {
       const ids = [...new Set(indices)];
@@ -100,6 +108,7 @@
       this.checkpoint();
       this.segments = this.segments.filter((_, index) => !ids.includes(index));
       this.selected = Math.min(this.selected, this.segments.length - 1);
+      this.structureVersion++;
     }
     serialize() {
       if (!modelValid(this.segments)) throw new Error('유효하지 않은 라인이 포함되어 있습니다.');

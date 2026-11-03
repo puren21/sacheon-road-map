@@ -73,14 +73,15 @@ test('structural line edits save a complete model only after server acknowledgem
   const group = { layerId: 'city', number: '3', key: 'city::3', roads: [{}, {}] };
   const state = { group, draft, mode: 'split', capture: [], baselineModel: JSON.stringify(roadSegments(true)) };
   const button = { disabled: false, textContent: '저장' };
-  let persisted = null, changed = false, cleared = false;
+  let persisted = null, changed = false, cleared = false, reentered = false;
   const c = context(['saveRoadGeometryEdit'], {
     roadGeometryEditState: state, selectedRoadPopupState: null, selectedRoadObject: null,
     document: { getElementById: () => button, querySelector: () => null },
     roadGeometrySyncWorkingPath: () => {}, fetchOnlineRoadEdits: async () => ({ roads: { 0: { review: '이전 값' } }, geometries: { 0: [[35, 128], [35, 129]] } }),
     saveOnlineRoadEdits: async (_, payload) => { assert.equal(changed, false); persisted = structuredClone(payload); },
-    clearRoadGeometryEdit: () => { cleared = true; },
+    clearRoadGeometryEdit: () => { cleared = true; c.roadGeometryEditState = null; },
     applyOnlineRoadEdits: () => { assert.equal(cleared, true); changed = true; return true; },
+    startRoadGeometryEdit: async () => { reentered = true; },
     alert: message => { throw new Error(message); }, console: { error() {} }
   });
   assert.equal(await c.saveRoadGeometryEdit(), true);
@@ -89,6 +90,7 @@ test('structural line edits save a complete model only after server acknowledgem
   assert.deepEqual(persisted.roads, {});
   assert.deepEqual(persisted.geometries, {});
   assert.equal(changed, true);
+  assert.equal(reentered, true);
 });
 
 test('failed line save keeps the editable draft and leaves map segments untouched', async () => {
@@ -129,15 +131,18 @@ test('line editor opens the Gunsan-style tool set on the full-resolution segment
   const path = [new LatLng(...point(0)), new LatLng(...point(5)), new LatLng(...point(10))];
   const road = { pathFine: [path[0], path[2]], properties: { number: '3', 연장: 1000 }, groupKey: 'city::3' };
   const group = { key: 'city::3', number: '3', layerId: 'city', roads: [road], paths: [path] };
-  const elements = { finishRoadGeometryCaptureBtn: {}, roadLineSnapBtn: {} };
+  const elements = { finishRoadGeometryCaptureBtn: {}, roadLineSnapBtn: {
+    classList: { toggle() {} }, setAttribute() {}
+  } };
   let toolbar;
   const c = context(['startRoadGeometryEdit'], {
     roadGeometryEditState: null, geometryEditingGroupKey: null, groups: new Map([[group.key, group]]),
     getEditableRoad: () => road, syncOnlineRoadEdits: async () => false,
     roadGroupSegmentModel: () => [{ properties: { ...road.properties }, geometry: path.map(p => [p.getLat(), p.getLng()]) }],
     focusSelectedRoadForEditing() {}, removeSelectedRouteBalloon() {}, updateLabels() {}, closeRoadEditPanel() {},
-    rebuildRoadGeometryEditMarkers() {}, cloneRoadEditPath: points => points.slice(),
+    rebuildRoadGeometryEditMarkers() {}, roadGeometryShowDraft() {}, cloneRoadEditPath: points => points.slice(),
     roadGeometryFinishCapture() {}, roadGeometryHistory() {}, roadGeometryApplyTool() {},
+    roadGeometrySnapEnabled: () => true,
     setRoadGeometryEditMode() {}, roadGeometryHelp() {},
     getRoadVisualLines: () => [new Polyline({ path, map: {} })],
     map: { setCursor() {} },
@@ -153,11 +158,110 @@ test('line editor opens the Gunsan-style tool set on the full-resolution segment
   });
   await c.startRoadGeometryEdit(group.key);
   assert.equal(c.roadGeometryEditState.workingPath.length, 3);
-  for (const name of ['vertex', 'add', 'split', 'multi', 'merge', 'join', 'delete', 'undo', 'redo']) {
+  assert.equal(c.roadGeometryEditState.mode, 'select');
+  for (const name of ['select', 'vertex', 'add', 'split', 'multi', 'merge', 'join', 'delete', 'undo', 'redo']) {
     assert.ok(toolbar.innerHTML.includes(`data-line-mode="${name}"`), name);
   }
   assert.equal(typeof elements.finishRoadGeometryCaptureBtn.onclick, 'function');
   assert.equal(typeof elements.roadLineSnapBtn.onclick, 'function');
+});
+
+test('line selection replaces a single choice and Shift adds or removes choices', () => {
+  const selected = [];
+  const segments = roadSegments(true);
+  const state = { groupKey: 'city::3', group: { number: '3' }, mode: 'select',
+    draft: { segments, selected: 0 },
+    selectedIndices: new Set([0]) };
+  const c = context(['roadGeometrySelectSegment'], {
+    roadGeometryEditState: state,
+    roadGeometrySetActiveSegment(_state, index) { selected.push(index); state.draft.selected = index; },
+    roadGeometryShowDraft() {}, roadGeometryHelp() {}
+  });
+  c.roadGeometrySelectSegment(1, null, { shiftKey: false });
+  assert.deepEqual([...state.selectedIndices], [1]);
+  c.roadGeometrySelectSegment(0, null, { shiftKey: true });
+  assert.deepEqual([...state.selectedIndices], [1, 0]);
+  c.roadGeometrySelectSegment(1, null, { shiftKey: true });
+  assert.deepEqual([...state.selectedIndices], [0]);
+  state.modifierDown = true;
+  c.roadGeometrySelectSegment(1, null, null);
+  assert.deepEqual([...state.selectedIndices], [0, 1]);
+  assert.deepEqual(selected, [1, 0, 0, 1]);
+});
+
+test('newly split segments remain clickable before saving', () => {
+  const draft = new RoadLineDraft(roadSegments(false), 'rural');
+  draft.split([point(5, -5), point(5, 5)]);
+  const callbacks = [];
+  class Polyline { constructor(options) { this.options = options; } setMap(map) { this.options.map = map; } }
+  const state = { draft, mode: 'select', selectedIndices: new Set([0]), draftOverlays: [], capture: [] };
+  const c = context(['roadGeometryShowDraft'], {
+    map: {}, kakao: { maps: { LatLng: class {}, Polyline,
+      event: { addListener(_line, event, callback) { if (event === 'click') callbacks.push(callback); }, preventMap() {} } } },
+    roadGeometrySelectSegment(index) { state.selectedIndices = new Set([index]); }
+  });
+  c.roadGeometryShowDraft(state);
+  assert.equal(callbacks.length, 3);
+  callbacks[1]({ latLng: point(7), domEvent: {} });
+  assert.deepEqual([...state.selectedIndices], [1]);
+});
+
+test('vertex editing can follow a cut without an intermediate save', () => {
+  const draft = new RoadLineDraft(roadSegments(false), 'rural');
+  draft.split([point(5, -5), point(5, 5)]);
+  const state = { draft, mode: 'split', structuralPending: true, selectedIndices: new Set([1]),
+    capture: [], markers: [], previewLine: { setMap() {} }, previewHitLine: { setMap() {} } };
+  let active = -1;
+  const c = context(['setRoadGeometryEditMode'], {
+    roadGeometryEditState: state, map: {},
+    roadGeometrySyncWorkingPath() {}, hideGeometryHoverPlus() {},
+    roadGeometrySetActiveSegment(_state, index) { active = index; },
+    roadGeometryShowDraft() {}, roadGeometryHelp() {},
+    document: { querySelectorAll: () => [] }
+  });
+  c.setRoadGeometryEditMode('vertex');
+  assert.equal(state.mode, 'vertex');
+  assert.equal(active, 1);
+});
+
+test('choosing another route switches editors only when the draft is saved', () => {
+  const segments = roadSegments(false);
+  const state = { groupKey: 'rural::3', mode: 'select', capture: [],
+    draft: { segments }, baselineModel: JSON.stringify(segments) };
+  const steps = [];
+  const target = { road: true };
+  const c = context(['roadGeometrySelectTarget'], {
+    roadGeometryEditState: state, roadGeometrySyncWorkingPath() {},
+    clearRoadGeometryEdit() { steps.push('close'); },
+    showInfo(_position, _key, road) { assert.equal(road, target); steps.push('select'); },
+    startRoadGeometryEdit() { steps.push('start'); }, roadGeometryHelp() { steps.push('blocked'); }
+  });
+  c.roadGeometrySelectTarget('city::4', target, {});
+  assert.deepEqual(steps, ['close', 'select', 'start']);
+  steps.length = 0;
+  state.draft.segments[0].geometry[0][0] += 0.001;
+  c.roadGeometrySelectTarget('city::4', target, {});
+  assert.deepEqual(steps, ['blocked']);
+});
+
+test('vertex dragging snaps to a nearby route endpoint', () => {
+  class LatLng {
+    constructor(lat, lng) { this.lat = lat; this.lng = lng; }
+    getLat() { return this.lat; }
+    getLng() { return this.lng; }
+  }
+  const model = roadSegments(true);
+  const workingPath = model[0].geometry.map(coord => new LatLng(...coord));
+  let current = new LatLng(...point(10.06));
+  const marker = { getPosition: () => current, setPosition: value => { current = value; } };
+  const c = context(['roadGeometrySnapVertex', 'serializeRoadGeometryPath'], {
+    kakao: { maps: { LatLng } },
+    map: { getProjection: () => ({ containerPointFromCoords: p => ({ x: p.lng * 1000000, y: p.lat * 1000000 }) }) },
+    window: { SacheonLineGeometry: require('../road-line-geometry.js') }
+  });
+  const state = { snapEnabled: true, roadIndex: 0, draft: { segments: model }, workingPath };
+  assert.equal(c.roadGeometrySnapVertex(state, 1, marker), true);
+  assert.deepEqual([current.getLat(), current.getLng()], point(10));
 });
 
 for (const layerId of ['city', 'rural']) {
@@ -259,6 +363,11 @@ for (const layerId of ['city', 'rural']) {
     const draft = new RoadLineDraft(roadSegments(layerId === 'city'), layerId);
     draft.split([point(5, -5), point(5, 5)]);
     assert.equal(draft.serialize().length, 3);
+    assert.equal(draft.structureVersion, 1);
+    assert.equal(draft.undo(), true);
+    assert.equal(draft.structureVersion, 0);
+    assert.equal(draft.redo(), true);
+    assert.equal(draft.structureVersion, 1);
     assert.equal(draft.serialize()[0].properties.비고, '기존 값');
     assert.equal(draft.serialize()[1].properties.비고, '기존 값');
     assert.ok(Math.abs(draft.serialize()[0].properties.연장 + draft.serialize()[1].properties.연장 - (layerId === 'city' ? 1000 : 1)) <= 0.002);
@@ -281,5 +390,10 @@ for (const layerId of ['city', 'rural']) {
     assert.equal(draft.serialize().length, 1);
     assert.deepEqual(draft.serialize()[0].geometry[0], point(0));
     assert.deepEqual(draft.serialize()[0].geometry.at(-1), point(20));
+    const reverse = roadSegments(layerId === 'city');
+    reverse[1].properties.비고 = '먼저 선택한 라인';
+    const reverseDraft = new RoadLineDraft(reverse, layerId);
+    reverseDraft.combine([1, 0], false);
+    assert.equal(reverseDraft.serialize()[0].properties.비고, '먼저 선택한 라인');
   });
 }
