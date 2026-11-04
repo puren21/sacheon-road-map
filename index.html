@@ -1243,19 +1243,19 @@
     #roadviewResizeHandle {
       position: absolute;
       right: 0;
-      bottom: 0;
+      top: 0;
       z-index: 50;
       width: 32px;
       height: 32px;
       border: 0;
-      border-radius: 8px 0 0 0;
+      border-radius: 0 0 0 8px;
       background: rgba(255,255,255,.95);
-      box-shadow: -2px -2px 7px rgba(0,0,0,.25);
+      box-shadow: -2px 2px 7px rgba(0,0,0,.25);
       color: #176fc1;
       font-size: 24px;
       line-height: 32px;
       text-align: center;
-      cursor: nwse-resize;
+      cursor: nesw-resize;
       touch-action: none;
       user-select: none;
     }
@@ -1302,7 +1302,7 @@
     .roadview-buttons {
       position: absolute;
       top: 7px;
-      right: 7px;
+      right: 42px;
       z-index: 41;
       display: flex;
       gap: 5px;
@@ -7626,7 +7626,7 @@
     </div>
 
     <div id="roadview"></div>
-    <div id="roadviewResizeHandle" role="button" tabindex="0" aria-label="로드뷰 창 크기 조절" title="끌어서 로드뷰 창 크기 조절">◢</div>
+    <div id="roadviewResizeHandle" role="button" tabindex="0" aria-label="로드뷰 창 크기 조절" title="끌어서 로드뷰 창 크기 조절">◥</div>
   </div>
 
   <script>
@@ -17739,8 +17739,8 @@
         function preparePanel() {
           const rect = roadviewPanel.getBoundingClientRect();
           roadviewPanel.style.left = rect.left + "px";
-          roadviewPanel.style.top = rect.top + "px";
-          roadviewPanel.style.bottom = "auto";
+          roadviewPanel.style.top = "auto";
+          roadviewPanel.style.bottom = (window.innerHeight - rect.bottom) + "px";
           roadviewPanel.style.width = rect.width + "px";
           roadviewPanel.style.height = rect.height + "px";
           return rect;
@@ -17748,9 +17748,9 @@
 
         function setSize(width, height) {
           const left = parseFloat(roadviewPanel.style.left) || 0;
-          const top = parseFloat(roadviewPanel.style.top) || 0;
+          const bottom = parseFloat(roadviewPanel.style.bottom) || 0;
           const maxWidth = Math.max(160, window.innerWidth - left - 10);
-          const maxHeight = Math.max(140, window.innerHeight - top - 10);
+          const maxHeight = Math.max(140, window.innerHeight - bottom - 10);
           roadviewPanel.style.width = Math.min(maxWidth, Math.max(Math.min(320, maxWidth), width)) + "px";
           roadviewPanel.style.height = Math.min(maxHeight, Math.max(Math.min(220, maxHeight), height)) + "px";
           if (!relayoutPending) {
@@ -17775,7 +17775,7 @@
         });
         handle.addEventListener("pointermove", function(event) {
           if (activePointer !== event.pointerId) return;
-          setSize(startWidth + event.clientX - startX, startHeight + event.clientY - startY);
+          setSize(startWidth + event.clientX - startX, startHeight + startY - event.clientY);
           event.preventDefault();
           event.stopPropagation();
         });
@@ -17790,7 +17790,7 @@
         handle.addEventListener("keydown", function(event) {
           if (roadviewPanel.classList.contains("fullscreen")) return;
           const deltaWidth = event.key === "ArrowRight" ? 20 : event.key === "ArrowLeft" ? -20 : 0;
-          const deltaHeight = event.key === "ArrowDown" ? 20 : event.key === "ArrowUp" ? -20 : 0;
+          const deltaHeight = event.key === "ArrowUp" ? 20 : event.key === "ArrowDown" ? -20 : 0;
           if (!deltaWidth && !deltaHeight) return;
           const rect = preparePanel();
           setSize(rect.width + deltaWidth, rect.height + deltaHeight);

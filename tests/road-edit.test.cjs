@@ -59,13 +59,13 @@ test('selecting a road no longer creates a route balloon on the map', () => {
   assert.match(html, /row\("노선번호", group\.number\)/);
 });
 
-test('roadview resize handle changes panel width and height and relayouts the viewer', () => {
+test('top-right roadview resize handle expands right and upward and relayouts the viewer', () => {
   const listeners = {};
   let captured = null, relayouts = 0;
   const panel = {
     style: { display: 'block' },
     classList: { contains: () => false },
-    getBoundingClientRect: () => ({ left: 15, top: 100, width: 400, height: 300 })
+    getBoundingClientRect: () => ({ left: 15, top: 485, bottom: 785, width: 400, height: 300 })
   };
   const handle = {
     addEventListener(type, callback) { listeners[type] = callback; },
@@ -83,15 +83,16 @@ test('roadview resize handle changes panel width and height and relayouts the vi
   const event = (x, y) => ({ pointerId: 7, clientX: x, clientY: y,
     preventDefault() {}, stopPropagation() {} });
   listeners.pointerdown(event(400, 300));
-  listeners.pointermove(event(510, 380));
+  listeners.pointermove(event(510, 220));
   assert.equal(panel.style.width, '510px');
   assert.equal(panel.style.height, '380px');
-  assert.equal(panel.style.bottom, 'auto');
+  assert.equal(panel.style.bottom, '15px');
+  assert.equal(panel.style.top, 'auto');
   assert.ok(relayouts > 0);
-  listeners.pointerup(event(510, 380));
+  listeners.pointerup(event(510, 220));
   assert.equal(captured, null);
   assert.match(html, /id="roadviewResizeHandle"/);
-  assert.match(html, /#roadviewResizeHandle\s*\{[^}]*z-index:\s*50/);
+  assert.match(html, /#roadviewResizeHandle\s*\{[^}]*top:\s*0;[^}]*z-index:\s*50/s);
 });
 
 test('vertex plus stays at the middle of the hovered segment while line clicks keep their position', () => {
