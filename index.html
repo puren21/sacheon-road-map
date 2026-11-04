@@ -1226,7 +1226,8 @@
       min-height: 220px;
       max-width: calc(100vw - 30px);
       max-height: calc(100vh - 30px);
-      resize: both;
+      box-sizing: border-box;
+      resize: none;
       overflow: hidden;
       display: none;
       background: white;
@@ -1238,6 +1239,28 @@
       width: 100%;
       height: 100%;
     }
+
+    #roadviewResizeHandle {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      z-index: 50;
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 8px 0 0 0;
+      background: rgba(255,255,255,.95);
+      box-shadow: -2px -2px 7px rgba(0,0,0,.25);
+      color: #176fc1;
+      font-size: 24px;
+      line-height: 32px;
+      text-align: center;
+      cursor: nwse-resize;
+      touch-action: none;
+      user-select: none;
+    }
+
+    #roadviewPanel.fullscreen #roadviewResizeHandle { display: none; }
 
     /* 본 지도에 표시하는 로드뷰 위치와 바라보는 방향 */
     .roadview-direction-marker {
@@ -1301,8 +1324,12 @@
     #roadviewPanel.fullscreen {
       position: fixed;
       inset: 0;
-      width: 100%;
-      height: 100%;
+      top: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
       max-width: none;
       max-height: none;
       resize: none;
@@ -7599,6 +7626,7 @@
     </div>
 
     <div id="roadview"></div>
+    <div id="roadviewResizeHandle" role="button" tabindex="0" aria-label="로드뷰 창 크기 조절" title="끌어서 로드뷰 창 크기 조절">◢</div>
   </div>
 
   <script>
@@ -17701,6 +17729,75 @@
       }
 
       document.getElementById("roadviewPopout").onclick = function() { openRoadviewPopup(); };
+      function enableRoadviewPanelResize() {
+        const handle = document.getElementById("roadviewResizeHandle");
+        if (!handle) return;
+        let activePointer = null;
+        let startX = 0, startY = 0, startWidth = 0, startHeight = 0;
+        let relayoutPending = false;
+
+        function preparePanel() {
+          const rect = roadviewPanel.getBoundingClientRect();
+          roadviewPanel.style.left = rect.left + "px";
+          roadviewPanel.style.top = rect.top + "px";
+          roadviewPanel.style.bottom = "auto";
+          roadviewPanel.style.width = rect.width + "px";
+          roadviewPanel.style.height = rect.height + "px";
+          return rect;
+        }
+
+        function setSize(width, height) {
+          const left = parseFloat(roadviewPanel.style.left) || 0;
+          const top = parseFloat(roadviewPanel.style.top) || 0;
+          const maxWidth = Math.max(160, window.innerWidth - left - 10);
+          const maxHeight = Math.max(140, window.innerHeight - top - 10);
+          roadviewPanel.style.width = Math.min(maxWidth, Math.max(Math.min(320, maxWidth), width)) + "px";
+          roadviewPanel.style.height = Math.min(maxHeight, Math.max(Math.min(220, maxHeight), height)) + "px";
+          if (!relayoutPending) {
+            relayoutPending = true;
+            requestAnimationFrame(function() {
+              relayoutPending = false;
+              if (roadview && roadviewPanel.style.display !== "none") roadview.relayout();
+            });
+          }
+        }
+
+        handle.addEventListener("pointerdown", function(event) {
+          if (roadviewPanel.classList.contains("fullscreen") ||
+              (event.button !== undefined && event.button !== 0)) return;
+          const rect = preparePanel();
+          activePointer = event.pointerId;
+          startX = event.clientX; startY = event.clientY;
+          startWidth = rect.width; startHeight = rect.height;
+          handle.setPointerCapture(event.pointerId);
+          event.preventDefault();
+          event.stopPropagation();
+        });
+        handle.addEventListener("pointermove", function(event) {
+          if (activePointer !== event.pointerId) return;
+          setSize(startWidth + event.clientX - startX, startHeight + event.clientY - startY);
+          event.preventDefault();
+          event.stopPropagation();
+        });
+        function finish(event) {
+          if (activePointer !== event.pointerId) return;
+          activePointer = null;
+          if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);
+          event.stopPropagation();
+        }
+        handle.addEventListener("pointerup", finish);
+        handle.addEventListener("pointercancel", finish);
+        handle.addEventListener("keydown", function(event) {
+          if (roadviewPanel.classList.contains("fullscreen")) return;
+          const deltaWidth = event.key === "ArrowRight" ? 20 : event.key === "ArrowLeft" ? -20 : 0;
+          const deltaHeight = event.key === "ArrowDown" ? 20 : event.key === "ArrowUp" ? -20 : 0;
+          if (!deltaWidth && !deltaHeight) return;
+          const rect = preparePanel();
+          setSize(rect.width + deltaWidth, rect.height + deltaHeight);
+          event.preventDefault();
+        });
+      }
+      enableRoadviewPanelResize();
       if (typeof ResizeObserver === "function") {
         new ResizeObserver(function() {
           if (roadviewPanel.style.display === "none") return;

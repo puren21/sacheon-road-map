@@ -32,6 +32,41 @@ test('selecting a road no longer creates a route balloon on the map', () => {
   assert.match(html, /row\("노선번호", group\.number\)/);
 });
 
+test('roadview resize handle changes panel width and height and relayouts the viewer', () => {
+  const listeners = {};
+  let captured = null, relayouts = 0;
+  const panel = {
+    style: { display: 'block' },
+    classList: { contains: () => false },
+    getBoundingClientRect: () => ({ left: 15, top: 100, width: 400, height: 300 })
+  };
+  const handle = {
+    addEventListener(type, callback) { listeners[type] = callback; },
+    setPointerCapture(id) { captured = id; },
+    hasPointerCapture: id => captured === id,
+    releasePointerCapture() { captured = null; }
+  };
+  const c = context(['enableRoadviewPanelResize'], {
+    document: { getElementById: () => handle }, roadviewPanel: panel,
+    roadview: { relayout() { relayouts++; } },
+    requestAnimationFrame(callback) { callback(); },
+    window: { innerWidth: 1000, innerHeight: 800 }
+  });
+  c.enableRoadviewPanelResize();
+  const event = (x, y) => ({ pointerId: 7, clientX: x, clientY: y,
+    preventDefault() {}, stopPropagation() {} });
+  listeners.pointerdown(event(400, 300));
+  listeners.pointermove(event(510, 380));
+  assert.equal(panel.style.width, '510px');
+  assert.equal(panel.style.height, '380px');
+  assert.equal(panel.style.bottom, 'auto');
+  assert.ok(relayouts > 0);
+  listeners.pointerup(event(510, 380));
+  assert.equal(captured, null);
+  assert.match(html, /id="roadviewResizeHandle"/);
+  assert.match(html, /#roadviewResizeHandle\s*\{[^}]*z-index:\s*50/);
+});
+
 test('vertex plus stays at the middle of the hovered segment while line clicks keep their position', () => {
   class LatLng {
     constructor(lat, lng) { this.lat = lat; this.lng = lng; }
@@ -476,7 +511,8 @@ test('roadview opens a resizable lower-left panel and popout opens only on its b
   assert.equal(popoutCount, 2);
   assert.match(opened.url, /lat=34\.94&lng=128\.08/);
   assert.equal(panoId, 123);
-  assert.match(html, /#roadviewPanel\s*\{[^}]*left:\s*15px;[^}]*bottom:\s*15px;[^}]*resize:\s*both/s);
+  assert.match(html, /#roadviewPanel\s*\{[^}]*left:\s*15px;[^}]*bottom:\s*15px;/s);
+  assert.match(html, /id="roadviewResizeHandle"/);
   assert.match(html, /id="roadviewPopout"[^>]*>팝업/);
   assert.doesNotMatch(html, /id="roadviewMiniMap"/);
   assert.match(html, /"position_changed",\s*syncRoadviewMapDirection/);
