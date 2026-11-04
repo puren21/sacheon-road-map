@@ -13543,6 +13543,7 @@
 
       function addFeature(feature, layerId) {
         const properties = feature.properties || {};
+        if (layerId === "city") syncCityRoadStatus(properties);
         const lines = getLines(feature.geometry);
         if (!lines.length) return;
 
@@ -15084,7 +15085,9 @@
         fields += group.layerId === "city"
           ? buildRoadEditField("구분", "gubun", "시도", "text", null, true)
           : buildRoadEditField("구분", "gubun", String(props.GUBUN || props["구분"] || getRoadGroupTypeLabel(group)), "select", ["면도", "리도", "농도"]);
-        fields += buildRoadEditField("개설상태", "status", statusValueFromKey(currentStatus), "select", ["개설", "미확장", "미개설"]);
+        fields += group.layerId === "city"
+          ? buildRoadEditField("개설상태", "status", statusValueFromKey(currentStatus), "text", null, true)
+          : buildRoadEditField("개설상태", "status", statusValueFromKey(currentStatus), "select", ["개설", "미확장", "미개설"]);
         fields += buildRoadEditField("차선", "lane", safe(props["차선"]) === "-" ? "" : props["차선"]);
         fields += buildRoadEditField("도로폭 (m)", "width", safe(props["도로폭"]) === "-" ? "" : props["도로폭"]);
         fields += buildRoadEditField("연장 (km)", "length", roadLengthInputValue(props, group.layerId));
@@ -15126,6 +15129,13 @@
         };
 
         const form = document.getElementById("roadEditForm");
+        if (group.layerId === "city") {
+          const laneInput = form.elements.namedItem("lane");
+          const statusInput = form.elements.namedItem("status");
+          laneInput.addEventListener("input", function() {
+            statusInput.value = roadStatusLabel(getRoadStatusKey({ "차선":laneInput.value }, "city"));
+          });
+        }
         form.addEventListener("input", function() { panel.dataset.dirty = "true"; });
         form.addEventListener("change", function() { panel.dataset.dirty = "true"; });
       }
@@ -15213,7 +15223,7 @@
         if (values.remark !== undefined) props["비고"] = values.remark;
         if (values.extra !== undefined) props["기타"] = values.extra;
         if (group.layerId === "city") {
-          if (values.status !== undefined) setPropertyValue(props, ["개설여부","Opened","Opend"], "개설여부", values.status);
+          if (values.lane !== undefined || values.status !== undefined) syncCityRoadStatus(props);
           if (values.review !== undefined) setPropertyValue(props, ["검토"], "검토", values.review);
           if (values.change !== undefined) props["변경사항"] = values.change;
         } else {
@@ -15226,6 +15236,7 @@
         if (!group) return;
 
         group.roads.forEach(function(groupRoad) {
+          if (group.layerId === "city") syncCityRoadStatus(groupRoad.properties);
           groupRoad.statusKey = getRoadStatusKey(groupRoad.properties, group.layerId);
           groupRoad.styleKey = getStyleKey(groupRoad.properties, group.layerId);
           const style = ROAD_STYLES[groupRoad.styleKey];
@@ -15323,7 +15334,10 @@
         group.propertiesList = [];
         validated.forEach(function(item) {
           item.properties.number = group.number;
-          if (group.layerId === "city") item.properties.GUBUN = "시도";
+          if (group.layerId === "city") {
+            item.properties.GUBUN = "시도";
+            syncCityRoadStatus(item.properties);
+          }
           const road = drawRoad(item.path, item.properties, group.layerId, group.key,
             getColor(item.properties, group.layerId), getRoadStatusKey(item.properties, group.layerId));
           group.roads.push(road);
@@ -17972,10 +17986,10 @@
 
       function getRoadStatusKey(properties, layerId) {
         if (layerId === "city") {
-          const status = String(properties["개설여부"] || "").trim();
-          if (status.includes("미개설")) return "UNOPENED";
-          if (status.includes("미확장")) return "UNEXPANDED";
-          return "NORMAL";
+          const lanes = Number.parseFloat(String(properties["차선"] ?? "").trim().replace(/,/g, ""));
+          if (lanes >= 2) return "NORMAL";
+          if (lanes >= 1) return "UNEXPANDED";
+          return "UNOPENED";
         }
 
         const status = String(properties.Opened || "").trim();
@@ -17988,6 +18002,10 @@
         if (statusKey === "UNOPENED") return "미개설";
         if (statusKey === "UNEXPANDED") return "미확장";
         return "개설";
+      }
+
+      function syncCityRoadStatus(properties) {
+        properties["개설여부"] = roadStatusLabel(getRoadStatusKey(properties, "city"));
       }
 
       function getStatusStrokeStyle(statusKey) {

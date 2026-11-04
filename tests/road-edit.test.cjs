@@ -200,7 +200,7 @@ test('city and rural road lengths display one decimal in km without changing sto
 });
 
 test('both road types update shared properties while retaining city-specific fields', () => {
-  const c = context(['applyRoadEditValuesToRoad'], {
+  const c = context(['getRoadStatusKey', 'roadStatusLabel', 'syncCityRoadStatus', 'applyRoadEditValuesToRoad'], {
     setPropertyValue(props, candidates, fallback, value) { props[candidates.find(k => k in props) || fallback] = value; }
   });
   const values = { lane: '2', width: '8', length: 4154, start: '새 기점', end: '새 종점', remark: '비고', extra: '기타', status: '개설', review: '검토', change: '변경' };
@@ -215,6 +215,31 @@ test('both road types update shared properties while retaining city-specific fie
   assert.equal(rural.properties.연장, 4.154);
   assert.equal(rural.properties.Opened, '개설');
   assert.equal(rural.properties.도로폭, '8');
+});
+
+test('city road status follows lane count on initial display, edit and saved segments', () => {
+  const c = context(['getRoadStatusKey', 'roadStatusLabel', 'syncCityRoadStatus',
+    'applyRoadEditValuesToRoad'], {
+    setPropertyValue(props, candidates, fallback, value) {
+      props[candidates.find(key => key in props) || fallback] = value;
+    }
+  });
+  for (const [lane, expected] of [
+    [null, '미개설'], ['', '미개설'], ['-', '미개설'],
+    ['1', '미확장'], ['1차선', '미확장'], ['2', '개설'], ['4차선', '개설']
+  ]) {
+    const props = { 차선: lane, 개설여부: '개설' };
+    c.syncCityRoadStatus(props);
+    assert.equal(props.개설여부, expected);
+    assert.equal(c.roadStatusLabel(c.getRoadStatusKey(props, 'city')), expected);
+  }
+  const city = { properties: { 차선: '2', 개설여부: '개설' } };
+  c.applyRoadEditValuesToRoad({ layerId: 'city' }, city, { lane: '1', status: '개설' });
+  assert.equal(city.properties.개설여부, '미확장');
+  c.applyRoadEditValuesToRoad({ layerId: 'city' }, city, { lane: '', status: '개설' });
+  assert.equal(city.properties.개설여부, '미개설');
+  assert.equal(c.getRoadStatusKey({ Opened: '미확장' }, 'rural'), 'UNEXPANDED');
+  assert.match(html, /group\.layerId === "city"[\s\S]*?buildRoadEditField\("개설상태", "status", statusValueFromKey\(currentStatus\), "text", null, true\)/);
 });
 
 for (const layerId of ['city', 'rural']) {
@@ -274,7 +299,8 @@ test('city route 1 keeps the clicked location selected when online segments repl
   const selectedRoadPopupState = { groupKey: group.key, road: oldRoads[0], anchorPosition };
   const segments = Array.from({ length: 11 }, (_, index) => ({ properties: { number: '1' },
     geometry: [[35, 128 + index * 0.01], [35, 128 + (index + 1) * 0.01]] }));
-  const c = context(['replaceRoadGroupSegments', 'pointSegmentDistanceSq'], {
+  const c = context(['getRoadStatusKey', 'roadStatusLabel', 'syncCityRoadStatus',
+    'replaceRoadGroupSegments', 'pointSegmentDistanceSq'], {
     selectedRoadObject: oldRoads[0], selectedRoadPopupState,
     kakao: { maps: { LatLng } }, removeRoadSegmentVisuals() {},
     drawRoad(path, properties, layerId, groupKey) { return { path, properties, layerId, groupKey }; },
@@ -635,7 +661,8 @@ test('unified editor saves input fields into the selected line draft', () => {
   const state = { groupKey: 'city::3', group: { layerId: 'city' },
     draft: { selected: 1, segments: roadSegments(true), checkpoint() {} } };
   state.draft.segments[1].properties.연장 = 2750;
-  const c = context(['roadGeometryCommitForm', 'roadLengthEditedValue', 'applyRoadEditValuesToRoad',
+  const c = context(['roadGeometryCommitForm', 'roadLengthEditedValue', 'getRoadStatusKey',
+    'roadStatusLabel', 'syncCityRoadStatus', 'applyRoadEditValuesToRoad',
     'setPropertyValue', 'getExistingPropertyKey'], {
     document: { getElementById: id => id === 'roadEditPanel' ? panel : {} },
     FormData: class { get(key) { return ({ length: '2.8', lane: '4', start: '새 기점', status: '개설' })[key] || ''; } }
@@ -656,7 +683,7 @@ for (const layerId of ['city', 'rural']) {
     const group = { key: `${layerId}::3`, layerId, number: '3',
       roads: [{ properties: segments[0].properties }, { properties: segments[1].properties }],
       paths: [], propertiesList: [] };
-    const c = context(['replaceRoadGroupSegments'], {
+    const c = context(['getRoadStatusKey', 'roadStatusLabel', 'syncCityRoadStatus', 'replaceRoadGroupSegments'], {
       selectedRoadObject: null, selectedRoadPopupState: null,
       kakao: { maps: { LatLng: class { constructor(lat, lng) { this.lat = lat; this.lng = lng; } } } },
       removeRoadSegmentVisuals() { removed++; },
