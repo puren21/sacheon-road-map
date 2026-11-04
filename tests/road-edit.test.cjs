@@ -18,6 +18,20 @@ function context(names, extras = {}) {
   return sandbox;
 }
 
+test('selecting a road no longer creates a route balloon on the map', () => {
+  const previous = { setMap(value) { this.map = value; } };
+  const c = context(['removeSelectedRouteBalloon', 'updateSelectedRouteBalloon'], {
+    selectedRouteBalloonOverlay: previous,
+    selectedRoadGroupKey: 'city::1'
+  });
+  c.updateSelectedRouteBalloon();
+  assert.equal(previous.map, null);
+  assert.equal(c.selectedRouteBalloonOverlay, null);
+  assert.doesNotMatch(html, /className = "selected-route-balloon"/);
+  assert.match(html, /showInfo\(event\.latLng, groupKey, road\)/);
+  assert.match(html, /row\("노선번호", group\.number\)/);
+});
+
 test('vertex plus stays at the middle of the hovered segment while line clicks keep their position', () => {
   class LatLng {
     constructor(lat, lng) { this.lat = lat; this.lng = lng; }

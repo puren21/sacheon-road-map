@@ -2553,7 +2553,7 @@
     .list-header { background:#fff; color:#20262d; }
     #listContent, .sidebar-filter-details[open] ~ #listContent { height:auto; }
   }
-  /* ===== 2026-09-14: 지도형 상단 메뉴 + 선택 노선 말풍선 ===== */
+  /* ===== 지도형 상단 메뉴 ===== */
   .top-toolbar {
     top: 12px;
     right: 14px;
@@ -2650,51 +2650,6 @@
   }
   #mapTools #locationBtn svg { width:24px; height:24px; margin:auto; display:block; }
 
-  /* 선택 노선 말풍선 */
-  .selected-route-balloon {
-    position: relative;
-    min-width: 104px;
-    padding: 10px 14px 9px;
-    border-radius: 12px;
-    color: #fff;
-    background: #2489eb;
-    box-shadow: 0 4px 12px rgba(0,0,0,.28);
-    text-align: left;
-    white-space: nowrap;
-    pointer-events: none;
-    transform: translateZ(0);
-  }
-
-  .selected-route-balloon::after {
-    content: "";
-    position: absolute;
-    left: 24px;
-    bottom: -10px;
-    width: 0;
-    height: 0;
-    border-left: 9px solid transparent;
-    border-right: 9px solid transparent;
-    border-top: 11px solid #2489eb;
-    filter: drop-shadow(0 2px 1px rgba(0,0,0,.10));
-  }
-
-  .selected-route-balloon-number {
-    font-size: 18px;
-    font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: -.4px;
-  }
-
-  .selected-route-balloon-type {
-    margin-top: 4px;
-    padding-top: 4px;
-    border-top: 1px solid rgba(255,255,255,.28);
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.1;
-    opacity: .96;
-  }
-
   @media (max-width:700px) {
     .top-toolbar { top:8px; right:8px; gap:6px; }
     .top-map-switch { height:42px; }
@@ -2704,9 +2659,6 @@
     .top-square-button svg,
     #roadLayerEditorBtn.top-square-button svg { width:25px; height:25px; }
     .top-load-button { min-width:78px; height:42px; padding:0 12px; font-size:14px; }
-    .selected-route-balloon { min-width:92px; padding:8px 11px 7px; border-radius:10px; }
-    .selected-route-balloon-number { font-size:16px; }
-    .selected-route-balloon-type { font-size:12px; }
   }
 
 
@@ -3463,19 +3415,6 @@
       max-height: 30dvh !important;
     }
 
-    /* 말풍선은 모바일에서 약간 작게 */
-    .selected-route-balloon {
-      min-width: 82px !important;
-      padding: 7px 10px 6px !important;
-    }
-
-    .selected-route-balloon-number {
-      font-size: 15px !important;
-    }
-
-    .selected-route-balloon-type {
-      font-size: 11px !important;
-    }
   }
 
 
@@ -14670,81 +14609,8 @@
         }
       }
 
-      function getSelectedRouteBalloonPosition(group) {
-        if (!group) return null;
-
-        const basePosition = midpointAcrossPaths(group.paths || []);
-        if (!basePosition) return null;
-
-        try {
-          const bounds = map.getBounds();
-          if (bounds && bounds.contain(basePosition)) return basePosition;
-
-          const pseudoLabel = {
-            groupKey: group.key,
-            basePosition: basePosition,
-            position: basePosition
-          };
-          return getVisibleLabelPosition(pseudoLabel, bounds) || basePosition;
-        } catch (e) {
-          return basePosition;
-        }
-      }
-
       function updateSelectedRouteBalloon() {
-        if (mapInteracting || map.getLevel() >= overviewMapLevel) {
-          removeSelectedRouteBalloon();
-          return;
-        }
-        if (roadGeometryEditState) {
-          removeSelectedRouteBalloon();
-          return;
-        }
-        if (!selectedRoadGroupKey) {
-          removeSelectedRouteBalloon();
-          return;
-        }
-
-        const group = groups.get(selectedRoadGroupKey);
-        if (!group) {
-          removeSelectedRouteBalloon();
-          return;
-        }
-
-        const position = getSelectedRouteBalloonPosition(group);
-        if (!position) return;
-
-        const numberText = escapeHTML(String(group.number || "-"));
-        const typeText = escapeHTML(getRoadGroupTypeLabel(group));
-
-        if (!selectedRouteBalloonOverlay) {
-          const content = document.createElement("div");
-          content.className = "selected-route-balloon";
-          content.innerHTML =
-            '<div class="selected-route-balloon-number">' + numberText + '</div>' +
-            '<div class="selected-route-balloon-type">' + typeText + '</div>';
-
-          selectedRouteBalloonOverlay = new kakao.maps.CustomOverlay({
-            position: position,
-            content: content,
-            xAnchor: 0.24,
-            // 말풍선 꼬리 아래에 여유 공간을 확보해 도로선과 겹치지 않도록 함.
-            // yAnchor가 1보다 클수록 말풍선 전체가 노선 기준점 위쪽으로 이동함.
-            yAnchor: 1.52,
-            zIndex: 125
-          });
-          selectedRouteBalloonOverlay.setMap(map);
-        } else {
-          const node = selectedRouteBalloonOverlay.getContent && selectedRouteBalloonOverlay.getContent();
-          if (node) {
-            const numberEl = node.querySelector(".selected-route-balloon-number");
-            const typeEl = node.querySelector(".selected-route-balloon-type");
-            if (numberEl) numberEl.textContent = String(group.number || "-");
-            if (typeEl) typeEl.textContent = getRoadGroupTypeLabel(group);
-          }
-          selectedRouteBalloonOverlay.setPosition(position);
-          if (!selectedRouteBalloonOverlay.getMap()) selectedRouteBalloonOverlay.setMap(map);
-        }
+        removeSelectedRouteBalloon();
       }
 
       function setRoadGroupHighlight(groupKey, enabled) {
