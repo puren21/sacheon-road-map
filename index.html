@@ -15236,6 +15236,7 @@
         panel.id = "roadEditPanel";
         panel.className = "road-edit-panel";
         panel.dataset.groupKey = groupKey;
+        panel.dataset.initialLengthDisplay = roadLengthInputValue(props, group.layerId);
         panel.innerHTML =
           '<div class="road-edit-header">' +
             '<div class="road-edit-title">' + (group.layerId === "city" ? "시도" : "농어촌도로") + ' 편집</div>' +
@@ -15600,9 +15601,8 @@
         values.status = data.get("status") || "개설";
         values.lane = data.get("lane") || "";
         values.width = data.get("width") || "";
-        values.length = lengthText === "" ? "" : group.layerId === "city"
-          ? Math.round(Number(lengthText) * 1000 * 1000) / 1000
-          : Number(lengthText);
+        values.length = roadLengthEditedValue(lengthText, road.properties, group.layerId,
+          document.getElementById("roadEditPanel")?.dataset?.initialLengthDisplay);
         values.start = data.get("start") || "";
         values.end = data.get("end") || "";
         values.remark = data.get("remark") || "";
@@ -16672,8 +16672,9 @@
         const values = {
           status:data.get("status") || "개설", lane:data.get("lane") || "",
           width:data.get("width") || "",
-          length:lengthText === "" ? "" : state.group.layerId === "city"
-            ? Math.round(Number(lengthText) * 1000000) / 1000 : Number(lengthText),
+          length:roadLengthEditedValue(lengthText,
+            state.draft.segments[state.draft.selected].properties, state.group.layerId,
+            panel.dataset.initialLengthDisplay),
           start:data.get("start") || "", end:data.get("end") || "",
           remark:data.get("remark") || "", extra:data.get("extra") || ""
         };
@@ -18067,12 +18068,21 @@
       function roadLengthInputValue(properties, layerId) {
         const value = properties && properties["연장"];
         if (value === null || value === undefined || String(value).trim() === "") return "";
-        return String(roadLengthKm(properties, layerId));
+        return roadLengthKm(properties, layerId).toFixed(1);
+      }
+
+      function roadLengthEditedValue(text, properties, layerId, initialDisplay) {
+        if (initialDisplay !== undefined && text === initialDisplay) {
+          return properties && properties["연장"];
+        }
+        if (text === "") return "";
+        return layerId === "city" ? Math.round(Number(text) * 1000000) / 1000 : Number(text);
       }
 
       function formatRoadLength(value) {
-        const rounded = Math.round((Number(value) + Number.EPSILON) * 1000) / 1000;
-        return rounded.toLocaleString("ko-KR", { maximumFractionDigits: 3 });
+        return Number(value).toLocaleString("ko-KR", {
+          minimumFractionDigits: 1, maximumFractionDigits: 1
+        });
       }
 
       function safe(value) {

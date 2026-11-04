@@ -76,11 +76,17 @@ test('merge and join display a named action button once two segments are selecte
   assert.match(html, /roadGeometryApplyTool\(state\.mode\)/);
 });
 
-test('city and rural road lengths share a km UI without changing stored units', () => {
-  const c = context(['parseRoadLength', 'roadLengthKm', 'roadLengthInputValue']);
-  assert.equal(c.roadLengthInputValue({ 연장: 4154 }, 'city'), '4.154');
-  assert.equal(c.roadLengthInputValue({ 연장: '4.154' }, 'rural'), '4.154');
+test('city and rural road lengths display one decimal in km without changing stored units', () => {
+  const c = context(['parseRoadLength', 'roadLengthKm', 'roadLengthInputValue',
+    'roadLengthEditedValue', 'formatRoadLength']);
+  assert.equal(c.roadLengthInputValue({ 연장: 4154 }, 'city'), '4.2');
+  assert.equal(c.roadLengthInputValue({ 연장: '4.154' }, 'rural'), '4.2');
   assert.equal(c.roadLengthInputValue({ 연장: null }, 'city'), '');
+  assert.equal(c.formatRoadLength(4154.364), '4,154.4');
+  assert.equal(c.formatRoadLength(0), '0.0');
+  assert.equal(c.roadLengthEditedValue('4.2', { 연장: 4154 }, 'city', '4.2'), 4154);
+  assert.equal(c.roadLengthEditedValue('4.3', { 연장: 4154 }, 'city', '4.2'), 4300);
+  assert.equal(c.roadLengthEditedValue('4.2', { 연장: 4.154 }, 'rural', '4.2'), 4.154);
 });
 
 test('both road types update shared properties while retaining city-specific fields', () => {
@@ -196,7 +202,7 @@ for (const layerId of ['city', 'rural']) {
     let applied = false;
     let notified = false;
     const formData = { status: '개설', lane: '2', width: '8', length: '4.154', start: '새 기점', end: '새 종점', remark: '비고', extra: '기타', gubun: '면도' };
-    const c = context(['saveRoadAttributes'], {
+    const c = context(['saveRoadAttributes', 'roadLengthEditedValue'], {
       groups: new Map([['road', group]]), getEditableRoad: () => group.roads[0], roadGeometryEditState: null,
       document: { getElementById: id => id === 'roadEditForm' ? {} : saveButton, body: { contains: () => true } },
       FormData: class { get(key) { return formData[key] || ''; } },
@@ -442,13 +448,14 @@ test('roadview opens its own map window', () => {
 });
 
 test('unified editor saves input fields into the selected line draft', () => {
-  const panel = { dataset: { groupKey: 'city::3', dirty: 'true' } };
+  const panel = { dataset: { groupKey: 'city::3', dirty: 'true', initialLengthDisplay: '2.8' } };
   const state = { groupKey: 'city::3', group: { layerId: 'city' },
     draft: { selected: 1, segments: roadSegments(true), checkpoint() {} } };
-  const c = context(['roadGeometryCommitForm', 'applyRoadEditValuesToRoad',
+  state.draft.segments[1].properties.연장 = 2750;
+  const c = context(['roadGeometryCommitForm', 'roadLengthEditedValue', 'applyRoadEditValuesToRoad',
     'setPropertyValue', 'getExistingPropertyKey'], {
     document: { getElementById: id => id === 'roadEditPanel' ? panel : {} },
-    FormData: class { get(key) { return ({ length: '2.75', lane: '4', start: '새 기점', status: '개설' })[key] || ''; } }
+    FormData: class { get(key) { return ({ length: '2.8', lane: '4', start: '새 기점', status: '개설' })[key] || ''; } }
   });
   c.roadGeometryCommitForm(state);
   assert.equal(state.draft.segments[1].properties.연장, 2750);
@@ -497,16 +504,18 @@ test('city GeoJSON has the same editable common fields as rural GeoJSON', () => 
   }
 });
 
-test('saving city km input persists metres and keeps previous online edits', async () => {
+test('saving other city fields preserves original metres beneath rounded display', async () => {
   const group = { layerId: 'city', number: '3', roads: [{ properties: { 연장: 4154 } }] };
   const saveButton = { disabled: false, textContent: '저장' };
   const previous = { roads: { '1': { review: '기존 검토' } }, geometries: { '1': [[34, 128], [35, 129]] } };
   let saved;
   let applied = false;
-  const c = context(['saveRoadAttributes'], {
+  const c = context(['saveRoadAttributes', 'roadLengthEditedValue'], {
     groups: new Map([['road', group]]), getEditableRoad: () => group.roads[0], roadGeometryEditState: null,
-    document: { getElementById: id => id === 'roadEditForm' ? {} : saveButton, body: { contains: () => true }, querySelector: () => null },
-    FormData: class { get(key) { return ({ status: '개설', length: '4.154', start: '기점', end: '종점' })[key] || ''; } },
+    document: { getElementById: id => id === 'roadEditForm' ? {} :
+      id === 'roadEditPanel' ? { dataset: { initialLengthDisplay: '4.2' } } : saveButton,
+      body: { contains: () => true }, querySelector: () => null },
+    FormData: class { get(key) { return ({ status: '개설', length: '4.2', start: '기점', end: '종점' })[key] || ''; } },
     fetchOnlineRoadEdits: async () => previous,
     saveOnlineRoadEdits: async (_group, payload) => { assert.equal(applied, false); saved = structuredClone(payload); },
     applyOnlineRoadEdits: () => { applied = true; },
