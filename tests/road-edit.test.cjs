@@ -435,16 +435,36 @@ test('one edit action opens both the line tools and the attribute inputs', async
   assert.deepEqual(calls, ['line:city::3', 'attributes:city::3']);
 });
 
-test('roadview opens its own map window', () => {
-  let opened;
-  const c = context(['openRoadview'], {
-    roadviewMode: true, roadviewClient: {}, roadviewWindowWatchTimer: null,
-    hideRoadviewMapDirection() {}, setInterval: () => 1,
-    window: { open(url, name) { opened = { url, name }; return { focus() {} }; } }
+test('roadview opens a resizable lower-left panel and popout opens only on its button', () => {
+  let opened, panoId, focused = false, closedPanel = false, popoutCount = 0;
+  const position = { getLat: () => 34.93, getLng: () => 128.07 };
+  const panel = { style: { display: 'none' } };
+  const viewer = { getPosition: () => position, relayout() {}, setPanoId(id) { panoId = id; } };
+  const c = context(['openRoadview', 'openRoadviewPopup'], {
+    roadviewMode: true, roadviewClient: { getNearestPanoId(_pos, _radius, callback) { callback(123); } },
+    roadviewRequestId: 0, roadviewRequestedPosition: null, roadviewPopupWindow: null,
+    roadviewWindowChannel: null, roadviewWindowWatchTimer: null,
+    roadviewPanel: panel, roadview: viewer, roadviewMiniMap: null, roadviewDirectionOverlay: null,
+    hideRoadviewMapDirection() {}, closeRoadviewPanel() { closedPanel = true; },
+    setTimeout(callback) { callback(); }, setInterval: () => 1, clearInterval() {},
+    window: { open(url, name) { popoutCount++; opened = { url, name }; return { focus() { focused = true; } }; } }
   });
-  c.openRoadview({ getLat: () => 34.93, getLng: () => 128.07 });
+  c.openRoadview(position);
+  assert.equal(panel.style.display, 'block');
+  assert.equal(panoId, 123);
+  assert.equal(opened, undefined);
+  c.openRoadviewPopup();
   assert.equal(opened.name, 'sacheonRoadview');
   assert.match(opened.url, /^roadview\.html\?lat=34\.93&lng=128\.07&channel=/);
+  assert.equal(focused, true);
+  assert.equal(closedPanel, true);
+  c.openRoadview({ getLat: () => 34.94, getLng: () => 128.08 });
+  assert.equal(popoutCount, 2);
+  assert.match(opened.url, /lat=34\.94&lng=128\.08/);
+  assert.equal(panoId, 123);
+  assert.match(html, /#roadviewPanel\s*\{[^}]*left:\s*15px;[^}]*bottom:\s*15px;[^}]*resize:\s*both/s);
+  assert.match(html, /id="roadviewPopout"[^>]*>팝업/);
+  assert.match(html, /showInfo\(event\.latLng, groupKey, road\);\s*if \(roadviewMode\) openRoadview\(event\.latLng\);/);
   assert.match(fs.readFileSync(path.join(__dirname, '../roadview.html'), 'utf8'), /new kakao\.maps\.Roadview\(/);
 });
 

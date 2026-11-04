@@ -1216,12 +1216,18 @@
        ========================= */
 
     #roadviewPanel {
-      position: absolute;
-      right: 15px;
+      position: fixed;
+      left: 15px;
       bottom: 15px;
       z-index: 40;
-      width: 45%;
-      height: 45%;
+      width: min(45vw, 620px);
+      height: min(45vh, 420px);
+      min-width: min(320px, calc(100vw - 30px));
+      min-height: 220px;
+      max-width: calc(100vw - 30px);
+      max-height: calc(100vh - 30px);
+      resize: both;
+      overflow: hidden;
       display: none;
       background: white;
       border: 3px solid white;
@@ -1318,6 +1324,9 @@
       inset: 0;
       width: 100%;
       height: 100%;
+      max-width: none;
+      max-height: none;
+      resize: none;
       border: 0;
       z-index: 9999;
     }
@@ -1346,6 +1355,7 @@
       #roadviewPanel {
         width: calc(100% - 30px);
         height: 40%;
+        left: 15px;
       }
 
       #roadviewPanel.fullscreen {
@@ -7679,6 +7689,7 @@
   <!-- 로드뷰 창 -->
   <div id="roadviewPanel">
     <div class="roadview-buttons">
+      <button id="roadviewPopout" type="button" title="별도 창에서 열기">팝업</button>
       <button id="roadviewFullscreen">전체화면</button>
       <button id="roadviewClose">닫기</button>
     </div>
@@ -10269,6 +10280,8 @@
       let roadviewPopupWindow = null;
       let roadviewWindowChannel = null;
       let roadviewWindowWatchTimer = null;
+      let roadviewRequestId = 0;
+      let roadviewRequestedPosition = null;
 
       const normalBtn = document.getElementById("normalBtn");
       const skyBtn = document.getElementById("skyBtn");
@@ -10738,10 +10751,7 @@
           addMeasurePoint(position);
           return;
         }
-        if (roadviewMode) {
-          openRoadview(position);
-          return;
-        }
+        if (roadviewMode) openRoadview(position);
         resetSelection();
         showImportedFeatureInfo(position, feature, layer);
       }
@@ -13922,14 +13932,10 @@
               return;
             }
 
-            if (roadviewMode) {
-              openRoadview(event.latLng);
-              return;
-            }
-
             kakao.maps.event.preventMap();
             suppressBasePlaceClickUntil = Date.now() + 350;
             showInfo(event.latLng, groupKey, road);
+            if (roadviewMode) openRoadview(event.latLng);
           }
         );
 
@@ -17790,7 +17796,8 @@
           roadviewDirectionOverlay.setMap(roadviewMiniMap);
 
           const syncRoadviewMiniMap = function () {
-            if (!roadviewMiniMap || !roadviewDirectionOverlay) return;
+            if (!roadviewMiniMap || !roadviewDirectionOverlay || roadviewPopupWindow ||
+                roadviewPanel.style.display === "none") return;
             const currentPosition = roadview.getPosition();
             if (!currentPosition) return;
             roadviewDirectionOverlay.setPosition(currentPosition);
@@ -17807,7 +17814,9 @@
               : 0;
             roadviewDirectionCone.style.transform =
               "translate(-50%, -100%) rotate(" + pan + "deg)";
-            showRoadviewMapDirection(roadview.getPosition(), pan);
+            if (!roadviewPopupWindow && roadviewPanel.style.display !== "none") {
+              showRoadviewMapDirection(roadview.getPosition(), pan);
+            }
           };
 
           kakao.maps.event.addListener(
@@ -17837,11 +17846,11 @@
         roadviewBtn.classList.add("active");
 
         infoWindow.close();
-        resetSelection();
       }
 
       function stopRoadview() {
         roadviewMode = false;
+        roadviewRequestId++;
         roadviewBtn.classList.remove("active");
         hideRoadviewMapDirection();
         roadviewPopupWindow = null;
@@ -17860,63 +17869,71 @@
        * 로드뷰 열기
        */
       function openRoadview(position) {
-        if (!roadviewMode || !roadviewClient) {
+        if (!roadviewMode || !roadviewClient || !position) {
           return;
         }
+        if (roadviewPopupWindow && !roadviewPopupWindow.closed) {
+          roadviewRequestedPosition = position;
+          openRoadviewPopup(position);
+          return;
+        }
+        const requestId = ++roadviewRequestId;
+        roadviewRequestedPosition = position;
+        roadviewPopupWindow = null;
+        roadviewWindowChannel = null;
+        if (roadviewWindowWatchTimer) clearInterval(roadviewWindowWatchTimer);
+        roadviewWindowWatchTimer = null;
+        hideRoadviewMapDirection();
 
+        roadviewClient.getNearestPanoId(position, 100, function(panoId) {
+          if (requestId !== roadviewRequestId || !roadviewMode || panoId === null) return;
+          roadviewPanel.style.display = "block";
+          setTimeout(function() {
+            if (requestId !== roadviewRequestId || !roadviewMode) return;
+            roadview.relayout();
+            if (roadviewMiniMap) {
+              roadviewMiniMap.relayout();
+              roadviewMiniMap.setCenter(position);
+            }
+            if (roadviewDirectionOverlay) roadviewDirectionOverlay.setPosition(position);
+            roadview.setPanoId(panoId, position);
+          }, 0);
+        });
+      }
+
+      function openRoadviewPopup(targetPosition) {
+        if (!roadviewMode) return;
+        const position = targetPosition || roadview.getPosition() || roadviewRequestedPosition;
+        if (!position) return;
         const channel = String(Date.now()) + "-" + Math.random().toString(36).slice(2);
         const url = "roadview.html?lat=" + encodeURIComponent(position.getLat()) +
           "&lng=" + encodeURIComponent(position.getLng()) + "&channel=" + encodeURIComponent(channel);
         const separateWindow = window.open(url, "sacheonRoadview",
           "width=1100,height=720,resizable=yes,scrollbars=yes");
-        if (separateWindow) {
-          roadviewPopupWindow = separateWindow;
-          roadviewWindowChannel = channel;
-          hideRoadviewMapDirection();
-          if (roadviewWindowWatchTimer) clearInterval(roadviewWindowWatchTimer);
-          roadviewWindowWatchTimer = setInterval(function() {
-            if (!roadviewPopupWindow || !roadviewPopupWindow.closed) return;
-            roadviewPopupWindow = null;
-            roadviewWindowChannel = null;
-            hideRoadviewMapDirection();
-            clearInterval(roadviewWindowWatchTimer);
-            roadviewWindowWatchTimer = null;
-          }, 1000);
-          separateWindow.focus();
-          return;
-        }
-
-        roadviewPopupWindow = null;
-        roadviewWindowChannel = null;
+        if (!separateWindow) return;
+        ++roadviewRequestId;
+        roadviewPopupWindow = separateWindow;
+        roadviewWindowChannel = channel;
         if (roadviewWindowWatchTimer) clearInterval(roadviewWindowWatchTimer);
-        roadviewWindowWatchTimer = null;
+        roadviewWindowWatchTimer = setInterval(function() {
+          if (!roadviewPopupWindow || !roadviewPopupWindow.closed) return;
+          roadviewPopupWindow = null;
+          roadviewWindowChannel = null;
+          hideRoadviewMapDirection();
+          clearInterval(roadviewWindowWatchTimer);
+          roadviewWindowWatchTimer = null;
+        }, 1000);
+        closeRoadviewPanel();
+        separateWindow.focus();
+      }
 
-        roadviewClient.getNearestPanoId(
-          position,
-          100,
-          function (panoId) {
-            if (panoId === null) {
-              return;
-            }
-
-            roadviewPanel.style.display = "block";
-
-            setTimeout(function () {
-              roadview.relayout();
-              if (roadviewMiniMap) {
-                roadviewMiniMap.relayout();
-                roadviewMiniMap.setCenter(position);
-              }
-              if (roadviewDirectionOverlay) {
-                roadviewDirectionOverlay.setPosition(position);
-              }
-              roadview.setPanoId(
-                panoId,
-                position
-              );
-            }, 0);
-          }
-        );
+      document.getElementById("roadviewPopout").onclick = function() { openRoadviewPopup(); };
+      if (typeof ResizeObserver === "function") {
+        new ResizeObserver(function() {
+          if (roadviewPanel.style.display === "none") return;
+          if (roadview) roadview.relayout();
+          if (roadviewMiniMap) roadviewMiniMap.relayout();
+        }).observe(roadviewPanel);
       }
 
       /*
