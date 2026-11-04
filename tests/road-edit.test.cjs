@@ -48,7 +48,7 @@ for (const layerId of ['city', 'rural']) {
     const makeRoad = () => ({ styleKey: 'CITY', statusKey: 'OPEN', _visible: true,
       visualLines: [{ getMap: () => ({}), setMap() {} }], hitLine: { getMap: () => ({}), setMap() {} } });
     const roads = [makeRoad(), makeRoad(), makeRoad()];
-    const group = { key: 'route', roads };
+    const group = { key: 'route', layerId, roads };
     const c = context(['setRoadGroupHighlight'], {
       groups: new Map([['route', group]]), selectedRoadObject: roads[1],
       hiddenRoadGroups: new Set(), geometryEditingGroupKey: null, map: {},
@@ -60,14 +60,24 @@ for (const layerId of ['city', 'rural']) {
     });
     c.setRoadGroupHighlight('route', true);
     assert.deepEqual(roads.map(road => road.visualLines[0].strokeColor),
-      ['#0057FF', '#E60012', '#0057FF']);
+      layerId === 'city' ? ['#E60012', '#E60012', '#E60012']
+        : ['#0057FF', '#E60012', '#0057FF']);
     assert.ok(roads.every(road => road.visualLines[0].strokeStyle === 'solid'));
     c.selectedRoadObject = null;
     c.setRoadGroupHighlight('route', true);
     assert.deepEqual(roads.map(road => road.visualLines[0].strokeColor),
-      ['#E60012', '#0057FF', '#0057FF']);
+      layerId === 'city' ? ['#E60012', '#E60012', '#E60012']
+        : ['#E60012', '#0057FF', '#0057FF']);
   });
 }
+
+test('city route 1 contains five connected parts that share one highlighted route', () => {
+  const data = JSON.parse(fs.readFileSync(path.join(__dirname, '../city_roads.geojson'), 'utf8'));
+  const city1 = data.features.filter(feature => feature.properties.number === '1');
+  assert.equal(city1.length, 1);
+  assert.equal(city1[0].geometry.type, 'MultiLineString');
+  assert.equal(city1[0].geometry.coordinates.length, 5);
+});
 
 for (const layerId of ['city', 'rural']) {
   test(`${layerId}: online save failure does not show an unsaved attribute edit`, async () => {

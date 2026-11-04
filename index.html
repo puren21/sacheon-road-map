@@ -14802,7 +14802,7 @@
           const isSelectedSegment = enabled && selectedSegment === road;
           const highlightRoad = enabled;
           const highlightColor =
-            isSelectedSegment ? "#E60012" : "#0057FF";
+            group.layerId === "city" || isSelectedSegment ? "#E60012" : "#0057FF";
 
           const statusHidden = isRoadStatusHidden(road.statusKey);
 
@@ -14826,7 +14826,7 @@
               strokeWeight: mapStrokePx(
                 highlightRoad
                   ? (Number(config.width) || 3) +
-                    (isSelectedSegment ? 3 : 2.5)
+                    (group.layerId === "city" || isSelectedSegment ? 3 : 2.5)
                   : (
                       road.statusKey === "UNOPENED"
                         ? Math.max(
