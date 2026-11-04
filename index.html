@@ -3630,6 +3630,14 @@
     padding: 12px 13px 13px;
   }
 
+  .road-popup .road-edit-body {
+    padding: 8px 0 4px;
+  }
+
+  .road-popup .road-edit-field {
+    grid-template-columns: 82px minmax(0,1fr);
+  }
+
   .road-edit-note {
     margin: 0 0 11px;
     padding: 8px 9px;
@@ -14529,6 +14537,9 @@
       }
 
       function closeRoadPopup() {
+        if (roadGeometryEditState && document.getElementById("roadEditPanel")) {
+          clearRoadGeometryEdit(false);
+        }
         // 사용자가 X로 닫은 뒤 지도 이동/확대축소에서 자동으로 다시 열리지 않도록 상태도 함께 해제
         selectedRoadPopupState = null;
         if (roadPopupOverlay) {
@@ -15021,7 +15032,21 @@
 
       function closeRoadEditPanel() {
         const panel = document.getElementById("roadEditPanel");
-        if (panel) panel.remove();
+        if (!panel) return;
+        panel.removeAttribute("id");
+        delete panel.dataset.groupKey;
+        delete panel.dataset.initialLengthDisplay;
+        delete panel.dataset.dirty;
+        const editButton = panel.querySelector(".road-edit-btn");
+        if (editButton) editButton.disabled = false;
+        const group = selectedRoadPopupState && groups.get(selectedRoadPopupState.groupKey);
+        const attributes = panel.querySelector(".road-attributes");
+        if (group && attributes) {
+          const holder = document.createElement("div");
+          holder.innerHTML = groupPopup(group, getEditableRoad(group.key));
+          const restored = holder.querySelector(".road-attributes");
+          if (restored) attributes.innerHTML = restored.innerHTML;
+        }
       }
 
       window.closeRoadEditPanel = closeRoadEditPanel;
@@ -15069,8 +15094,9 @@
         const group = groups.get(groupKey);
         const road = getEditableRoad(groupKey);
         if (!group || !road) return;
-
-        closeRoadEditPanel();
+        const panel = document.querySelector("body > .road-popup");
+        const attributes = panel && panel.querySelector(".road-attributes");
+        if (!attributes || !selectedRoadPopupState || selectedRoadPopupState.groupKey !== groupKey) return;
 
         // 사용자가 클릭한 실제 도로 구간을 편집 중심으로 유지
         if (!roadGeometryEditState) focusSelectedRoadForEditing(groupKey, road);
@@ -15100,26 +15126,21 @@
           fields += buildRoadEditField("변경사항", "change", safe(props["변경사항"]) === "-" ? "" : props["변경사항"]);
         }
 
-        const panel = document.createElement("div");
         panel.id = "roadEditPanel";
-        panel.className = "road-edit-panel";
         panel.dataset.groupKey = groupKey;
         panel.dataset.initialLengthDisplay = roadLengthInputValue(props, group.layerId);
-        panel.innerHTML =
-          '<div class="road-edit-header">' +
-            '<div class="road-edit-title">' + (group.layerId === "city" ? "시도" : "농어촌도로") + ' 편집</div>' +
-            '<button type="button" class="road-edit-close" onclick="cancelRoadGeometryEdit();closeRoadEditPanel()">×</button>' +
-          '</div>' +
+        panel.dataset.dirty = "false";
+        const editButton = panel.querySelector(".road-edit-btn");
+        if (editButton) editButton.disabled = true;
+        attributes.innerHTML =
           '<div class="road-edit-body">' +
-            '<div class="road-edit-note">선택한 구간의 속성을 편집합니다. 연장은 km 단위입니다. 농어촌도로 구분은 노선 전체에 적용됩니다. 저장하면 다른 기기에도 반영됩니다.</div>' +
             '<form id="roadEditForm">' + fields + '</form>' +
             '<div class="road-edit-actions">' +
-              '<button type="button" onclick="cancelRoadGeometryEdit();closeRoadEditPanel()">변경 취소</button>' +
+              '<button type="button" onclick="cancelRoadGeometryEdit()">변경 취소</button>' +
               '<button type="button" class="primary" id="saveRoadAttributesBtn">저장</button>' +
             '</div>' +
           '</div>';
-
-        document.body.appendChild(panel);
+        panel.scrollTop = 0;
         if (roadGeometryEditState && roadGeometryEditState.groupKey === groupKey) {
           roadGeometryEditState.previousPanelIndex = roadGeometryEditState.draft.selected;
         }
@@ -15138,6 +15159,10 @@
         }
         form.addEventListener("input", function() { panel.dataset.dirty = "true"; });
         form.addEventListener("change", function() { panel.dataset.dirty = "true"; });
+        form.addEventListener("submit", function(event) {
+          event.preventDefault();
+          saveRoadAttributes(groupKey);
+        });
       }
 
       async function openRoadEditor(groupKey) {
@@ -17041,6 +17066,7 @@
               roadGeometrySetActiveSegment(active, index);
               if (currentMode !== "select") setRoadGeometryEditMode(currentMode);
               else roadGeometryShowDraft(active);
+              showRoadAttributePanel(group.key);
               roadGeometryHelp("저장했습니다. 라인을 계속 선택하고 편집할 수 있습니다.");
             }
           } else closeRoadEditPanel();

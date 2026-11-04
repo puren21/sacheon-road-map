@@ -571,6 +571,46 @@ test('one edit action opens both the line tools and the attribute inputs', async
   assert.deepEqual(calls, ['line:city::3', 'attributes:city::3']);
 });
 
+test('editing uses the existing road popup and cancel restores its attributes', () => {
+  const road = { properties: { 차선: '2', 연장: 1000 } };
+  const group = { key: 'city::3', number: '3', layerId: 'city', roads: [road] };
+  const attributes = { innerHTML: '<p>원래 속성정보</p>' };
+  const editButton = { disabled: false };
+  const popup = {
+    dataset: {}, querySelector(selector) {
+      return selector === '.road-attributes' ? attributes : selector === '.road-edit-btn' ? editButton : null;
+    }, removeAttribute(name) { if (name === 'id') delete this.id; }
+  };
+  const form = { elements: { namedItem: () => ({ addEventListener() {} }) }, addEventListener() {} };
+  let appended = 0;
+  const c = context(['roadEditorEscape', 'buildRoadEditField', 'showRoadAttributePanel', 'closeRoadEditPanel'], {
+    groups: new Map([[group.key, group]]), selectedRoadPopupState: { groupKey: group.key, road },
+    roadGeometryEditState: { groupKey: group.key, draft: { selected: 0, segments: [{ properties: road.properties }] } },
+    getEditableRoad: () => road, getRoadStatusKey: () => 'NORMAL', statusValueFromKey: () => '개설',
+    roadLengthInputValue: () => '1.0', safe: value => value == null ? '-' : String(value),
+    roadEditorEscape: value => String(value == null ? '' : value),
+    escapeHTML: value => String(value),
+    groupPopup: () => '<div><div class="road-attributes">복원된 속성정보</div></div>',
+    document: {
+      querySelector: selector => selector === 'body > .road-popup' ? popup : null,
+      getElementById: id => id === 'roadEditPanel' ? popup : id === 'roadEditForm' ? form :
+        id === 'saveRoadAttributesBtn' ? {} : null,
+      createElement: () => ({ querySelector: () => ({ innerHTML: '복원된 속성정보' }) }),
+      body: { appendChild() { appended++; } }
+    }
+  });
+  c.showRoadAttributePanel(group.key);
+  assert.equal(popup.id, 'roadEditPanel');
+  assert.equal(appended, 0);
+  assert.match(attributes.innerHTML, /id="roadEditForm"/);
+  assert.match(attributes.innerHTML, /onclick="cancelRoadGeometryEdit\(\)"/);
+  assert.equal(editButton.disabled, true);
+  c.closeRoadEditPanel();
+  assert.equal(popup.id, undefined);
+  assert.equal(attributes.innerHTML, '복원된 속성정보');
+  assert.equal(editButton.disabled, false);
+});
+
 test('roadview opens a resizable lower-left panel and popout opens only on its button', () => {
   let opened, panoId, focused = false, closedPanel = false, popoutCount = 0;
   const position = { getLat: () => 34.93, getLng: () => 128.07 };
