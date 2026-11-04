@@ -18,6 +18,39 @@ function context(names, extras = {}) {
   return sandbox;
 }
 
+test('split preview and captured point snap to the selected road before adjacent roads', () => {
+  class LatLng {
+    constructor(lat, lng) { this.lat = lat; this.lng = lng; }
+    getLat() { return this.lat; }
+    getLng() { return this.lng; }
+  }
+  const geometry = require('../road-line-geometry.js');
+  const state = {
+    mode: 'split', snapEnabled: true, draft: {
+      selected: 0, segments: [
+        { geometry: [[0, 0], [0, 100]] },
+        { geometry: [[5, 0], [5, 100]] }
+      ]
+    }, capture: [], captureCursor: null,
+    capturePreview: { setPath(path) { this.path = path; }, setMap() {} }
+  };
+  const projection = { containerPointFromCoords: p => ({ x: p.getLng(), y: p.getLat() }) };
+  const c = context(['roadGeometrySnapCapture', 'roadGeometryCapture'], {
+    roadGeometryEditState: state,
+    kakao: { maps: { LatLng } }, map: { getProjection: () => projection },
+    window: { SacheonLineGeometry: geometry },
+    roadGeometryShowDraft() {}, roadGeometryHelp() {}
+  });
+  const cursor = c.roadGeometrySnapCapture(state, new LatLng(4, 50));
+  assert.equal(cursor.getLat(), 0);
+  assert.equal(cursor.getLng(), 50);
+  c.roadGeometryCapture(new LatLng(4, 50));
+  assert.equal(state.capture[0].getLat(), cursor.getLat());
+  assert.equal(state.capture[0].getLng(), cursor.getLng());
+  state.snapEnabled = false;
+  assert.equal(c.roadGeometrySnapCapture(state, new LatLng(4, 50)).getLat(), 4);
+});
+
 test('switching road category refreshes visible city entries after mode changes', () => {
   const items = [
     { dataset: { key: 'city::1' }, style: {} },

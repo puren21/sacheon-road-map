@@ -16452,22 +16452,32 @@
         }
       }
 
+      function roadGeometrySnapCapture(state, position) {
+        const captured = new kakao.maps.LatLng(position.getLat(), position.getLng());
+        if (!state.snapEnabled || !window.SacheonLineGeometry) return captured;
+        const projection = map.getProjection();
+        if (!projection) return captured;
+        const entries = state.draft.segments.map(function(segment, index) {
+          return { id:String(index), part:0, path:segment.geometry.map(function(c) { return [c[1], c[0]]; }) };
+        });
+        const project = function(coord) {
+          const pixel = projection.containerPointFromCoords(new kakao.maps.LatLng(coord[1], coord[0]));
+          return [pixel.x, pixel.y];
+        };
+        // 자르기 시작점과 끝점은 편집 중인 선에 우선 맞춘다.
+        const selected = entries[state.draft.selected];
+        const target = state.mode === "split" && selected
+          ? window.SacheonLineGeometry.snapToPaths([selected], [captured.getLng(), captured.getLat()], project, 12)
+          : null;
+        const snap = target || window.SacheonLineGeometry.snapToPaths(entries,
+          [captured.getLng(), captured.getLat()], project, 12);
+        return snap ? new kakao.maps.LatLng(snap.coordinate[1], snap.coordinate[0]) : captured;
+      }
+
       function roadGeometryCapture(position) {
         const state = roadGeometryEditState;
         if (!state || !position || (state.mode !== "add" && state.mode !== "split")) return;
-        let captured = new kakao.maps.LatLng(position.getLat(), position.getLng());
-        const projection = state.snapEnabled && map.getProjection();
-        if (projection) {
-          const entries = state.draft.segments.map(function(segment, index) {
-            return { id:String(index), part:0, path:segment.geometry.map(function(c) { return [c[1], c[0]]; }) };
-          });
-          const snap = window.SacheonLineGeometry.snapToPaths(entries,
-            [captured.getLng(), captured.getLat()], function(coord) {
-              const pixel = projection.containerPointFromCoords(new kakao.maps.LatLng(coord[1], coord[0]));
-              return [pixel.x, pixel.y];
-            }, 12);
-          if (snap) captured = new kakao.maps.LatLng(snap.coordinate[1], snap.coordinate[0]);
-        }
+        const captured = roadGeometrySnapCapture(state, position);
         state.capture.push(captured);
         state.captureCursor = null;
         roadGeometryShowDraft(state);
@@ -16808,8 +16818,8 @@
           const state = roadGeometryEditState;
           if (!state || !state.capture.length || !event || !event.latLng ||
               (state.mode !== "add" && state.mode !== "split")) return;
-          state.captureCursor = event.latLng;
-          state.capturePreview.setPath(state.capture.concat([event.latLng]));
+          state.captureCursor = roadGeometrySnapCapture(state, event.latLng);
+          state.capturePreview.setPath(state.capture.concat([state.captureCursor]));
           state.capturePreview.setMap(map);
         };
         kakao.maps.event.addListener(map, "mousemove", roadGeometryEditState.lineMapMove);
