@@ -185,12 +185,37 @@ test('zero-size label measurements are not cached',()=>{
 test('cached overlapping labels are rejected without reattachment or layout reads',()=>{
   const {c}=setup();let reads=0;const position={equals:()=>true};
   const labels=['a','b'].map(key=>({groupKey:key,statusKeys:['open'],overlay:{...overlay(),getPosition:()=>position,setPosition(){}},element:{textContent:key,getBoundingClientRect(){reads++;return {width:30,height:20}}}}));
-  Object.assign(c,{roadGeometryEditState:null,LABEL_STYLES:{VISIBLE:true},hiddenRoadGroups:new Set(),roadStatusFilters:{open:true},groups:new Map(labels.map(item=>[item.groupKey,{number:item.groupKey,layerId:'city',roads:[{_visible:true}]}])),isRoadLayerVisibleAtScale:()=>true,isRoadGroupKindVisible:()=>true,getVisibleLabelPosition:()=>position,getMapResolutionScale:()=>1,applyLabelScale(){},applyLabelAppearance(){}});
+  Object.assign(c,{roadGeometryEditState:null,LABEL_STYLES:{CITY_VISIBLE:true,RURAL_VISIBLE:true},hiddenRoadGroups:new Set(),roadStatusFilters:{open:true},groups:new Map(labels.map(item=>[item.groupKey,{number:item.groupKey,layerId:'city',roads:[{_visible:true}]}])),isRoadLayerVisibleAtScale:()=>true,isRoadGroupKindVisible:()=>true,getVisibleLabelPosition:()=>position,getMapResolutionScale:()=>1,applyLabelScale(){},applyLabelAppearance(){}});
   c.LAYERS.city.labels=labels;c.map.getBounds=()=>({});c.map.getProjection=()=>({containerPointFromCoords:()=>({x:50,y:50})});
-  for(const name of ['getRoadLabelCollisionBox','roadLabelBoxesOverlap','updateLabels'])vm.runInContext(source(name),c);
+  for(const name of ['roadNumberLabelVisible','getRoadLabelCollisionBox','roadLabelBoxesOverlap','updateLabels'])vm.runInContext(source(name),c);
   c.updateLabels();assert.equal(reads,2);assert.equal(labels[0].overlay.getMap(),c.map);assert.equal(labels[1].overlay.getMap(),null);
   const rejectedWrites=labels[1].overlay.writes;c.updateLabels();assert.equal(reads,2);assert.equal(labels[1].overlay.writes,rejectedWrites);
   c.LABEL_STYLES.SCALE=150;c.updateLabels();assert.equal(reads,4);
+});
+test('city and rural route number labels toggle independently and persist',()=>{
+  const {c}=setup();
+  const position={equals:()=>true};
+  const city={groupKey:'city::1',statusKeys:['open'],overlay:{...overlay(),getPosition:()=>position,setPosition(){}},element:{textContent:'1'}};
+  const rural={groupKey:'rural::1',statusKeys:['open'],overlay:{...overlay(),getPosition:()=>position,setPosition(){}},element:{textContent:'농1'}};
+  let stored;
+  Object.assign(c,{
+    roadGeometryEditState:null,LABEL_STYLES:{CITY_VISIBLE:true,RURAL_VISIBLE:true},
+    LAYERS:{city:{visible:true,labels:[city]},rural:{visible:true,labels:[rural]}},
+    groups:new Map([['city::1',{layerId:'city',roads:[{_visible:true}]}],['rural::1',{layerId:'rural',roads:[{_visible:true}]}]]),
+    roadStatusFilters:{open:true},hiddenRoadGroups:new Set(),document:{fonts:null},
+    localStorage:{setItem(_key,value){stored=JSON.parse(value);}},
+    isRoadLayerVisibleAtScale:()=>true,isRoadGroupKindVisible:()=>true,
+    getVisibleLabelPosition:()=>position,getMapResolutionScale:()=>1,
+    getRoadLabelCollisionBox:()=>null,applyLabelScale(){},applyLabelAppearance(){}
+  });
+  c.map.getBounds=()=>({});
+  for(const name of ['roadNumberLabelVisible','setRoadNumberLabelVisible','updateLabels'])vm.runInContext(source(name),c);
+  c.updateLabels();assert.equal(city.overlay.getMap(),c.map);assert.equal(rural.overlay.getMap(),c.map);
+  c.setRoadNumberLabelVisible('city',false);
+  assert.equal(city.overlay.getMap(),null);assert.equal(rural.overlay.getMap(),c.map);
+  assert.equal(stored.CITY_VISIBLE,false);assert.equal(stored.RURAL_VISIBLE,true);
+  c.setRoadNumberLabelVisible('city',true);c.setRoadNumberLabelVisible('rural',false);
+  assert.equal(city.overlay.getMap(),c.map);assert.equal(rural.overlay.getMap(),null);
 });
 test('automatic overview and manual original lines never render together',()=>{
   const {c}=setup();const layer=c.BOUNDARY_LAYERS.townshipBoundary;

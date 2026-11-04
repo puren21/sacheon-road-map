@@ -7821,7 +7821,8 @@
 
       const DEFAULT_LABEL_STYLES = {
         SCALE: 70,
-        VISIBLE: true,
+        CITY_VISIBLE: true,
+        RURAL_VISIBLE: true,
         SHAPE_VISIBLE: true,
         SHAPE: "auto",
         SHAPE_FILL_COLOR: "#FFFFFF",
@@ -7894,9 +7895,14 @@
 
       let LABEL_STYLES;
       try {
+        const savedLabelStyles = JSON.parse(localStorage.getItem("labelStyles") || "{}");
         LABEL_STYLES = {
           ...DEFAULT_LABEL_STYLES,
-          ...JSON.parse(localStorage.getItem("labelStyles") || "{}")
+          ...savedLabelStyles,
+          CITY_VISIBLE: typeof savedLabelStyles.CITY_VISIBLE === "boolean"
+            ? savedLabelStyles.CITY_VISIBLE : savedLabelStyles.VISIBLE !== false,
+          RURAL_VISIBLE: typeof savedLabelStyles.RURAL_VISIBLE === "boolean"
+            ? savedLabelStyles.RURAL_VISIBLE : savedLabelStyles.VISIBLE !== false
         };
       } catch (error) {
         LABEL_STYLES = { ...DEFAULT_LABEL_STYLES };
@@ -11647,40 +11653,26 @@
         const card = document.createElement("section");
         card.className = "layer-style-menu-card";
 
-        const routeLabelRow = makeStyleMenuRow(
-          "노선번호",
-          "",
-          function() {
+        [["시도 노선번호", "city"], ["농어촌도로 노선번호", "rural"]].forEach(function(entry) {
+          const label = entry[0];
+          const layerId = entry[1];
+          const routeLabelRow = makeStyleMenuRow(label, "", function() {
             roadLayerEditorView = { type:"label", styleKey:null, parent:"labelMain" };
             renderRoadLayerEditor();
-          }
-        );
-
-        const routeLabelToggle = document.createElement("input");
-        routeLabelToggle.type = "checkbox";
-        routeLabelToggle.className = "layer-style-inline-check";
-        routeLabelToggle.checked = LABEL_STYLES.VISIBLE !== false;
-        routeLabelToggle.setAttribute("aria-label", "노선번호 표시");
-        routeLabelToggle.addEventListener("click", function(event) {
-          event.stopPropagation();
-        });
-        routeLabelToggle.addEventListener("change", function() {
-          LABEL_STYLES.VISIBLE = this.checked;
-          localStorage.setItem("labelStyles", JSON.stringify(LABEL_STYLES));
-          Object.values(LAYERS).forEach(function(layer) {
-            (layer.labels || []).forEach(function(item) {
-              item._visible = false;
-            });
           });
-          applyLabelScale();
-          applyLabelAppearance();
-          updateLabels();
+
+          const toggle = document.createElement("input");
+          toggle.type = "checkbox";
+          toggle.className = "layer-style-inline-check";
+          toggle.checked = roadNumberLabelVisible(layerId);
+          toggle.setAttribute("aria-label", label + " 표시");
+          toggle.addEventListener("click", function(event) { event.stopPropagation(); });
+          toggle.addEventListener("change", function() {
+            setRoadNumberLabelVisible(layerId, this.checked);
+          });
+          routeLabelRow.insertBefore(toggle, routeLabelRow.querySelector(".layer-style-menu-chevron"));
+          card.appendChild(routeLabelRow);
         });
-        routeLabelRow.insertBefore(
-          routeLabelToggle,
-          routeLabelRow.querySelector(".layer-style-menu-chevron")
-        );
-        card.appendChild(routeLabelRow);
 
         const townshipLabelRow = makeStyleMenuRow(
           "읍면 명칭",
@@ -11981,13 +11973,26 @@
         if (rebuild) updateLabels();
       }
 
+      function roadNumberLabelVisible(layerId) {
+        return LABEL_STYLES[layerId === "city" ? "CITY_VISIBLE" : "RURAL_VISIBLE"] !== false;
+      }
+
+      function setRoadNumberLabelVisible(layerId, visible) {
+        const key = layerId === "city" ? "CITY_VISIBLE" : "RURAL_VISIBLE";
+        LABEL_STYLES[key] = !!visible;
+        localStorage.setItem("labelStyles", JSON.stringify(LABEL_STYLES));
+        (LAYERS[layerId].labels || []).forEach(function(item) { item._visible = false; });
+        updateLabels();
+      }
+
       function renderLabelDetail(body) {
         ensureLabelStyleModel();
         renderEditorBackbar(body, '노선번호', '표시·도형·면색·라인색·번호색을 조정합니다.');
         const card = document.createElement('section');
         card.className = 'layer-detail-card';
         card.innerHTML =
-          '<div class="layer-detail-row"><span>표시</span><label class="layer-toggle-line"><input id="editorLabelVisible" type="checkbox" ' + (LABEL_STYLES.VISIBLE !== false ? 'checked' : '') + '> 노선번호 표시</label></div>' +
+          '<div class="layer-detail-row"><span>시도 표시</span><label class="layer-toggle-line"><input id="editorCityLabelVisible" type="checkbox" ' + (roadNumberLabelVisible("city") ? 'checked' : '') + '> 시도 노선번호</label></div>' +
+          '<div class="layer-detail-row"><span>농어촌도로 표시</span><label class="layer-toggle-line"><input id="editorRuralLabelVisible" type="checkbox" ' + (roadNumberLabelVisible("rural") ? 'checked' : '') + '> 농어촌도로 노선번호</label></div>' +
           '<div class="layer-detail-row"><span>도형 표시</span><label class="layer-toggle-line"><input id="editorLabelShapeVisible" type="checkbox" ' + (LABEL_STYLES.SHAPE_VISIBLE !== false ? 'checked' : '') + '> 박스/원 표시</label></div>' +
           '<div class="layer-detail-row"><span>도형</span><select id="editorLabelShape"><option value="auto">기본(시도 원 / 농어촌 사각)</option><option value="box">사각형</option><option value="rounded">둥근 사각형</option><option value="circle">원형</option><option value="none">없음</option></select></div>' +
           '<div class="layer-detail-row"><span>라벨 크기</span><div class="layer-detail-inline"><input id="editorLabelScale" type="range" min="50" max="150" step="5" value="' + LABEL_STYLES.SCALE + '"><strong id="editorLabelScaleValue" style="font-size:11px;text-align:right">' + LABEL_STYLES.SCALE + '%</strong></div></div>' +
@@ -11998,10 +12003,11 @@
 
         card.querySelector('#editorLabelShape').value = LABEL_STYLES.SHAPE || 'auto';
 
-        card.querySelector('#editorLabelVisible').addEventListener('change', function() {
-          LABEL_STYLES.VISIBLE = this.checked;
-          Object.values(LAYERS).forEach(function(layer) { layer.labels.forEach(function(item) { item._visible = false; }); });
-          saveAndApplyLabelStyles(true);
+        card.querySelector('#editorCityLabelVisible').addEventListener('change', function() {
+          setRoadNumberLabelVisible('city', this.checked);
+        });
+        card.querySelector('#editorRuralLabelVisible').addEventListener('change', function() {
+          setRoadNumberLabelVisible('rural', this.checked);
         });
         card.querySelector('#editorLabelShapeVisible').addEventListener('change', function() {
           LABEL_STYLES.SHAPE_VISIBLE = this.checked;
@@ -14179,11 +14185,11 @@
         if (mapInteracting || windowsZoomFastMode || windowsDragFastMode) return;
 
         const bounds = map.getBounds();
-        const labelsEnabled = LABEL_STYLES.VISIBLE !== false;
         const candidates = [];
 
         Object.entries(LAYERS).forEach(function([layerId, layer]) {
           const scaleVisible = isRoadLayerVisibleAtScale(layerId);
+          const labelsEnabled = roadNumberLabelVisible(layerId);
 
           layer.labels.forEach(function(labelItem) {
             let displayPosition = null;
