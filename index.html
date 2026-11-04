@@ -3870,6 +3870,24 @@
     font-size: 12px;
   }
 
+  .sacheon-line-tools .geometry-apply-btn {
+    min-width: 126px;
+    height: 38px;
+    background: #176b3a;
+    border-color: #176b3a;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .sacheon-line-tools .geometry-apply-btn[hidden] { display: none; }
+  .sacheon-line-tools .geometry-apply-btn:disabled {
+    background: #e8ebee;
+    border-color: #cbd4dc;
+    color: #59636c;
+    cursor: default;
+  }
+
   @media (max-width:700px) {
     .road-edit-panel {
       top: auto;
@@ -16522,6 +16540,17 @@
         if (label) label.textContent = message;
       }
 
+      function updateRoadGeometryApplyButton(state) {
+        const button = document.getElementById("applyRoadGeometryBtn");
+        if (!button || !state) return;
+        const isCombine = state.mode === "merge" || state.mode === "join";
+        const count = state.selectedIndices.size;
+        button.hidden = !isCombine;
+        button.disabled = count < 2;
+        button.textContent = (state.mode === "join" ? "선택한 라인 연결" : "선택한 라인 병합") +
+          " (" + count + "개)";
+      }
+
       function roadGeometrySnapEnabled() {
         try {
           return typeof localStorage === "undefined" ||
@@ -16675,12 +16704,13 @@
           if (state.selectedIndices.has(index)) state.selectedIndices.delete(index);
           else state.selectedIndices.add(index);
         } else state.selectedIndices = new Set([index]);
+        updateRoadGeometryApplyButton(state);
         if (state.selectedIndices.size) {
           roadGeometrySetActiveSegment(state, state.selectedIndices.has(index) ? index : state.selectedIndices.values().next().value);
         }
         roadGeometryShowDraft(state);
-        const action = state.mode === "merge" ? " · 병합 버튼을 다시 눌러 실행" :
-          state.mode === "join" ? " · 연결 버튼을 다시 눌러 실행" : " · Shift+클릭으로 추가 선택";
+        const action = state.mode === "merge" ? " · 상단의 선택한 라인 병합 버튼으로 실행" :
+          state.mode === "join" ? " · 상단의 선택한 라인 연결 버튼으로 실행" : " · Shift+클릭으로 추가 선택";
         roadGeometryHelp(state.selectedIndices.size
           ? state.group.number + " · 구간 " + (state.draft.selected + 1) + "/" +
             state.draft.segments.length + " · 선택 " + state.selectedIndices.size + "개" + action
@@ -16692,6 +16722,7 @@
         if (!state) return;
         roadGeometrySyncWorkingPath(state);
         state.mode = mode;
+        updateRoadGeometryApplyButton(state);
         state.capture = [];
         state.captureCursor = null;
         hideGeometryHoverPlus(state, true);
@@ -16713,7 +16744,7 @@
           roadGeometryHelp(mode === "add" ? "지도에서 새 라인의 점을 클릭한 뒤 완료를 누르세요." : "선택한 라인을 가로지르는 선을 그린 뒤 완료를 누르세요.");
         } else {
           roadGeometryHelp("같은 노선의 라인을 지도에서 선택하세요. Shift+클릭으로 추가 선택합니다. " +
-            ((mode === "merge" || mode === "join") ? "선택 후 도구 버튼을 다시 누르면 실행됩니다. " : "") +
+            ((mode === "merge" || mode === "join") ? "두 개 이상 선택한 뒤 상단 실행 버튼을 누르세요. " : "") +
             "선택 " + state.selectedIndices.size + "개.");
         }
         roadGeometryShowDraft(state);
@@ -16731,6 +16762,7 @@
           else if (mode === "delete") state.draft.delete(ids);
           state.structuralPending = true;
           state.selectedIndices = new Set([state.draft.selected]);
+          updateRoadGeometryApplyButton(state);
           const panel = document.getElementById("roadEditPanel");
           if (panel && panel.dataset.groupKey === state.groupKey) showRoadAttributePanel(state.groupKey);
           roadGeometryShowDraft(state);
@@ -16750,6 +16782,7 @@
         }
         state.structuralPending = state.draft.structureVersion !== 0;
         state.selectedIndices = new Set([state.draft.selected]);
+        updateRoadGeometryApplyButton(state);
         if (state.mode === "vertex") {
           state.roadIndex = state.draft.selected;
           roadGeometrySetActiveSegment(state, state.draft.selected);
@@ -17021,6 +17054,7 @@
               '" title="' + item[1] + '" aria-label="' + item[1] + '" data-line-mode="' + item[0] + '">' +
               '<svg viewBox="0 0 24 24" aria-hidden="true">' + icons[item[0]] + '</svg></button>';
           }).join("") +
+          '<button type="button" class="geometry-apply-btn" id="applyRoadGeometryBtn" hidden disabled>선택한 라인 병합 (1개)</button>' +
           '<button type="button" class="geometry-icon-btn" id="finishRoadGeometryCaptureBtn" title="그리기 완료" aria-label="그리기 완료">✓</button>' +
           '<button type="button" class="geometry-icon-btn active" id="roadLineSnapBtn" title="스냅 켜짐" aria-label="스냅 켜짐" aria-pressed="true">⌖</button>' +
           '<button type="button" class="save" id="saveRoadGeometryBtn" onclick="saveRoadGeometryEdit()">저장</button>' +
@@ -17032,10 +17066,14 @@
             const mode = this.dataset.lineMode;
             if (mode === "undo" || mode === "redo") roadGeometryHistory(mode === "redo");
             else if (mode === "delete") roadGeometryApplyTool(mode);
-            else if ((mode === "merge" || mode === "join") && roadGeometryEditState.mode === mode) roadGeometryApplyTool(mode);
             else setRoadGeometryEditMode(mode);
           };
         });
+        document.getElementById("applyRoadGeometryBtn").onclick = function() {
+          const state = roadGeometryEditState;
+          if (state && state.selectedIndices.size >= 2 &&
+              (state.mode === "merge" || state.mode === "join")) roadGeometryApplyTool(state.mode);
+        };
         document.getElementById("finishRoadGeometryCaptureBtn").onclick = roadGeometryFinishCapture;
         const snapButton = document.getElementById("roadLineSnapBtn");
         snapButton.classList.toggle("active", roadGeometryEditState.snapEnabled);

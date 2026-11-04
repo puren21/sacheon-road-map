@@ -52,6 +52,30 @@ test('vertex plus stays at the middle of the hovered segment while line clicks k
   assert.equal(hidden, true);
 });
 
+test('merge and join display a named action button once two segments are selected', () => {
+  const button = { hidden: true, disabled: true, textContent: '' };
+  const c = context(['updateRoadGeometryApplyButton'], {
+    document: { getElementById: () => button }
+  });
+  const state = { mode: 'merge', selectedIndices: new Set([0]) };
+  c.updateRoadGeometryApplyButton(state);
+  assert.equal(button.hidden, false);
+  assert.equal(button.disabled, true);
+  assert.equal(button.textContent, '선택한 라인 병합 (1개)');
+  state.selectedIndices.add(1);
+  c.updateRoadGeometryApplyButton(state);
+  assert.equal(button.disabled, false);
+  assert.equal(button.textContent, '선택한 라인 병합 (2개)');
+  state.mode = 'join';
+  c.updateRoadGeometryApplyButton(state);
+  assert.equal(button.textContent, '선택한 라인 연결 (2개)');
+  state.mode = 'select';
+  c.updateRoadGeometryApplyButton(state);
+  assert.equal(button.hidden, true);
+  assert.match(html, /id="applyRoadGeometryBtn"[^>]*>선택한 라인 병합/);
+  assert.match(html, /roadGeometryApplyTool\(state\.mode\)/);
+});
+
 test('city and rural road lengths share a km UI without changing stored units', () => {
   const c = context(['parseRoadLength', 'roadLengthKm', 'roadLengthInputValue']);
   assert.equal(c.roadLengthInputValue({ 연장: 4154 }, 'city'), '4.154');
@@ -253,9 +277,10 @@ test('line editor opens the Gunsan-style tool set on the full-resolution segment
   const path = [new LatLng(...point(0)), new LatLng(...point(5)), new LatLng(...point(10))];
   const road = { pathFine: [path[0], path[2]], properties: { number: '3', 연장: 1000 }, groupKey: 'city::3' };
   const group = { key: 'city::3', number: '3', layerId: 'city', roads: [road], paths: [path] };
-  const elements = { finishRoadGeometryCaptureBtn: {}, roadLineSnapBtn: {
+  const elements = { applyRoadGeometryBtn: {}, finishRoadGeometryCaptureBtn: {}, roadLineSnapBtn: {
     classList: { toggle() {} }, setAttribute() {}
   } };
+  let appliedMode = null;
   let toolbar;
   const c = context(['startRoadGeometryEdit'], {
     roadGeometryEditState: null, geometryEditingGroupKey: null, groups: new Map([[group.key, group]]),
@@ -263,7 +288,7 @@ test('line editor opens the Gunsan-style tool set on the full-resolution segment
     roadGroupSegmentModel: () => [{ properties: { ...road.properties }, geometry: path.map(p => [p.getLat(), p.getLng()]) }],
     focusSelectedRoadForEditing() {}, removeSelectedRouteBalloon() {}, updateLabels() {}, closeRoadEditPanel() {},
     rebuildRoadGeometryEditMarkers() {}, roadGeometryShowDraft() {}, cloneRoadEditPath: points => points.slice(),
-    roadGeometryFinishCapture() {}, roadGeometryHistory() {}, roadGeometryApplyTool() {},
+    roadGeometryFinishCapture() {}, roadGeometryHistory() {}, roadGeometryApplyTool(mode) { appliedMode = mode; },
     roadGeometrySnapEnabled: () => true,
     setRoadGeometryEditMode() {}, roadGeometryHelp() {},
     getRoadVisualLines: () => [new Polyline({ path, map: {} })],
@@ -285,7 +310,14 @@ test('line editor opens the Gunsan-style tool set on the full-resolution segment
     assert.ok(toolbar.innerHTML.includes(`data-line-mode="${name}"`), name);
   }
   assert.equal(typeof elements.finishRoadGeometryCaptureBtn.onclick, 'function');
+  assert.equal(typeof elements.applyRoadGeometryBtn.onclick, 'function');
   assert.equal(typeof elements.roadLineSnapBtn.onclick, 'function');
+  c.roadGeometryEditState.mode = 'merge';
+  elements.applyRoadGeometryBtn.onclick();
+  assert.equal(appliedMode, null);
+  c.roadGeometryEditState.selectedIndices.add(1);
+  elements.applyRoadGeometryBtn.onclick();
+  assert.equal(appliedMode, 'merge');
 });
 
 test('line selection replaces a single choice and Shift adds or removes choices', () => {
@@ -297,7 +329,7 @@ test('line selection replaces a single choice and Shift adds or removes choices'
   const c = context(['roadGeometrySelectSegment'], {
     roadGeometryEditState: state,
     roadGeometrySetActiveSegment(_state, index) { selected.push(index); state.draft.selected = index; },
-    roadGeometryShowDraft() {}, roadGeometryHelp() {}
+    roadGeometryShowDraft() {}, roadGeometryHelp() {}, updateRoadGeometryApplyButton() {}
   });
   c.roadGeometrySelectSegment(1, null, { shiftKey: false });
   assert.deepEqual([...state.selectedIndices], [1]);
@@ -338,7 +370,7 @@ test('vertex editing can follow a cut without an intermediate save', () => {
     roadGeometryEditState: state, map: {},
     roadGeometrySyncWorkingPath() {}, hideGeometryHoverPlus() {},
     roadGeometrySetActiveSegment(_state, index) { active = index; },
-    roadGeometryShowDraft() {}, roadGeometryHelp() {},
+    roadGeometryShowDraft() {}, roadGeometryHelp() {}, updateRoadGeometryApplyButton() {},
     document: { querySelectorAll: () => [] }
   });
   c.setRoadGeometryEditMode('vertex');
