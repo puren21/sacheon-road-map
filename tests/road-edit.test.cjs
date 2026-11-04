@@ -18,6 +18,33 @@ function context(names, extras = {}) {
   return sandbox;
 }
 
+test('switching road category refreshes visible city entries after mode changes', () => {
+  const items = [
+    { dataset: { key: 'city::1' }, style: {} },
+    { dataset: { key: 'rural::1' }, style: {} }
+  ];
+  const elements = Object.fromEntries(['cityListTitle', 'ruralListTitle', 'searchEmpty']
+    .map(id => [id, { style: {} }]));
+  const c = context(['showAllRoadList'], {
+    groups: new Map([
+      ['city::1', { layerId: 'city' }], ['rural::1', { layerId: 'rural' }]
+    ]),
+    window: { sacheonRoadCategoryMode: 'rural' },
+    document: { querySelectorAll: () => items, getElementById: id => elements[id] },
+    isRoadGroupKindVisible: () => true
+  });
+  c.showAllRoadList();
+  assert.equal(items[0].style.display, 'none');
+  assert.equal(items[1].style.display, 'block');
+  c.window.sacheonRoadCategoryMode = 'city';
+  c.showAllRoadList();
+  assert.equal(items[0].style.display, 'block');
+  assert.equal(items[1].style.display, 'none');
+  assert.equal(elements.cityListTitle.style.display, 'block');
+  assert.equal(elements.searchEmpty.style.display, 'none');
+  assert.match(html, /categorySelect\.addEventListener\("change", function\(\) \{\s*setCategoryMode\(this\.value\);\s*if \(searchInput\) \{\s*searchInput\.value = "";\s*searchInput\.dispatchEvent/);
+});
+
 test('selecting a road no longer creates a route balloon on the map', () => {
   const previous = { setMap(value) { this.map = value; } };
   const c = context(['removeSelectedRouteBalloon', 'updateSelectedRouteBalloon'], {

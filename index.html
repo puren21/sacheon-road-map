@@ -18440,14 +18440,10 @@
 
   if (categorySelect) {
     categorySelect.addEventListener("change", function() {
+      setCategoryMode(this.value);
       if (searchInput) {
         searchInput.value = "";
         searchInput.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-      setCategoryMode(this.value);
-      if (typeof showAllRoadList === "function") {
-        showAllRoadList();
-        if (typeof updateRoadSearchCount === "function") updateRoadSearchCount();
       }
     });
   }
