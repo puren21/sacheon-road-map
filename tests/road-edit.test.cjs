@@ -36,6 +36,50 @@ test('city route 12 rejects remote geometry outside its mapped area', () => {
   assert.equal(c.isRoadGeometryNearGroup(group, [[36.058583, 129.2452779], [36.0745599, 129.263593]]), false);
 });
 
+test('attribute table saves city segments together without replacing geometry or other fields', async () => {
+  const group = { key:'city::12', number:'12', layerId:'city', roads:[
+    { properties:{ 연장:2348, 차선:null } }, { properties:{ 연장:2461, 차선:null } }
+  ] };
+  let calls = 0, persisted;
+  const c = context(['saveRoadTableChanges', 'roadLengthEditedValue', 'roadLengthInputValue', 'roadLengthKm', 'parseRoadLength'], {
+    groups:new Map([[group.key,group]]), roadGeometryEditState:null,
+    fetchOnlineRoadEdits:async () => ({ version:2, roads:{ '0':{remark:'유지'} }, geometries:{ '0':[[35,128],[35.1,128.1]] } }),
+    saveOnlineRoadEdits:async (_group,payload) => { calls++; persisted = structuredClone(payload); },
+    applyOnlineRoadEdits:() => {}
+  });
+  await c.saveRoadTableChanges([
+    { groupKey:group.key, index:0, values:{lane:'2',length:'1.2'} },
+    { groupKey:group.key, index:1, values:{width:'7'} }
+  ]);
+  assert.equal(calls,1);
+  assert.equal(persisted.roads['0'].length,1200);
+  assert.equal(persisted.roads['0'].lane,'2');
+  assert.equal(persisted.roads['0'].remark,'유지');
+  assert.equal(persisted.roads['1'].width,'7');
+  assert.deepEqual(persisted.geometries['0'],[[35,128],[35.1,128.1]]);
+});
+
+test('attribute table preserves rural segment models when saving one field', async () => {
+  const group = { key:'rural::4', number:'4', layerId:'rural', roads:[
+    { properties:{ 연장:1.5, GUBUN:'면도' } }
+  ] };
+  let persisted;
+  const c = context(['saveRoadTableChanges', 'roadLengthEditedValue', 'roadLengthInputValue', 'roadLengthKm', 'parseRoadLength'], {
+    groups:new Map([[group.key,group]]), roadGeometryEditState:null,
+    fetchOnlineRoadEdits:async () => ({ version:3, segmentModel:[{
+      geometry:[[35,128],[35.1,128.1]], properties:{ GUBUN:'면도', 비고:'기존' }
+    }] }),
+    saveOnlineRoadEdits:async (_group,payload) => { persisted=structuredClone(payload); },
+    applyOnlineRoadEdits:() => {},
+    applyRoadEditValuesToRoad:(_group,road,values) => { road.properties.도로폭=values.width; }
+  });
+  await c.saveRoadTableChanges([{ groupKey:group.key, index:0, values:{width:'6'} }]);
+  assert.equal(persisted.version,3);
+  assert.equal(persisted.segmentModel[0].properties.도로폭,'6');
+  assert.equal(persisted.segmentModel[0].properties.비고,'기존');
+  assert.deepEqual(persisted.segmentModel[0].geometry,[[35,128],[35.1,128.1]]);
+});
+
 test('split preview and captured point snap to the selected road before adjacent roads', () => {
   class LatLng {
     constructor(lat, lng) { this.lat = lat; this.lng = lng; }

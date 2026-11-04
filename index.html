@@ -7469,6 +7469,10 @@
 
     <div id="listContent">
       <div id="addressResults"></div>
+      <div class="road-table-launchers" aria-label="도로 속성테이블">
+        <button type="button" data-road-table="city">▦ 시도 속성테이블</button>
+        <button type="button" data-road-table="rural">▦ 농어촌도로 속성테이블</button>
+      </div>
       <div id="cityListTitle" class="list-title city">시도</div>
       <div id="cityList"></div>
 
@@ -7695,6 +7699,8 @@
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
   <script src="road-line-geometry.js?v=20261103-2"></script>
   <script src="road-line-draft.js?v=20261103-2"></script>
+  <link rel="stylesheet" href="road-attribute-table.css?v=20261104-1">
+  <script src="road-attribute-table.js?v=20261104-1"></script>
 
   <script>
     if (!window.kakao || !window.kakao.maps) {
@@ -13516,6 +13522,46 @@
         await preloadCityRoadEdits();
         buildGroupLabels();
         makeLists();
+        window.initSacheonAttributeTable({
+          rows: function(layerId) {
+            return Array.from(groups.values()).filter(function(group) {
+              return group.layerId === layerId;
+            }).flatMap(function(group) {
+              return group.roads.map(function(road, index) {
+                return { groupKey:group.key, number:group.number, index:index,
+                  layerId:layerId, properties:road.properties,
+                  status:statusValueFromKey(getRoadStatusKey(road.properties, layerId)),
+                  length:roadLengthInputValue(road.properties, layerId) };
+              });
+            });
+          },
+          select: function(groupKey, index) {
+            selectGroup(groupKey);
+            const group = groups.get(groupKey);
+            if (group && group.roads[index]) selectedRoadObject = group.roads[index];
+          },
+          load: async function(layerId) {
+            const prefix = "sacheon-edit:" + layerId + ":";
+            const response = await fetch(SACHEON_MEMO_REST_URL +
+              "/route_memos?route_number=like." + encodeURIComponent(prefix) +
+              "*&select=route_number,memo&limit=500",
+              { headers:SACHEON_MEMO_HEADERS, cache:"no-store" });
+            if (!response.ok) throw new Error("온라인 속성 불러오기 실패 (" + response.status + ")");
+            const saved = await response.json();
+            (saved || []).forEach(function(item) {
+              if (!item.route_number || !item.route_number.startsWith(prefix) || !item.memo) return;
+              const group = groups.get(layerId + "::" + item.route_number.slice(prefix.length));
+              if (!group) return;
+              try {
+                const payload = JSON.parse(item.memo);
+                if (appliedOnlineRoadEditSignatures.get(group.key) !== JSON.stringify(payload)) {
+                  applyOnlineRoadEdits(group, payload);
+                }
+              } catch (error) { console.error("도로 속성테이블 온라인 자료 오류", error); }
+            });
+          },
+          save: saveRoadTableChanges
+        });
         applyRoadVisibility();
         if (townshipAllBounds.isEmpty() && !allBounds.isEmpty()) map.setBounds(allBounds);
         updateLabels();
@@ -14351,7 +14397,8 @@
 
       function openSelectedGroupInfoFromList(group) {
         if (!group) return;
-        const road = group.roads && group.roads.length ? group.roads[0] : null;
+        const road = selectedRoadObject && selectedRoadObject.groupKey === group.key
+          ? selectedRoadObject : group.roads && group.roads.length ? group.roads[0] : null;
         let position = null;
 
         if (road) {
@@ -15352,6 +15399,51 @@
         if (!response.ok) {
           const detail = await response.text();
           throw new Error("온라인 편집정보 저장 실패 (" + response.status + "): " + detail);
+        }
+      }
+
+      async function saveRoadTableChanges(changes) {
+        const grouped = new Map();
+        changes.forEach(function(change) {
+          if (!grouped.has(change.groupKey)) grouped.set(change.groupKey, []);
+          grouped.get(change.groupKey).push(change);
+        });
+        for (const [groupKey, edits] of grouped) {
+          const group = groups.get(groupKey);
+          if (!group) throw new Error("노선을 찾을 수 없습니다: " + groupKey);
+          if (roadGeometryEditState && roadGeometryEditState.groupKey === groupKey) {
+            throw new Error("해당 노선의 선형 편집을 마친 뒤 속성을 저장해 주세요.");
+          }
+          const payload = await fetchOnlineRoadEdits(group) || {};
+          edits.forEach(function(edit) {
+            if (!group.roads[edit.index]) throw new Error("구간이 변경되었습니다. 테이블을 다시 열어 주세요.");
+            if (Object.prototype.hasOwnProperty.call(edit.values, "length")) {
+              const props = group.roads[edit.index].properties;
+              edit.values.length = roadLengthEditedValue(edit.values.length, props,
+                group.layerId, roadLengthInputValue(props, group.layerId));
+            }
+          });
+          if (Array.isArray(payload.segmentModel)) {
+            edits.forEach(function(edit) {
+              const segment = payload.segmentModel[edit.index];
+              if (!segment) throw new Error("저장된 구간이 변경되었습니다. 테이블을 다시 열어 주세요.");
+              const copy = { properties:Object.assign({}, segment.properties || {}) };
+              applyRoadEditValuesToRoad(group, copy, edit.values);
+              segment.properties = copy.properties;
+            });
+            payload.version = 3;
+          } else {
+            if (!payload.roads || typeof payload.roads !== "object") payload.roads = {};
+            edits.forEach(function(edit) {
+              if (!group.roads[edit.index]) throw new Error("구간이 변경되었습니다. 테이블을 다시 열어 주세요.");
+              payload.roads[String(edit.index)] = Object.assign({}, payload.roads[String(edit.index)] || {}, edit.values);
+            });
+            payload.version = payload.geometries && Object.keys(payload.geometries).length ? 2 : 1;
+          }
+          payload.layerId = group.layerId;
+          payload.number = String(group.number);
+          await saveOnlineRoadEdits(group, payload);
+          applyOnlineRoadEdits(group, payload);
         }
       }
 

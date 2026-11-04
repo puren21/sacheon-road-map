@@ -1,0 +1,35 @@
+.road-table-launchers{display:flex;gap:6px;padding:8px 12px 6px;flex-wrap:wrap}
+.road-table-launchers button{flex:1 1 130px;min-height:37px;padding:7px 9px;border:1px solid #c9d9e6;border-radius:8px;background:#f3f8fc;color:#21577d;font:600 12px/1.3 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;cursor:pointer;text-align:center}
+.road-table-launchers button:hover{background:#e6f2ff;border-color:#84b3dc}
+#sacheonAttributeTable{position:fixed;z-index:1600;left:50%;bottom:16px;transform:translateX(-50%);width:min(1300px,calc(100vw - 24px));height:min(650px,70dvh);min-height:240px;box-sizing:border-box;display:flex;flex-direction:column;resize:both;overflow:hidden;border:1px solid #b9cbd9;border-radius:12px;background:white;box-shadow:0 12px 40px #15344b44;color:#23394b;font:13px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}
+#sacheonAttributeTable[hidden]{display:none!important}
+#sacheonAttributeTable .road-table-header{display:flex;flex:none;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 11px;border-bottom:1px solid #d5e0e9;background:#f7fafc}
+#sacheonAttributeTable .road-table-header strong{white-space:nowrap;font-size:15px;margin-right:4px}
+#sacheonAttributeTable nav{display:flex;gap:3px;padding:2px;border-radius:7px;background:#eaf0f5}
+#sacheonAttributeTable button{border:1px solid #c4d3df;border-radius:6px;background:#fff;color:#245572;font:inherit;padding:5px 9px;white-space:nowrap;cursor:pointer}
+#sacheonAttributeTable button:disabled{opacity:.45;cursor:default}
+#sacheonAttributeTable nav button{background:transparent;border-color:transparent}
+#sacheonAttributeTable nav button[aria-pressed="true"],#roadTableEdit[aria-pressed="true"]{background:#dceeff;border-color:#81b2df;color:#155590}
+#roadTableSearch{flex:1 1 140px;min-width:130px;max-width:230px;padding:6px 8px;border:1px solid #bfcfdc;border-radius:6px;font:inherit}
+#roadTableCount{white-space:nowrap;color:#617688}
+#roadTableSave{background:#1875c2!important;color:white!important;border-color:#1875c2!important}
+#roadTableClose{margin-left:auto;font-size:21px!important;line-height:1!important;padding:2px 8px!important}
+#sacheonAttributeTable .road-table-message{padding:5px 11px;color:#587185;font-size:12px;min-height:18px;flex:none}
+#sacheonAttributeTable .road-table-message.error{color:#b12727}
+#sacheonAttributeTable .road-table-scroll{flex:1;min-height:0;overflow:auto}
+#sacheonAttributeTable table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:100%}
+#sacheonAttributeTable th,#sacheonAttributeTable td{box-sizing:border-box;border-right:1px solid #dce5eb;border-bottom:1px solid #dce5eb;padding:4px 6px;white-space:nowrap;overflow:hidden}
+#sacheonAttributeTable th{position:sticky;top:0;z-index:2;background:#e7eff5;text-align:left;overflow:visible}
+#sacheonAttributeTable th button{border:0;background:transparent;font-weight:700;max-width:calc(100% - 8px);text-overflow:ellipsis;overflow:hidden;text-align:left}
+#sacheonAttributeTable .road-table-resize{position:absolute;right:-4px;top:0;bottom:0;width:9px;z-index:3;cursor:col-resize;touch-action:none}
+#sacheonAttributeTable .road-table-resize:hover{background:#2385cc44}
+#sacheonAttributeTable tbody tr:nth-child(even){background:#f8fafc}
+#sacheonAttributeTable tbody tr:hover{background:#eff6fd}
+#sacheonAttributeTable tbody tr[aria-selected="true"]{background:#d9ebff;box-shadow:inset 3px 0 #2679ba}
+#sacheonAttributeTable tbody tr.road-table-dirty td:first-child{box-shadow:inset 3px 0 #e09819}
+#sacheonAttributeTable td input,#sacheonAttributeTable td select{box-sizing:border-box;width:100%;min-width:0;padding:4px;border:1px solid transparent;background:transparent;color:inherit;font:inherit;text-overflow:ellipsis}
+#sacheonAttributeTable td input:not([readonly]),#sacheonAttributeTable td select:not(:disabled){background:#fff;border-color:#aec9e0;border-radius:4px}
+#sacheonAttributeTable td input[readonly],#sacheonAttributeTable td select:disabled{pointer-events:none}
+#sacheonAttributeTable td input:focus,#sacheonAttributeTable td select:focus{outline:2px solid #2184d1;outline-offset:0}
+#sacheonAttributeTable.road-table-popup{position:relative;left:auto;bottom:auto;transform:none;width:100%;height:100dvh;min-height:0;resize:none;border:0;border-radius:0;box-shadow:none}
+@media (max-width:700px){#sacheonAttributeTable{left:6px;bottom:6px;transform:none;width:calc(100vw - 12px);height:65dvh}#sacheonAttributeTable .road-table-header{gap:5px}#sacheonAttributeTable .road-table-header strong{width:100%}#roadTableClose{position:absolute;right:9px;top:8px}}
