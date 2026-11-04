@@ -17,6 +17,7 @@
     const params = new URLSearchParams(location.search);
     const lat = Number(params.get('lat'));
     const lng = Number(params.get('lng'));
+    const channel = params.get('channel');
     const status = document.getElementById('status');
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat)>90 || Math.abs(lng)>180) {
       status.textContent = '올바른 위치 좌표가 없습니다.';
@@ -25,6 +26,26 @@
     } else kakao.maps.load(function() {
       const position = new kakao.maps.LatLng(lat, lng);
       const viewer = new kakao.maps.Roadview(document.getElementById('roadview'));
+      function reportRoadviewState() {
+        if (!window.opener || !channel) return;
+        const current = viewer.getPosition();
+        if (!current) return;
+        const viewpoint = viewer.getViewpoint();
+        window.opener.postMessage({
+          type: 'sacheon-roadview-state', channel,
+          lat: current.getLat(), lng: current.getLng(),
+          pan: viewpoint && viewpoint.pan
+        }, location.origin);
+      }
+      kakao.maps.event.addListener(viewer, 'init', reportRoadviewState);
+      kakao.maps.event.addListener(viewer, 'pano_changed', reportRoadviewState);
+      kakao.maps.event.addListener(viewer, 'position_changed', reportRoadviewState);
+      kakao.maps.event.addListener(viewer, 'viewpoint_changed', reportRoadviewState);
+      window.addEventListener('pagehide', function() {
+        if (window.opener && channel) window.opener.postMessage({
+          type: 'sacheon-roadview-closed', channel
+        }, location.origin);
+      });
       new kakao.maps.RoadviewClient().getNearestPanoId(position, 100, function(panoId) {
         if (panoId === null) {
           status.textContent = '이 위치 주변에 로드뷰가 없습니다.';

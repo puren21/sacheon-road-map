@@ -438,13 +438,62 @@ test('one edit action opens both the line tools and the attribute inputs', async
 test('roadview opens its own map window', () => {
   let opened;
   const c = context(['openRoadview'], {
-    roadviewMode: true, roadviewClient: {},
+    roadviewMode: true, roadviewClient: {}, roadviewWindowWatchTimer: null,
+    hideRoadviewMapDirection() {}, setInterval: () => 1,
     window: { open(url, name) { opened = { url, name }; return { focus() {} }; } }
   });
   c.openRoadview({ getLat: () => 34.93, getLng: () => 128.07 });
   assert.equal(opened.name, 'sacheonRoadview');
-  assert.match(opened.url, /^roadview\.html\?lat=34\.93&lng=128\.07$/);
+  assert.match(opened.url, /^roadview\.html\?lat=34\.93&lng=128\.07&channel=/);
   assert.match(fs.readFileSync(path.join(__dirname, '../roadview.html'), 'utf8'), /new kakao\.maps\.Roadview\(/);
+});
+
+test('separate roadview updates main map position and heading, then clears on close', () => {
+  class LatLng {
+    constructor(lat, lng) { this.lat = lat; this.lng = lng; }
+    getLat() { return this.lat; }
+    getLng() { return this.lng; }
+  }
+  class CustomOverlay {
+    constructor(options) { this.position = options.position; }
+    setPosition(position) { this.position = position; }
+    setMap(map) { this.map = map; }
+  }
+  const direction = { style: {} };
+  const marker = { className: '', innerHTML: '', querySelector: () => direction };
+  const popout = {};
+  const map = {};
+  const c = context(['showRoadviewMapDirection', 'hideRoadviewMapDirection',
+    'receiveRoadviewWindowMessage'], {
+    roadviewMode: true, roadviewPopupWindow: popout, roadviewWindowChannel: 'current',
+    roadviewWindowWatchTimer: null, roadviewMapDirectionOverlay: null,
+    roadviewMapDirectionCone: null, map, clearInterval() {},
+    document: { createElement: () => marker },
+    kakao: { maps: { LatLng, CustomOverlay } },
+    window: { location: { origin: 'https://puren21.github.io' } }
+  });
+  const deliver = (data, origin = 'https://puren21.github.io', source = popout) =>
+    c.receiveRoadviewWindowMessage({ data, origin, source });
+  const initial = { type: 'sacheon-roadview-state', channel: 'current', lat: 34.93, lng: 128.07, pan: 120 };
+  deliver(initial, 'https://untrusted.example');
+  deliver({ ...initial, channel: 'old' });
+  deliver(initial, undefined, {});
+  assert.equal(c.roadviewMapDirectionOverlay, null);
+  deliver(initial);
+  assert.equal(c.roadviewMapDirectionOverlay.position.getLat(), 34.93);
+  assert.equal(direction.style.transform, 'translate(-50%, -100%) rotate(120deg)');
+  assert.equal(c.roadviewMapDirectionOverlay.map, map);
+  deliver({ ...initial, lat: 34.94, pan: 270 });
+  assert.equal(c.roadviewMapDirectionOverlay.position.getLat(), 34.94);
+  assert.equal(direction.style.transform, 'translate(-50%, -100%) rotate(270deg)');
+  deliver({ ...initial, lat: 999 });
+  assert.equal(c.roadviewMapDirectionOverlay.position.getLat(), 34.94);
+  deliver({ type: 'sacheon-roadview-closed', channel: 'current' });
+  assert.equal(c.roadviewMapDirectionOverlay.map, null);
+  assert.equal(c.roadviewWindowChannel, null);
+  const popoutHtml = fs.readFileSync(path.join(__dirname, '../roadview.html'), 'utf8');
+  assert.match(popoutHtml, /'position_changed', reportRoadviewState/);
+  assert.match(popoutHtml, /'viewpoint_changed', reportRoadviewState/);
 });
 
 test('unified editor saves input fields into the selected line draft', () => {

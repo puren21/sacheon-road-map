@@ -10264,6 +10264,11 @@
       let roadviewMiniMarker = null;
       let roadviewDirectionOverlay = null;
       let roadviewDirectionCone = null;
+      let roadviewMapDirectionOverlay = null;
+      let roadviewMapDirectionCone = null;
+      let roadviewPopupWindow = null;
+      let roadviewWindowChannel = null;
+      let roadviewWindowWatchTimer = null;
 
       const normalBtn = document.getElementById("normalBtn");
       const skyBtn = document.getElementById("skyBtn");
@@ -17790,6 +17795,8 @@
             if (!currentPosition) return;
             roadviewDirectionOverlay.setPosition(currentPosition);
             roadviewMiniMap.setCenter(currentPosition);
+            const viewpoint = roadview.getViewpoint();
+            showRoadviewMapDirection(currentPosition, viewpoint && viewpoint.pan);
           };
 
           const syncRoadviewDirection = function () {
@@ -17800,6 +17807,7 @@
               : 0;
             roadviewDirectionCone.style.transform =
               "translate(-50%, -100%) rotate(" + pan + "deg)";
+            showRoadviewMapDirection(roadview.getPosition(), pan);
           };
 
           kakao.maps.event.addListener(
@@ -17835,6 +17843,11 @@
       function stopRoadview() {
         roadviewMode = false;
         roadviewBtn.classList.remove("active");
+        hideRoadviewMapDirection();
+        roadviewPopupWindow = null;
+        roadviewWindowChannel = null;
+        if (roadviewWindowWatchTimer) clearInterval(roadviewWindowWatchTimer);
+        roadviewWindowWatchTimer = null;
 
         if (roadviewOverlay) {
           roadviewOverlay.setMap(null);
@@ -17851,14 +17864,32 @@
           return;
         }
 
+        const channel = String(Date.now()) + "-" + Math.random().toString(36).slice(2);
         const url = "roadview.html?lat=" + encodeURIComponent(position.getLat()) +
-          "&lng=" + encodeURIComponent(position.getLng());
+          "&lng=" + encodeURIComponent(position.getLng()) + "&channel=" + encodeURIComponent(channel);
         const separateWindow = window.open(url, "sacheonRoadview",
           "width=1100,height=720,resizable=yes,scrollbars=yes");
         if (separateWindow) {
+          roadviewPopupWindow = separateWindow;
+          roadviewWindowChannel = channel;
+          hideRoadviewMapDirection();
+          if (roadviewWindowWatchTimer) clearInterval(roadviewWindowWatchTimer);
+          roadviewWindowWatchTimer = setInterval(function() {
+            if (!roadviewPopupWindow || !roadviewPopupWindow.closed) return;
+            roadviewPopupWindow = null;
+            roadviewWindowChannel = null;
+            hideRoadviewMapDirection();
+            clearInterval(roadviewWindowWatchTimer);
+            roadviewWindowWatchTimer = null;
+          }, 1000);
           separateWindow.focus();
           return;
         }
+
+        roadviewPopupWindow = null;
+        roadviewWindowChannel = null;
+        if (roadviewWindowWatchTimer) clearInterval(roadviewWindowWatchTimer);
+        roadviewWindowWatchTimer = null;
 
         roadviewClient.getNearestPanoId(
           position,
@@ -17902,7 +17933,51 @@
         roadviewPanel.style.display = "none";
         roadviewPanel.classList.remove("fullscreen");
         fullscreenBtn.textContent = "전체화면";
+        if (!roadviewPopupWindow || roadviewPopupWindow.closed) hideRoadviewMapDirection();
       }
+
+      function showRoadviewMapDirection(position, pan) {
+        if (!roadviewMode || !position) return;
+        if (!roadviewMapDirectionOverlay) {
+          const marker = document.createElement("div");
+          marker.className = "roadview-direction-marker";
+          marker.innerHTML = '<div class="roadview-direction-cone"></div>' +
+            '<div class="roadview-direction-dot"></div>';
+          roadviewMapDirectionCone = marker.querySelector(".roadview-direction-cone");
+          roadviewMapDirectionOverlay = new kakao.maps.CustomOverlay({
+            position: position, content: marker, xAnchor: 0, yAnchor: 0, zIndex: 200
+          });
+        }
+        roadviewMapDirectionOverlay.setPosition(position);
+        roadviewMapDirectionCone.style.transform =
+          "translate(-50%, -100%) rotate(" +
+          (Number.isFinite(Number(pan)) ? Number(pan) : 0) + "deg)";
+        roadviewMapDirectionOverlay.setMap(map);
+      }
+
+      function hideRoadviewMapDirection() {
+        if (roadviewMapDirectionOverlay) roadviewMapDirectionOverlay.setMap(null);
+      }
+
+      function receiveRoadviewWindowMessage(event) {
+        if (!roadviewMode || !roadviewPopupWindow || !roadviewWindowChannel ||
+            event.origin !== window.location.origin || event.source !== roadviewPopupWindow ||
+            !event.data || event.data.channel !== roadviewWindowChannel) return;
+        if (event.data.type === "sacheon-roadview-closed") {
+          hideRoadviewMapDirection();
+          roadviewPopupWindow = null;
+          roadviewWindowChannel = null;
+          if (roadviewWindowWatchTimer) clearInterval(roadviewWindowWatchTimer);
+          roadviewWindowWatchTimer = null;
+          return;
+        }
+        if (event.data.type !== "sacheon-roadview-state") return;
+        const lat = Number(event.data.lat), lng = Number(event.data.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) ||
+            Math.abs(lat) > 90 || Math.abs(lng) > 180) return;
+        showRoadviewMapDirection(new kakao.maps.LatLng(lat, lng), event.data.pan);
+      }
+      window.addEventListener("message", receiveRoadviewWindowMessage);
 
       /*
        * 로드뷰 전체화면
