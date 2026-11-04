@@ -14799,6 +14799,8 @@
           const lines = getRoadVisualLines(road);
           const isSelectedSegment =
             enabled && selectedRoadObject === road;
+          const highlightRoad = enabled &&
+            (isSelectedSegment || !group.roads.includes(selectedRoadObject));
           const highlightColor =
             isSelectedSegment ? "#E60012" : "#0057FF";
 
@@ -14818,11 +14820,11 @@
             }
 
             setMapOptionsIfChanged(line, {
-              strokeColor: enabled
+              strokeColor: highlightRoad
                 ? highlightColor
                 : getRoadLayerDisplayColor(road.styleKey, config),
               strokeWeight: mapStrokePx(
-                enabled
+                highlightRoad
                   ? (Number(config.width) || 3) +
                     (isSelectedSegment ? 3 : 2.5)
                   : (
@@ -14835,16 +14837,16 @@
                     ),
                 1
               ),
-              strokeOpacity: enabled
+              strokeOpacity: highlightRoad
                 ? 1
                 : Math.max(
                     0,
                     Math.min(100, Number(config.opacity) || 0)
                   ) / 100,
-              strokeStyle: enabled
+              strokeStyle: highlightRoad
                 ? "solid"
                 : getRoadLayerStrokeStyle(road, config, index),
-              zIndex: enabled ? 90 - index : 40 - index
+              zIndex: highlightRoad ? 90 - index : 40 - index
             });
           });
 
@@ -14858,7 +14860,7 @@
                 road.hitLine.setMap(map);
               }
               setMapOptionsIfChanged(road.hitLine, {
-                zIndex: enabled ? 110 : 60
+                zIndex: highlightRoad ? 110 : 60
               });
             }
           }

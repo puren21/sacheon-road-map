@@ -44,6 +44,29 @@ test('both road types update shared properties while retaining city-specific fie
 });
 
 for (const layerId of ['city', 'rural']) {
+  test(`${layerId}: choosing one divided line leaves the other segments in their normal color`, () => {
+    const makeRoad = () => ({ styleKey: 'CITY', statusKey: 'OPEN', _visible: true,
+      visualLines: [{ getMap: () => ({}), setMap() {} }], hitLine: { getMap: () => ({}), setMap() {} } });
+    const roads = [makeRoad(), makeRoad(), makeRoad()];
+    const group = { key: 'route', roads };
+    const c = context(['setRoadGroupHighlight'], {
+      groups: new Map([['route', group]]), selectedRoadObject: roads[1],
+      hiddenRoadGroups: new Set(), geometryEditingGroupKey: null, map: {},
+      getRoadLayerStack: () => [{ width: 3, opacity: 80 }],
+      getRoadVisualLines: road => road.visualLines, isRoadStatusHidden: () => false,
+      setMapOptionsIfChanged: (line, options) => Object.assign(line, options),
+      mapStrokePx: value => value, getRoadLayerDisplayColor: () => '#009966',
+      getRoadLayerStrokeStyle: () => 'dash'
+    });
+    c.setRoadGroupHighlight('route', true);
+    assert.deepEqual(roads.map(road => road.visualLines[0].strokeColor),
+      ['#009966', '#E60012', '#009966']);
+    assert.equal(roads[0].visualLines[0].strokeStyle, 'dash');
+    assert.equal(roads[2].visualLines[0].strokeOpacity, 0.8);
+  });
+}
+
+for (const layerId of ['city', 'rural']) {
   test(`${layerId}: online save failure does not show an unsaved attribute edit`, async () => {
     const group = { layerId, number: '3', roads: [{ properties: { 연장: layerId === 'city' ? 4154 : '4.154' } }] };
     const saveButton = { disabled: false, textContent: '저장' };
