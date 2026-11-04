@@ -14,9 +14,27 @@ function source(name) {
 function context(names, extras = {}) {
   const sandbox = Object.assign({ Number, console }, extras);
   vm.createContext(sandbox);
+  if (!names.includes('isRoadGeometryNearGroup')) {
+    vm.runInContext(source('isRoadGeometryNearGroup'), sandbox);
+  }
   for (const name of names) vm.runInContext(source(name), sandbox);
   return sandbox;
 }
+
+test('city route 12 rejects remote geometry outside its mapped area', () => {
+  const makePoint = (lat, lng) => ({ getLat: () => lat, getLng: () => lng });
+  const group = {
+    layerId: 'city',
+    bounds: {
+      isEmpty: () => false,
+      getSouthWest: () => makePoint(35.04, 128.04),
+      getNorthEast: () => makePoint(35.08, 128.09)
+    }
+  };
+  const c = context(['isRoadGeometryNearGroup']);
+  assert.equal(c.isRoadGeometryNearGroup(group, [[35.0692, 128.0668], [35.0612, 128.0503]]), true);
+  assert.equal(c.isRoadGeometryNearGroup(group, [[36.058583, 129.2452779], [36.0745599, 129.263593]]), false);
+});
 
 test('split preview and captured point snap to the selected road before adjacent roads', () => {
   class LatLng {

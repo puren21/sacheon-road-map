@@ -15440,8 +15440,26 @@
         if (index >= 0) allRoads.splice(index, 1);
       }
 
+      function isRoadGeometryNearGroup(group, coordinates) {
+        if (!group || group.layerId !== "city") return true;
+        if (!group.bounds || group.bounds.isEmpty()) return true;
+        const sw = group.bounds.getSouthWest();
+        const ne = group.bounds.getNorthEast();
+        const margin = 0.25;
+        return Array.isArray(coordinates) && coordinates.length >= 2 && coordinates.every(function(coord) {
+          const lat = Number(coord && coord[0]);
+          const lng = Number(coord && coord[1]);
+          return Number.isFinite(lat) && Number.isFinite(lng) &&
+            lat >= sw.getLat() - margin && lat <= ne.getLat() + margin &&
+            lng >= sw.getLng() - margin && lng <= ne.getLng() + margin;
+        });
+      }
+
       function replaceRoadGroupSegments(group, segments) {
         if (!group || !Array.isArray(segments) || !segments.length) return false;
+        if (segments.some(function(item) {
+          return !item || !isRoadGeometryNearGroup(group, item.geometry);
+        })) return false;
         const previousSelection = selectedRoadObject && selectedRoadObject.groupKey === group.key
           ? group.roads.indexOf(selectedRoadObject)
           : selectedRoadPopupState && selectedRoadPopupState.groupKey === group.key
@@ -15505,6 +15523,10 @@
       function applyOnlineRoadGeometry(group, roadIndex, coordinates) {
         if (!group || !Array.isArray(coordinates)) return false;
         if (!Number.isInteger(roadIndex) || roadIndex < 0 || roadIndex >= group.roads.length) return false;
+        if (!isRoadGeometryNearGroup(group, coordinates)) {
+          console.warn("노선 범위에서 벗어난 편집 선형을 건너뜁니다.", group.key, roadIndex);
+          return false;
+        }
 
         const road = group.roads[roadIndex];
         if (!road || coordinates.length < 2) return false;
@@ -17177,6 +17199,12 @@
         let segments;
         try { segments = state.draft.serialize(); }
         catch (error) { roadGeometryHelp(error.message); return false; }
+        if (segments.some(function(segment) {
+          return !isRoadGeometryNearGroup(group, segment.geometry);
+        })) {
+          roadGeometryHelp("노선에서 멀리 떨어진 선형은 저장할 수 없습니다. 좌표와 선택 구간을 확인해 주세요.");
+          return false;
+        }
         if (JSON.stringify(segments) === state.baselineModel) {
           if (closeAfterSave) cancelRoadGeometryEdit();
           else roadGeometryHelp("저장할 변경사항이 없습니다. 편집을 계속할 수 있습니다.");
