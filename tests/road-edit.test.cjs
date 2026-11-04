@@ -87,6 +87,50 @@ test('city route 1 contains five connected parts that share one highlighted rout
   assert.equal(city1[0].geometry.coordinates.length, 5);
 });
 
+test('city route 1 keeps the clicked location selected when online segments replace original parts', () => {
+  class LatLng {
+    constructor(lat, lng) { this.lat = lat; this.lng = lng; }
+    getLat() { return this.lat; }
+    getLng() { return this.lng; }
+  }
+  const oldRoads = Array.from({ length: 5 }, () => ({ groupKey: 'city::1' }));
+  const group = { key: 'city::1', layerId: 'city', number: '1',
+    roads: oldRoads, paths: [], propertiesList: [] };
+  const anchorPosition = new LatLng(35, 128.095);
+  const selectedRoadPopupState = { groupKey: group.key, road: oldRoads[0], anchorPosition };
+  const segments = Array.from({ length: 11 }, (_, index) => ({ properties: { number: '1' },
+    geometry: [[35, 128 + index * 0.01], [35, 128 + (index + 1) * 0.01]] }));
+  const c = context(['replaceRoadGroupSegments', 'pointSegmentDistanceSq'], {
+    selectedRoadObject: oldRoads[0], selectedRoadPopupState,
+    kakao: { maps: { LatLng } }, removeRoadSegmentVisuals() {},
+    drawRoad(path, properties, layerId, groupKey) { return { path, properties, layerId, groupKey }; },
+    getColor() { return '#0a0'; }, getRoadStatusKey() { return 'OPEN'; }, recalcGroupBounds() {}
+  });
+  assert.equal(c.replaceRoadGroupSegments(group, segments), true);
+  assert.equal(group.roads.length, 11);
+  assert.equal(group.roads.indexOf(c.selectedRoadObject), 9);
+  assert.equal(selectedRoadPopupState.road, c.selectedRoadObject);
+});
+
+test('unchanged online route geometry does not replace lines again on each click', async () => {
+  const group = { key: 'city::1' };
+  const payload = { version: 3, segmentModel: roadSegments(true) };
+  const signatures = new Map();
+  let redraws = 0;
+  const c = context(['syncOnlineRoadEdits'], {
+    groups: new Map([[group.key, group]]), appliedOnlineRoadEditSignatures: signatures,
+    fetchOnlineRoadEdits: async () => structuredClone(payload),
+    applyOnlineRoadEdits(_group, data) {
+      redraws++;
+      signatures.set(group.key, JSON.stringify(data));
+      return true;
+    }
+  });
+  assert.equal(await c.syncOnlineRoadEdits(group.key), true);
+  assert.equal(await c.syncOnlineRoadEdits(group.key), false);
+  assert.equal(redraws, 1);
+});
+
 for (const layerId of ['city', 'rural']) {
   test(`${layerId}: online save failure does not show an unsaved attribute edit`, async () => {
     const group = { layerId, number: '3', roads: [{ properties: { 연장: layerId === 'city' ? 4154 : '4.154' } }] };

@@ -15059,6 +15059,7 @@
 
       let roadGeometryEditState = null;
       let geometryEditingGroupKey = null;
+      const appliedOnlineRoadEditSignatures = new Map();
 
       function roadEditorEscape(value) {
         return escapeHTML(value === undefined || value === null ? "" : String(value));
@@ -15416,6 +15417,22 @@
         });
         if (validated.some(function(item) { return !item; })) return false;
 
+        // 시도는 원본 한 구간이 온라인 편집에서 여러 구간으로 나뉠 수 있음.
+        // 구간 번호 대신 지도에서 실제 클릭한 위치로 새 선택 구간을 찾는다.
+        let selectedIndex = Math.max(0, Math.min(previousSelection, validated.length - 1));
+        const anchor = group.layerId === "city" && selectedRoadPopupState &&
+          selectedRoadPopupState.groupKey === group.key
+            ? selectedRoadPopupState.anchorPosition : null;
+        if (anchor && typeof anchor.getLat === "function" && typeof anchor.getLng === "function") {
+          let nearest = Infinity;
+          validated.forEach(function(item, index) {
+            for (let i = 1; i < item.path.length; i++) {
+              const distance = pointSegmentDistanceSq(anchor, item.path[i - 1], item.path[i]);
+              if (distance < nearest) { nearest = distance; selectedIndex = index; }
+            }
+          });
+        }
+
         group.roads.forEach(removeRoadSegmentVisuals);
         group.roads = [];
         group.paths = [];
@@ -15431,9 +15448,10 @@
         });
         recalcGroupBounds(group);
         if (selectedRoadPopupState && selectedRoadPopupState.groupKey === group.key) {
-          const selected = group.roads[Math.max(0, Math.min(previousSelection, group.roads.length - 1))];
-          selectedRoadPopupState.road = selected;
-          selectedRoadObject = selected;
+          selectedRoadPopupState.road = group.roads[selectedIndex];
+        }
+        if (selectedRoadObject && selectedRoadObject.groupKey === group.key) {
+          selectedRoadObject = group.roads[selectedIndex];
         }
         return true;
       }
@@ -15514,6 +15532,7 @@
         });
 
         if (changed) {
+          appliedOnlineRoadEditSignatures.set(group.key, JSON.stringify(payload));
           recalcGroupBounds(group);
 
           const newLabelPosition = midpointAcrossPaths(group.paths);
@@ -15537,6 +15556,7 @@
 
         const payload = await fetchOnlineRoadEdits(group);
         if (!payload) return false;
+        if (appliedOnlineRoadEditSignatures.get(groupKey) === JSON.stringify(payload)) return false;
         return applyOnlineRoadEdits(group, payload);
       }
 
