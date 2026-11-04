@@ -45,13 +45,18 @@ test('both road types update shared properties while retaining city-specific fie
 
 for (const layerId of ['city', 'rural']) {
   test(`${layerId}: choosing one divided line highlights the entire route and distinguishes its segment`, () => {
+    const makeLine = () => ({ current: null, getMap() { return this.current; },
+      setMap(value) { this.current = value; } });
     const makeRoad = () => ({ styleKey: 'CITY', statusKey: 'OPEN', _visible: true,
-      visualLines: [{ getMap: () => ({}), setMap() {} }], hitLine: { getMap: () => ({}), setMap() {} } });
+      visualLines: [makeLine()], hitLine: makeLine() });
     const roads = [makeRoad(), makeRoad(), makeRoad()];
     const group = { key: 'route', layerId, roads };
+    roads[0]._visible = layerId !== 'city';
+    roads[2]._visible = layerId !== 'city';
+    const map = {};
     const c = context(['setRoadGroupHighlight'], {
       groups: new Map([['route', group]]), selectedRoadObject: roads[1],
-      hiddenRoadGroups: new Set(), geometryEditingGroupKey: null, map: {},
+      hiddenRoadGroups: new Set(), geometryEditingGroupKey: null, map,
       getRoadLayerStack: () => [{ width: 3, opacity: 80 }],
       getRoadVisualLines: road => road.visualLines, isRoadStatusHidden: () => false,
       setMapOptionsIfChanged: (line, options) => Object.assign(line, options),
@@ -60,14 +65,17 @@ for (const layerId of ['city', 'rural']) {
     });
     c.setRoadGroupHighlight('route', true);
     assert.deepEqual(roads.map(road => road.visualLines[0].strokeColor),
-      layerId === 'city' ? ['#E60012', '#E60012', '#E60012']
-        : ['#0057FF', '#E60012', '#0057FF']);
+      ['#0057FF', '#E60012', '#0057FF']);
+    assert.deepEqual(roads.map(road => road.visualLines[0].getMap()),
+      [map, map, map]);
     assert.ok(roads.every(road => road.visualLines[0].strokeStyle === 'solid'));
     c.selectedRoadObject = null;
     c.setRoadGroupHighlight('route', true);
     assert.deepEqual(roads.map(road => road.visualLines[0].strokeColor),
-      layerId === 'city' ? ['#E60012', '#E60012', '#E60012']
-        : ['#E60012', '#0057FF', '#0057FF']);
+      ['#E60012', '#0057FF', '#0057FF']);
+    c.setRoadGroupHighlight('route', false);
+    assert.deepEqual(roads.map(road => road.visualLines[0].getMap()),
+      layerId === 'city' ? [null, map, null] : [map, map, map]);
   });
 }
 

@@ -14802,7 +14802,7 @@
           const isSelectedSegment = enabled && selectedSegment === road;
           const highlightRoad = enabled;
           const highlightColor =
-            group.layerId === "city" || isSelectedSegment ? "#E60012" : "#0057FF";
+            isSelectedSegment ? "#E60012" : "#0057FF";
 
           const statusHidden = isRoadStatusHidden(road.statusKey);
 
@@ -14810,12 +14810,14 @@
             const config = stack[index] || stack[0];
             const layerEnabled = !config || config.visible !== false;
 
-            if (!layerEnabled || statusHidden) {
+            const showLine = layerEnabled && !statusHidden &&
+              (road._visible || (enabled && group.layerId === "city"));
+            if (!showLine) {
               if (line && line.getMap()) line.setMap(null);
               return;
             }
 
-            if (road._visible && line && !line.getMap()) {
+            if (line && !line.getMap()) {
               line.setMap(map);
             }
 
@@ -14826,7 +14828,7 @@
               strokeWeight: mapStrokePx(
                 highlightRoad
                   ? (Number(config.width) || 3) +
-                    (group.layerId === "city" || isSelectedSegment ? 3 : 2.5)
+                    (isSelectedSegment ? 3 : 2.5)
                   : (
                       road.statusKey === "UNOPENED"
                         ? Math.max(
@@ -14856,8 +14858,10 @@
                 road.hitLine.setMap(null);
               }
             } else {
-              if (road._visible && !road.hitLine.getMap()) {
+              if ((road._visible || (enabled && group.layerId === "city")) && !road.hitLine.getMap()) {
                 road.hitLine.setMap(map);
+              } else if (!road._visible && !enabled && road.hitLine.getMap()) {
+                road.hitLine.setMap(null);
               }
               setMapOptionsIfChanged(road.hitLine, {
                 zIndex: highlightRoad ? 110 : 60
