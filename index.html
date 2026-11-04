@@ -3638,6 +3638,14 @@
     grid-template-columns: 82px minmax(0,1fr);
   }
 
+  .road-popup.is-editing .road-edit-field input,
+  .road-popup.is-editing .road-edit-field select {
+    pointer-events: auto !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    cursor: text;
+  }
+
   .road-edit-note {
     margin: 0 0 11px;
     padding: 8px 9px;
@@ -3760,6 +3768,28 @@
     flex-wrap: wrap;
     justify-content: center;
     overflow: visible;
+  }
+
+  @media (min-width:701px) {
+    .geometry-edit-toolbar.sacheon-line-tools {
+      left: 12px;
+      right: 380px;
+      max-width: none;
+      transform: none;
+    }
+  }
+
+  @media (max-width:700px) {
+    .geometry-edit-toolbar.sacheon-line-tools {
+      left: 8px;
+      right: 8px;
+      max-width: calc(100vw - 16px);
+      transform: none;
+    }
+    body > .road-popup.is-editing {
+      top: calc(var(--road-edit-toolbar-bottom, 58px) + 8px) !important;
+      bottom: 50px !important;
+    }
   }
 
   .sacheon-line-tools .geometry-edit-label {
@@ -7159,6 +7189,11 @@
     top: 58px !important;
     bottom: 50px !important;
     max-height: none !important;
+  }
+  body > .road-popup.is-editing,
+  body.mobile-road-info-open > .road-popup.is-editing,
+  body.mobile-road-info-open:not(.list-collapsed) > .road-popup.is-editing {
+    top: calc(var(--road-edit-toolbar-bottom, 58px) + 8px) !important;
   }
   .road-popup .popup-header {
     position: sticky !important;
@@ -14862,6 +14897,7 @@
           if (!popup) return;
           placeRoadPopupTopRight();
           keepRoadPopupInSafeViewport();
+          updateRoadEditPopupToolbarOffset();
         });
       }
 
@@ -15034,6 +15070,7 @@
         const panel = document.getElementById("roadEditPanel");
         if (!panel) return;
         panel.removeAttribute("id");
+        panel.classList.remove("is-editing");
         delete panel.dataset.groupKey;
         delete panel.dataset.initialLengthDisplay;
         delete panel.dataset.dirty;
@@ -15107,16 +15144,12 @@
         const currentStatus = getRoadStatusKey(props, group.layerId);
         let fields = "";
 
-        fields += buildRoadEditField("노선번호", "number", group.number, "text", null, true);
-        fields += group.layerId === "city"
-          ? buildRoadEditField("구분", "gubun", "시도", "text", null, true)
-          : buildRoadEditField("구분", "gubun", String(props.GUBUN || props["구분"] || getRoadGroupTypeLabel(group)), "select", ["면도", "리도", "농도"]);
-        fields += group.layerId === "city"
-          ? buildRoadEditField("개설상태", "status", statusValueFromKey(currentStatus), "text", null, true)
-          : buildRoadEditField("개설상태", "status", statusValueFromKey(currentStatus), "select", ["개설", "미확장", "미개설"]);
+        if (group.layerId !== "city") {
+          fields += buildRoadEditField("구분", "gubun", String(props.GUBUN || props["구분"] || getRoadGroupTypeLabel(group)), "select", ["면도", "리도", "농도"]);
+          fields += buildRoadEditField("개설상태", "status", statusValueFromKey(currentStatus), "select", ["개설", "미확장", "미개설"]);
+        }
         fields += buildRoadEditField("차선", "lane", safe(props["차선"]) === "-" ? "" : props["차선"]);
         fields += buildRoadEditField("도로폭 (m)", "width", safe(props["도로폭"]) === "-" ? "" : props["도로폭"]);
-        fields += buildRoadEditField("연장 (km)", "length", roadLengthInputValue(props, group.layerId));
         fields += buildRoadEditField("기점", "start", safe(props["기점"] || props["시점"]) === "-" ? "" : (props["기점"] || props["시점"]));
         fields += buildRoadEditField("종점", "end", safe(props["종점"]) === "-" ? "" : props["종점"]);
         fields += buildRoadEditField("비고", "remark", safe(props["비고"]) === "-" ? "" : props["비고"]);
@@ -15127,6 +15160,7 @@
         }
 
         panel.id = "roadEditPanel";
+        panel.classList.add("is-editing");
         panel.dataset.groupKey = groupKey;
         panel.dataset.initialLengthDisplay = roadLengthInputValue(props, group.layerId);
         panel.dataset.dirty = "false";
@@ -15150,25 +15184,31 @@
         };
 
         const form = document.getElementById("roadEditForm");
-        if (group.layerId === "city") {
-          const laneInput = form.elements.namedItem("lane");
-          const statusInput = form.elements.namedItem("status");
-          laneInput.addEventListener("input", function() {
-            statusInput.value = roadStatusLabel(getRoadStatusKey({ "차선":laneInput.value }, "city"));
-          });
-        }
         form.addEventListener("input", function() { panel.dataset.dirty = "true"; });
         form.addEventListener("change", function() { panel.dataset.dirty = "true"; });
         form.addEventListener("submit", function(event) {
           event.preventDefault();
           saveRoadAttributes(groupKey);
         });
+        updateRoadEditPopupToolbarOffset();
+      }
+
+      function updateRoadEditPopupToolbarOffset() {
+        const panel = document.getElementById("roadEditPanel");
+        const toolbar = document.getElementById("geometryEditToolbar");
+        if (panel && toolbar) {
+          panel.style.setProperty("--road-edit-toolbar-bottom",
+            Math.ceil(toolbar.getBoundingClientRect().bottom) + "px");
+        }
       }
 
       async function openRoadEditor(groupKey) {
+        showRoadAttributePanel(groupKey);
         await startRoadGeometryEdit(groupKey);
         if (roadGeometryEditState && roadGeometryEditState.groupKey === groupKey) {
-          showRoadAttributePanel(groupKey);
+          const panel = document.getElementById("roadEditPanel");
+          if (panel && panel.dataset.dirty !== "true") showRoadAttributePanel(groupKey);
+          updateRoadEditPopupToolbarOffset();
         }
       }
 
@@ -15497,7 +15537,9 @@
         const roadIndex = Math.max(0, group.roads.indexOf(road));
         const values = {};
 
-        const lengthText = String(data.get("length") || "").replace(/,/g, "").trim();
+        const lengthText = data.get("length") === null
+          ? document.getElementById("roadEditPanel")?.dataset?.initialLengthDisplay || ""
+          : String(data.get("length") || "").replace(/,/g, "").trim();
         if (lengthText && (!Number.isFinite(Number(lengthText)) || Number(lengthText) < 0)) {
           alert("연장은 0 이상의 숫자를 km 단위로 입력해 주세요.");
           return;
@@ -16578,7 +16620,9 @@
         const form = document.getElementById("roadEditForm");
         if (!panel || !form || panel.dataset.groupKey !== state.groupKey || panel.dataset.dirty !== "true") return;
         const data = new FormData(form);
-        const lengthText = String(data.get("length") || "").replace(/,/g, "").trim();
+        const lengthText = data.get("length") === null
+          ? panel.dataset.initialLengthDisplay || ""
+          : String(data.get("length") || "").replace(/,/g, "").trim();
         if (lengthText && (!Number.isFinite(Number(lengthText)) || Number(lengthText) < 0)) {
           throw new Error("연장은 0 이상의 숫자를 km 단위로 입력해 주세요.");
         }
@@ -17285,6 +17329,7 @@
         syncOnlineRoadEdits(groupKey)
           .then(function(changed) {
             if (!changed) return;
+            if (document.getElementById("roadEditPanel")) return;
             if (!selectedRoadPopupState || selectedRoadPopupState.groupKey !== groupKey) return;
             const currentGroup = groups.get(groupKey);
             if (!currentGroup) return;

@@ -239,7 +239,7 @@ test('city road status follows lane count on initial display, edit and saved seg
   c.applyRoadEditValuesToRoad({ layerId: 'city' }, city, { lane: '', status: '개설' });
   assert.equal(city.properties.개설여부, '미개설');
   assert.equal(c.getRoadStatusKey({ Opened: '미확장' }, 'rural'), 'UNEXPANDED');
-  assert.match(html, /group\.layerId === "city"[\s\S]*?buildRoadEditField\("개설상태", "status", statusValueFromKey\(currentStatus\), "text", null, true\)/);
+  assert.doesNotMatch(source('showRoadAttributePanel'), /buildRoadEditField\("개설상태", "status", statusValueFromKey\(currentStatus\), "text"/);
 });
 
 for (const layerId of ['city', 'rural']) {
@@ -562,13 +562,20 @@ test('vertex dragging snaps to a nearby route endpoint', () => {
 
 test('one edit action opens both the line tools and the attribute inputs', async () => {
   const calls = [];
+  let complete;
+  const panel = { dataset: { dirty: 'true' } };
   const c = context(['openRoadEditor'], {
     roadGeometryEditState: { groupKey: 'city::3' },
-    startRoadGeometryEdit: async key => { calls.push('line:' + key); },
+    document: { getElementById: () => panel },
+    updateRoadEditPopupToolbarOffset() {},
+    startRoadGeometryEdit: key => { calls.push('line:' + key); return new Promise(resolve => { complete = resolve; }); },
     showRoadAttributePanel: key => { calls.push('attributes:' + key); }
   });
-  await c.openRoadEditor('city::3');
-  assert.deepEqual(calls, ['line:city::3', 'attributes:city::3']);
+  const opening = c.openRoadEditor('city::3');
+  assert.deepEqual(calls, ['attributes:city::3', 'line:city::3']);
+  complete();
+  await opening;
+  assert.deepEqual(calls, ['attributes:city::3', 'line:city::3']);
 });
 
 test('editing uses the existing road popup and cancel restores its attributes', () => {
@@ -576,14 +583,17 @@ test('editing uses the existing road popup and cancel restores its attributes', 
   const group = { key: 'city::3', number: '3', layerId: 'city', roads: [road] };
   const attributes = { innerHTML: '<p>원래 속성정보</p>' };
   const editButton = { disabled: false };
+  const offsets = {};
   const popup = {
-    dataset: {}, querySelector(selector) {
+    dataset: {}, style: { setProperty(name, value) { offsets[name] = value; } },
+    classList: { add() {}, remove() {} }, querySelector(selector) {
       return selector === '.road-attributes' ? attributes : selector === '.road-edit-btn' ? editButton : null;
     }, removeAttribute(name) { if (name === 'id') delete this.id; }
   };
   const form = { elements: { namedItem: () => ({ addEventListener() {} }) }, addEventListener() {} };
   let appended = 0;
-  const c = context(['roadEditorEscape', 'buildRoadEditField', 'showRoadAttributePanel', 'closeRoadEditPanel'], {
+  const c = context(['roadEditorEscape', 'buildRoadEditField', 'showRoadAttributePanel',
+    'updateRoadEditPopupToolbarOffset', 'closeRoadEditPanel'], {
     groups: new Map([[group.key, group]]), selectedRoadPopupState: { groupKey: group.key, road },
     roadGeometryEditState: { groupKey: group.key, draft: { selected: 0, segments: [{ properties: road.properties }] } },
     getEditableRoad: () => road, getRoadStatusKey: () => 'NORMAL', statusValueFromKey: () => '개설',
@@ -594,7 +604,8 @@ test('editing uses the existing road popup and cancel restores its attributes', 
     document: {
       querySelector: selector => selector === 'body > .road-popup' ? popup : null,
       getElementById: id => id === 'roadEditPanel' ? popup : id === 'roadEditForm' ? form :
-        id === 'saveRoadAttributesBtn' ? {} : null,
+        id === 'saveRoadAttributesBtn' ? {} : id === 'geometryEditToolbar' ?
+        { getBoundingClientRect: () => ({ bottom: 148.5 }) } : null,
       createElement: () => ({ querySelector: () => ({ innerHTML: '복원된 속성정보' }) }),
       body: { appendChild() { appended++; } }
     }
@@ -603,8 +614,13 @@ test('editing uses the existing road popup and cancel restores its attributes', 
   assert.equal(popup.id, 'roadEditPanel');
   assert.equal(appended, 0);
   assert.match(attributes.innerHTML, /id="roadEditForm"/);
+  const editable = [...attributes.innerHTML.matchAll(/<input name="([^"]+)"[^>]*>/g)];
+  assert.deepEqual(editable.map(match => match[1]),
+    ['lane', 'width', 'start', 'end', 'remark', 'extra', 'review', 'change']);
+  assert.ok(editable.every(match => !match[0].includes('readonly')));
   assert.match(attributes.innerHTML, /onclick="cancelRoadGeometryEdit\(\)"/);
   assert.equal(editButton.disabled, true);
+  assert.equal(offsets['--road-edit-toolbar-bottom'], '149px');
   c.closeRoadEditPanel();
   assert.equal(popup.id, undefined);
   assert.equal(attributes.innerHTML, '복원된 속성정보');
@@ -712,6 +728,28 @@ test('unified editor saves input fields into the selected line draft', () => {
   assert.equal(state.draft.segments[1].properties.차선, '4');
   assert.equal(state.draft.segments[0].properties.연장, 1000);
   assert.equal(panel.dataset.dirty, 'false');
+});
+
+test('city attribute edits save all eight requested fields while preserving stored length', () => {
+  const panel = { dataset: { groupKey: 'city::3', dirty: 'true', initialLengthDisplay: '2.8' } };
+  const properties = { 연장: 2750, 차선: '2', 개설여부: '개설' };
+  const state = { groupKey: 'city::3', group: { layerId: 'city' },
+    draft: { selected: 0, segments: [{ properties }], checkpoint() {} } };
+  const entered = { lane: '1', width: '6', start: '새 기점', end: '새 종점',
+    remark: '새 비고', extra: '새 기타', review: '새 검토', change: '새 변경사항' };
+  const c = context(['roadGeometryCommitForm', 'roadLengthEditedValue', 'getRoadStatusKey',
+    'roadStatusLabel', 'syncCityRoadStatus', 'applyRoadEditValuesToRoad',
+    'setPropertyValue', 'getExistingPropertyKey'], {
+    document: { getElementById: id => id === 'roadEditPanel' ? panel : {} },
+    FormData: class { get(name) { return entered[name] ?? null; } }
+  });
+  c.roadGeometryCommitForm(state);
+  assert.equal(properties.연장, 2750);
+  assert.equal(properties.개설여부, '미확장');
+  for (const [field, value] of Object.entries({ 차선: '1', 도로폭: '6', 기점: '새 기점',
+    종점: '새 종점', 비고: '새 비고', 기타: '새 기타', 검토: '새 검토', 변경사항: '새 변경사항' })) {
+    assert.equal(properties[field], value, field);
+  }
 });
 
 for (const layerId of ['city', 'rural']) {
