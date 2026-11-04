@@ -14792,15 +14792,15 @@
         }
 
 
+        const selectedSegment = group.roads.includes(selectedRoadObject)
+          ? selectedRoadObject : group.roads[0];
         group.roads.forEach(function(road) {
           if (!road) return;
 
           const stack = getRoadLayerStack(road.styleKey);
           const lines = getRoadVisualLines(road);
-          const isSelectedSegment =
-            enabled && selectedRoadObject === road;
-          const highlightRoad = enabled &&
-            (isSelectedSegment || !group.roads.includes(selectedRoadObject));
+          const isSelectedSegment = enabled && selectedSegment === road;
+          const highlightRoad = enabled;
           const highlightColor =
             isSelectedSegment ? "#E60012" : "#0057FF";
 

@@ -44,7 +44,7 @@ test('both road types update shared properties while retaining city-specific fie
 });
 
 for (const layerId of ['city', 'rural']) {
-  test(`${layerId}: choosing one divided line leaves the other segments in their normal color`, () => {
+  test(`${layerId}: choosing one divided line highlights the entire route and distinguishes its segment`, () => {
     const makeRoad = () => ({ styleKey: 'CITY', statusKey: 'OPEN', _visible: true,
       visualLines: [{ getMap: () => ({}), setMap() {} }], hitLine: { getMap: () => ({}), setMap() {} } });
     const roads = [makeRoad(), makeRoad(), makeRoad()];
@@ -60,9 +60,12 @@ for (const layerId of ['city', 'rural']) {
     });
     c.setRoadGroupHighlight('route', true);
     assert.deepEqual(roads.map(road => road.visualLines[0].strokeColor),
-      ['#009966', '#E60012', '#009966']);
-    assert.equal(roads[0].visualLines[0].strokeStyle, 'dash');
-    assert.equal(roads[2].visualLines[0].strokeOpacity, 0.8);
+      ['#0057FF', '#E60012', '#0057FF']);
+    assert.ok(roads.every(road => road.visualLines[0].strokeStyle === 'solid'));
+    c.selectedRoadObject = null;
+    c.setRoadGroupHighlight('route', true);
+    assert.deepEqual(roads.map(road => road.visualLines[0].strokeColor),
+      ['#E60012', '#0057FF', '#0057FF']);
   });
 }
 
