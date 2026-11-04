@@ -15954,6 +15954,11 @@
             best = {
               segmentIndex: i,
               position: position,
+              midpoint: new kakao.maps.LatLng(
+                (a.getLat() + b.getLat()) / 2,
+                (a.getLng() + b.getLng()) / 2
+              ),
+              screenLength: Math.hypot(dx, dy),
               distance: distance
             };
           }
@@ -15973,7 +15978,13 @@
           return;
         }
 
-        state.hoverPlusPosition = midpointInfo.position;
+        // +는 마우스 위치가 아닌 선택한 선분의 가운데에 고정함.
+        // 화면에서 너무 짧은 선분은 꼭짓점 표식과 겹치므로 직접 선 클릭으로 추가함.
+        if (midpointInfo.screenLength < 34) {
+          hideGeometryHoverPlus(state, false);
+          return;
+        }
+        state.hoverPlusPosition = midpointInfo.midpoint;
         state.hoverPlusSegmentIndex = midpointInfo.segmentIndex;
 
         if (!state.hoverPlusOverlay) {

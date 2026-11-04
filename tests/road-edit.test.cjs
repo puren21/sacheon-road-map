@@ -18,6 +18,40 @@ function context(names, extras = {}) {
   return sandbox;
 }
 
+test('vertex plus stays at the middle of the hovered segment while line clicks keep their position', () => {
+  class LatLng {
+    constructor(lat, lng) { this.lat = lat; this.lng = lng; }
+    getLat() { return this.lat; }
+    getLng() { return this.lng; }
+  }
+  const projection = { containerPointFromCoords: p => ({ x: p.getLng(), y: p.getLat() }) };
+  const state = { mode: 'vertex', workingPath: [new LatLng(0, 0), new LatLng(0, 100)],
+    draft: { checkpoint() {} }, previewLine: { setPath() {} }, previewHitLine: { setPath() {} } };
+  const overlays = [];
+  const c = context(['getGeometrySegmentMidpointInfo', 'showGeometryHoverPlus', 'roadGeometryAddVertex'], {
+    map: { getProjection: () => projection }, kakao: { maps: {
+      LatLng, CustomOverlay: class {
+        constructor(options) { this.position = options.position; overlays.push(this); }
+        setPosition(position) { this.position = position; }
+        setMap() {}
+      }
+    } },
+    document: { createElement: () => ({ addEventListener() {} }) },
+    clearTimeout() {}, hideGeometryHoverPlus() {}, rebuildRoadGeometryEditMarkers() {}
+  });
+  c.showGeometryHoverPlus(state, new LatLng(0, 8));
+  assert.equal(overlays[0].position.getLng(), 50);
+  c.showGeometryHoverPlus(state, new LatLng(0, 92));
+  assert.equal(overlays[0].position.getLng(), 50);
+  c.roadGeometryAddVertex(state, new LatLng(0, 25));
+  assert.equal(state.workingPath[1].getLng(), 25);
+  state.workingPath = [new LatLng(0, 0), new LatLng(0, 20)];
+  let hidden = false;
+  c.hideGeometryHoverPlus = () => { hidden = true; };
+  c.showGeometryHoverPlus(state, new LatLng(0, 10));
+  assert.equal(hidden, true);
+});
+
 test('city and rural road lengths share a km UI without changing stored units', () => {
   const c = context(['parseRoadLength', 'roadLengthKm', 'roadLengthInputValue']);
   assert.equal(c.roadLengthInputValue({ 연장: 4154 }, 'city'), '4.154');
