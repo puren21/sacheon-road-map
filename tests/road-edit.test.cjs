@@ -454,6 +454,7 @@ test('line editor opens the Gunsan-style tool set on the full-resolution segment
     rebuildRoadGeometryEditMarkers() {}, roadGeometryShowDraft() {}, cloneRoadEditPath: points => points.slice(),
     roadGeometryFinishCapture() {}, roadGeometryHistory() {}, roadGeometryApplyTool(mode) { appliedMode = mode; },
     roadGeometrySnapEnabled: () => true,
+    enableRoadGeometryToolbarDrag() {},
     setRoadGeometryEditMode() {}, roadGeometryHelp() {},
     getRoadVisualLines: () => [new Polyline({ path, map: {} })],
     map: { setCursor() {} },
@@ -628,7 +629,8 @@ test('editing uses the existing road popup and cancel restores its attributes', 
   const road = { properties: { 차선: '2', 연장: 1000 } };
   const group = { key: 'city::3', number: '3', layerId: 'city', roads: [road], propertiesList: [road.properties] };
   const attributes = { innerHTML: '<p>원래 속성정보</p>' };
-  const editButton = { attributes: {}, setAttribute(name, value) { this.attributes[name] = value; } };
+  const editButton = { dataset: { groupKey: encodeURIComponent(group.key) }, attributes: {},
+    setAttribute(name, value) { this.attributes[name] = value; } };
   const offsets = {};
   const popup = {
     dataset: {}, style: { setProperty(name, value) { offsets[name] = value; } },
@@ -640,8 +642,11 @@ test('editing uses the existing road popup and cancel restores its attributes', 
   let appended = 0;
   const c = context(['roadEditorEscape', 'buildRoadEditField', 'showRoadAttributePanel',
     'updateRoadEditPopupToolbarOffset', 'closeRoadEditPanel'], {
-    groups: new Map([[group.key, group]]), selectedRoadPopupState: { groupKey: group.key, road },
-    roadGeometryEditState: { groupKey: group.key, draft: { selected: 0, segments: [{ properties: road.properties }] } },
+    groups: new Map([[group.key, group]]), selectedRoadPopupState: null,
+    roadGeometryEditState: null,
+    getSelectedRoadEditFocus: () => null,
+    focusSelectedRoadForEditing() { throw Error('편집을 열 때 지도를 이동하지 않아야 합니다.'); },
+    window: { innerHeight: 800 },
     getEditableRoad: () => road, getRoadStatusKey: () => 'NORMAL', statusValueFromKey: () => '개설',
     roadLengthInputValue: () => '1.0', safe: value => value == null ? '-' : String(value),
     roadEditorEscape: value => String(value == null ? '' : value),
@@ -660,6 +665,7 @@ test('editing uses the existing road popup and cancel restores its attributes', 
     }
   });
   c.showRoadAttributePanel(group.key);
+  assert.equal(c.selectedRoadPopupState.groupKey, group.key);
   assert.equal(popup.id, 'roadEditPanel');
   assert.equal(appended, 0);
   assert.match(attributes.innerHTML, /id="roadEditForm"/);
@@ -675,6 +681,38 @@ test('editing uses the existing road popup and cancel restores its attributes', 
   assert.equal(popup.id, undefined);
   assert.equal(attributes.innerHTML, '복원된 속성정보');
   assert.equal(editButton.attributes['aria-pressed'], 'false');
+});
+
+test('top edit tools drag from the header without swallowing tool buttons', () => {
+  const listeners = {};
+  let captured = null, moved = 0;
+  const toolbar = {
+    style: {}, offsetWidth: 600, offsetHeight: 80,
+    getBoundingClientRect: () => ({ left: 12, top: 12, width: 600, height: 80 }),
+    addEventListener(type, callback) { listeners[type] = callback; },
+    setPointerCapture(id) { captured = id; },
+    hasPointerCapture(id) { return captured === id; },
+    releasePointerCapture() { captured = null; }
+  };
+  const c = context(['enableRoadGeometryToolbarDrag'], {
+    roadGeometryToolbarPosition: null,
+    window: { innerWidth: 1024, innerHeight: 768 },
+    updateRoadEditPopupToolbarOffset() { moved++; }
+  });
+  c.enableRoadGeometryToolbarDrag(toolbar);
+  const pointer = (x, y, inButton) => ({ button: 0, pointerId: 9, clientX: x, clientY: y,
+    target: { closest() { return inButton ? {} : null; } }, preventDefault() {} });
+  listeners.pointerdown(pointer(40, 25, true));
+  assert.equal(captured, null);
+  listeners.pointerdown(pointer(40, 25, false));
+  assert.equal(captured, 9);
+  listeners.pointermove(pointer(140, 75, false));
+  assert.equal(toolbar.style.left, '112px');
+  assert.equal(toolbar.style.top, '62px');
+  assert.equal(moved, 1);
+  listeners.pointerup(pointer(140, 75, false));
+  assert.equal(captured, null);
+  assert.equal(c.roadGeometryToolbarPosition.left, 112);
 });
 
 test('roadview opens a resizable lower-left panel and popout opens only on its button', () => {

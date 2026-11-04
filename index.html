@@ -3768,7 +3768,11 @@
     flex-wrap: wrap;
     justify-content: center;
     overflow: visible;
+    cursor: move;
+    touch-action: none;
   }
+
+  .sacheon-line-tools .geometry-edit-label { cursor: move; }
 
   @media (min-width:701px) {
     .geometry-edit-toolbar.sacheon-line-tools {
@@ -14993,6 +14997,7 @@
 
       let roadGeometryEditState = null;
       let geometryEditingGroupKey = null;
+      let roadGeometryToolbarPosition = null;
       const appliedOnlineRoadEditSignatures = new Map();
 
       function roadEditorEscape(value) {
@@ -15136,11 +15141,14 @@
         if (!group || !road) return;
         const panel = document.querySelector("body > .road-popup");
         const attributes = panel && panel.querySelector(".road-attributes");
-        if (!attributes || !selectedRoadPopupState || selectedRoadPopupState.groupKey !== groupKey) return;
+        if (!attributes) return;
+        const popupKey = panel.querySelector(".road-edit-btn")?.dataset?.groupKey;
+        if (popupKey && decodeURIComponent(popupKey) !== groupKey) return;
+        if (!selectedRoadPopupState || selectedRoadPopupState.groupKey !== groupKey) {
+          selectedRoadPopupState = { groupKey:groupKey, road:road,
+            anchorPosition:getSelectedRoadEditFocus(groupKey, road) };
+        }
         if (panel.id === "roadEditPanel" && panel.dataset.dirty === "true") return;
-
-        // 사용자가 클릭한 실제 도로 구간을 편집 중심으로 유지
-        if (!roadGeometryEditState) focusSelectedRoadForEditing(groupKey, road);
 
         const active = roadGeometryEditState && roadGeometryEditState.groupKey === groupKey
           ? roadGeometryEditState.draft.segments[roadGeometryEditState.draft.selected] : null;
@@ -15212,8 +15220,56 @@
         const toolbar = document.getElementById("geometryEditToolbar");
         if (panel && toolbar) {
           panel.style.setProperty("--road-edit-toolbar-bottom",
-            Math.ceil(toolbar.getBoundingClientRect().bottom) + "px");
+            (toolbar.getBoundingClientRect().bottom < window.innerHeight * 0.55
+              ? Math.ceil(toolbar.getBoundingClientRect().bottom) : 58) + "px");
         }
+      }
+
+      function enableRoadGeometryToolbarDrag(toolbar) {
+        if (!toolbar) return;
+        if (roadGeometryToolbarPosition) {
+          toolbar.style.left = Math.max(8, Math.min(roadGeometryToolbarPosition.left,
+            window.innerWidth - toolbar.offsetWidth - 8)) + "px";
+          toolbar.style.top = Math.max(8, Math.min(roadGeometryToolbarPosition.top,
+            window.innerHeight - toolbar.offsetHeight - 8)) + "px";
+          toolbar.style.right = "auto";
+          toolbar.style.bottom = "auto";
+          toolbar.style.transform = "none";
+        }
+        let dragging = null;
+        toolbar.addEventListener("pointerdown", function(event) {
+          if (event.button !== 0 || event.target.closest("button, input, select, textarea")) return;
+          const rect = toolbar.getBoundingClientRect();
+          dragging = { id:event.pointerId, x:event.clientX, y:event.clientY,
+            left:rect.left, top:rect.top, width:rect.width, height:rect.height };
+          toolbar.style.width = rect.width + "px";
+          toolbar.style.left = rect.left + "px";
+          toolbar.style.top = rect.top + "px";
+          toolbar.style.right = "auto";
+          toolbar.style.bottom = "auto";
+          toolbar.style.transform = "none";
+          toolbar.setPointerCapture(event.pointerId);
+          event.preventDefault();
+        });
+        toolbar.addEventListener("pointermove", function(event) {
+          if (!dragging || event.pointerId !== dragging.id) return;
+          const left = Math.max(8, Math.min(window.innerWidth - dragging.width - 8,
+            dragging.left + event.clientX - dragging.x));
+          const top = Math.max(8, Math.min(window.innerHeight - dragging.height - 8,
+            dragging.top + event.clientY - dragging.y));
+          toolbar.style.left = left + "px";
+          toolbar.style.top = top + "px";
+          roadGeometryToolbarPosition = { left:left, top:top };
+          updateRoadEditPopupToolbarOffset();
+          event.preventDefault();
+        });
+        function finish(event) {
+          if (!dragging || event.pointerId !== dragging.id) return;
+          dragging = null;
+          if (toolbar.hasPointerCapture(event.pointerId)) toolbar.releasePointerCapture(event.pointerId);
+        }
+        toolbar.addEventListener("pointerup", finish);
+        toolbar.addEventListener("pointercancel", finish);
       }
 
       async function openRoadEditor(groupKey) {
@@ -17065,6 +17121,7 @@
           '<button type="button" id="saveAndCloseRoadGeometryBtn" onclick="saveRoadGeometryEdit(true)">저장 후 닫기</button>' +
           '<button type="button" id="cancelRoadGeometryBtn" onclick="cancelRoadGeometryEdit()">변경 취소</button>';
         document.body.appendChild(toolbar);
+        enableRoadGeometryToolbarDrag(toolbar);
         toolbar.querySelectorAll("[data-line-mode]").forEach(function(button) {
           button.onclick = function() {
             const mode = this.dataset.lineMode;
@@ -17348,6 +17405,8 @@
       function showInfo(position, groupKey, road) {
         const group = groups.get(groupKey);
         if (!group) return;
+        const currentEditPanel = document.getElementById("roadEditPanel");
+        if (currentEditPanel && currentEditPanel.dataset.groupKey === groupKey) return;
 
         selectedRoadObject = road || null;
         selectRoadGroupHighlight(groupKey);
