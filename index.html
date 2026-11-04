@@ -5551,6 +5551,13 @@
     display: none !important;
   }
 
+  #roadSelectionModeBtn svg { width:24px; height:24px; }
+  #roadSelectionModeBtn[aria-pressed="true"] {
+    background:#2f91f2;
+    color:#fff;
+    border-color:#2f91f2;
+  }
+
   /* 기존 레이어 팝업 자체는 사용하지 않고 내부 설정 내용만 왼쪽 메뉴에서 사용 */
   #roadLayerEditorPanel {
     display: none !important;
@@ -7517,6 +7524,13 @@
       </svg>
     </button>
 
+    <button id="roadSelectionModeBtn" class="top-square-button" type="button" title="도로선택" aria-label="도로선택" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 18h5l6-12h5M4 18a1.5 1.5 0 1 0 0 .01M20 6a1.5 1.5 0 1 0 0 .01"/>
+        <path d="m14 13 6 3-3 1-1 3z" fill="currentColor"/>
+      </svg>
+    </button>
+
     <button id="spatialBtn" class="top-load-button" type="button" title="공간파일 불러오기">불러오기</button>
   </div>
 
@@ -7899,6 +7913,13 @@
         STATUS_STYLES = { ...DEFAULT_STATUS_STYLES };
       }
 
+      let roadSelectionStyles = {};
+      try {
+        roadSelectionStyles = JSON.parse(localStorage.getItem("roadSelectionStyles")) || {};
+      } catch (error) {
+        roadSelectionStyles = {};
+      }
+
       let LABEL_STYLES;
       try {
         const savedLabelStyles = JSON.parse(localStorage.getItem("labelStyles") || "{}");
@@ -8011,6 +8032,13 @@
       let roadPopupOverlay = null;
       let selectedRouteBalloonOverlay = null;
       let selectedRoadGroupKey = null;
+      let roadSelectionMode = false;
+      document.getElementById("roadSelectionModeBtn").addEventListener("click", function() {
+        roadSelectionMode = !roadSelectionMode;
+        this.setAttribute("aria-pressed", String(roadSelectionMode));
+        if (selectedRoadGroupKey) setRoadGroupHighlight(selectedRoadGroupKey, true);
+      });
+
       let selectedRoadPopupState = null;
       let selectedRoadObject = null;
       let selectedTownshipName = null;
@@ -11062,6 +11090,8 @@
           ROAD_STYLES = JSON.parse(JSON.stringify(DEFAULT_STYLES));
           ROAD_LAYER_STACKS = JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS));
           STATUS_STYLES = { ...DEFAULT_STATUS_STYLES };
+          roadSelectionStyles = {};
+          localStorage.removeItem("roadSelectionStyles");
           LABEL_STYLES = JSON.parse(JSON.stringify(DEFAULT_LABEL_STYLES));
           TOWNSHIP_LABEL_STYLES = JSON.parse(JSON.stringify(DEFAULT_TOWNSHIP_LABEL_STYLES));
           localStorage.removeItem("roadStyles");
@@ -11652,6 +11682,11 @@
           }
         ));
 
+        card.appendChild(makeStyleMenuRow("도로선택", "선택 노선의 개설상태별 표시", function() {
+          roadLayerEditorView = { type:"roadSelection", styleKey:null, parent:"lineMain" };
+          renderRoadLayerEditor();
+        }));
+
         body.appendChild(card);
       }
 
@@ -12170,6 +12205,59 @@
         body.appendChild(card);
       }
 
+      function renderRoadSelectionDetail(body) {
+        const note = document.createElement("p");
+        note.className = "style-section-note";
+        note.textContent = "상단 도로선택 아이콘을 켜고 노선을 선택하면 전체 구간을 상태별로 표시합니다.";
+        body.appendChild(note);
+
+        ["NORMAL", "UNEXPANDED", "UNOPENED"].forEach(function(statusKey) {
+          const style = roadSelectionStyles[statusKey] || {};
+          const card = document.createElement("section");
+          card.className = "layer-detail-card";
+          card.innerHTML =
+            '<strong>' + roadStatusLabel(statusKey) + '</strong>' +
+            '<label class="layer-detail-row"><span>색상</span><div class="road-layer-color-wrap">' +
+              '<input type="color" aria-label="색상 선택"><input type="text" class="road-layer-color-code" maxlength="7" placeholder="기존 색상" aria-label="색상 코드"></div></label>' +
+            '<label class="layer-detail-row"><span>두께</span><input type="number" min="1" max="30" step="0.5" placeholder="기본 강조 두께"></label>' +
+            '<label class="layer-detail-row"><span>선 모양</span><select><option value="">개설상태 설정</option>' +
+              statusStyleOptions(style.pattern) + '</select></label>';
+          const color = card.querySelector('input[type="color"]');
+          const code = card.querySelector('input[type="text"]');
+          const width = card.querySelector('input[type="number"]');
+          const pattern = card.querySelector("select");
+          pattern.remove(1); // 선택 모드에서는 모든 상태를 표시함.
+          code.value = normalizeHexColor(style.color) || "";
+          color.value = code.value || "#737d89";
+          width.value = style.width ?? "";
+
+          function save() {
+            const savedColor = normalizeHexColor(code.value);
+            code.value = savedColor || "";
+            color.value = savedColor || "#737d89";
+            if (width.value !== "") width.value = limitNumber(width.value, 1, 30);
+            roadSelectionStyles[statusKey] = {
+              color: savedColor,
+              width: width.value === "" ? null : Number(width.value),
+              pattern: pattern.value
+            };
+            localStorage.setItem("roadSelectionStyles", JSON.stringify(roadSelectionStyles));
+            if (roadSelectionMode && selectedRoadGroupKey) {
+              setRoadGroupHighlight(selectedRoadGroupKey, true);
+            }
+          }
+
+          color.addEventListener("change", function() {
+            code.value = color.value;
+            save();
+          });
+          [code, width, pattern].forEach(function(input) {
+            input.addEventListener("change", save);
+          });
+          body.appendChild(card);
+        });
+      }
+
       function renderRoadLayerEditor() {
         const body = document.getElementById("roadLayerEditorBody");
         if (!body) return;
@@ -12183,6 +12271,8 @@
           renderTownshipLabelDetail(body);
         } else if (roadLayerEditorView.type === "status") {
           renderStatusDetail(body);
+        } else if (roadLayerEditorView.type === "roadSelection") {
+          renderRoadSelectionDetail(body);
         } else if (roadLayerEditorView.type === "lineMain") {
           renderRoadLineMenu(body);
         } else if (roadLayerEditorView.type === "labelMain") {
@@ -12209,7 +12299,7 @@
       window.handleSacheonStyleBack = function() {
         const type = roadLayerEditorView && roadLayerEditorView.type ? roadLayerEditorView.type : "main";
 
-        if (type === "road" || type === "status") {
+        if (type === "road" || type === "status" || type === "roadSelection") {
           roadLayerEditorView = { type:"lineMain", styleKey:null };
           renderRoadLayerEditor();
           return { handled:true, title:"라인" };
@@ -14792,6 +14882,7 @@
 
         const selectedSegment = group.roads.includes(selectedRoadObject)
           ? selectedRoadObject : group.roads[0];
+        const showStatus = enabled && roadSelectionMode;
         group.roads.forEach(function(road) {
           if (!road) return;
 
@@ -14803,13 +14894,19 @@
             isSelectedSegment ? "#E60012" : "#0057FF";
 
           const statusHidden = isRoadStatusHidden(road.statusKey);
+          const selectionStyle = showStatus ? roadSelectionStyles[road.statusKey] || {} : null;
+          const visibleLineIndex = showStatus
+            ? stack.findIndex(function(config) { return config.visible !== false; })
+            : -1;
 
           lines.forEach(function(line, index) {
             const config = stack[index] || stack[0];
             const layerEnabled = !config || config.visible !== false;
 
-            const showLine = layerEnabled && !statusHidden &&
-              (road._visible || (enabled && group.layerId === "city"));
+            const showLine = showStatus
+              ? index === visibleLineIndex
+              : layerEnabled && !statusHidden &&
+                (road._visible || (enabled && group.layerId === "city"));
             if (!showLine) {
               if (line && line.getMap()) line.setMap(null);
               return;
@@ -14820,11 +14917,15 @@
             }
 
             setMapOptionsIfChanged(line, {
-              strokeColor: highlightRoad
+              strokeColor: showStatus
+                ? selectionStyle.color || getRoadLayerDisplayColor(road.styleKey, config)
+                : highlightRoad
                 ? highlightColor
                 : getRoadLayerDisplayColor(road.styleKey, config),
               strokeWeight: mapStrokePx(
-                highlightRoad
+                showStatus
+                  ? selectionStyle.width ?? ((Number(config.width) || 3) + 3)
+                  : highlightRoad
                   ? (Number(config.width) || 3) +
                     (isSelectedSegment ? 3 : 2.5)
                   : (
@@ -14843,7 +14944,11 @@
                     0,
                     Math.min(100, Number(config.opacity) || 0)
                   ) / 100,
-              strokeStyle: highlightRoad
+              strokeStyle: showStatus
+                ? selectionStyle.pattern || (statusHidden
+                  ? (road.statusKey === "UNOPENED" ? DEFAULT_STATUS_STYLES.UNOPENED_GAP : DEFAULT_STATUS_STYLES.UNEXPANDED)
+                  : getStatusStrokeStyle(road.statusKey))
+                : highlightRoad
                 ? "solid"
                 : getRoadLayerStrokeStyle(road, config, index),
               zIndex: highlightRoad ? 90 - index : 40 - index
@@ -14851,16 +14956,13 @@
           });
 
           if (road.hitLine) {
-            if (statusHidden) {
-              if (road.hitLine.getMap()) {
-                road.hitLine.setMap(null);
-              }
-            } else {
-              if ((road._visible || (enabled && group.layerId === "city")) && !road.hitLine.getMap()) {
-                road.hitLine.setMap(map);
-              } else if (!road._visible && !enabled && road.hitLine.getMap()) {
-                road.hitLine.setMap(null);
-              }
+            const showHitLine = showStatus
+              ? visibleLineIndex >= 0
+              : !statusHidden && (road._visible || (enabled && group.layerId === "city"));
+            if (showHitLine !== !!road.hitLine.getMap()) {
+              road.hitLine.setMap(showHitLine ? map : null);
+            }
+            if (showHitLine) {
               setMapOptionsIfChanged(road.hitLine, {
                 zIndex: highlightRoad ? 110 : 60
               });
