@@ -3773,8 +3773,10 @@
   @media (min-width:701px) {
     .geometry-edit-toolbar.sacheon-line-tools {
       left: 12px;
-      right: 380px;
-      max-width: none;
+      right: auto;
+      width: min(680px, calc(100vw - 390px));
+      max-width: calc(100vw - 390px);
+      box-sizing: border-box;
       transform: none;
     }
   }
@@ -13500,7 +13502,8 @@
       });
 
       roadsReadyPromise
-      .then(function () {
+      .then(async function () {
+        await preloadCityRoadEdits();
         buildGroupLabels();
         makeLists();
         applyRoadVisibility();
@@ -15075,7 +15078,7 @@
         delete panel.dataset.initialLengthDisplay;
         delete panel.dataset.dirty;
         const editButton = panel.querySelector(".road-edit-btn");
-        if (editButton) editButton.disabled = false;
+        if (editButton) editButton.setAttribute("aria-pressed", "false");
         const group = selectedRoadPopupState && groups.get(selectedRoadPopupState.groupKey);
         const attributes = panel.querySelector(".road-attributes");
         if (group && attributes) {
@@ -15134,6 +15137,7 @@
         const panel = document.querySelector("body > .road-popup");
         const attributes = panel && panel.querySelector(".road-attributes");
         if (!attributes || !selectedRoadPopupState || selectedRoadPopupState.groupKey !== groupKey) return;
+        if (panel.id === "roadEditPanel" && panel.dataset.dirty === "true") return;
 
         // 사용자가 클릭한 실제 도로 구간을 편집 중심으로 유지
         if (!roadGeometryEditState) focusSelectedRoadForEditing(groupKey, road);
@@ -15165,9 +15169,19 @@
         panel.dataset.initialLengthDisplay = roadLengthInputValue(props, group.layerId);
         panel.dataset.dirty = "false";
         const editButton = panel.querySelector(".road-edit-btn");
-        if (editButton) editButton.disabled = true;
+        if (editButton) editButton.setAttribute("aria-pressed", "true");
         attributes.innerHTML =
           '<div class="road-edit-body">' +
+            '<div class="road-edit-summary">' +
+              row("노선번호", group.number) +
+              row("구간현황", statusLengthSummary(group)) +
+              row("차선현황", rangeValues(group.propertiesList, "차선", group.layerId === "city")) +
+              row("도로폭", rangeValues(group.propertiesList, "도로폭", group.layerId === "city"),
+                rangeValues(group.propertiesList, "도로폭", group.layerId === "city") === "-" ? "" : " m") +
+              row("총연장", formatRoadLength(group.propertiesList.reduce(function(sum, p) {
+                return sum + roadLengthKm(p, group.layerId);
+              }, 0)), " km") +
+            '</div>' +
             '<form id="roadEditForm">' + fields + '</form>' +
             '<div class="road-edit-actions">' +
               '<button type="button" onclick="cancelRoadGeometryEdit()">변경 취소</button>' +
@@ -15203,11 +15217,18 @@
       }
 
       async function openRoadEditor(groupKey) {
-        showRoadAttributePanel(groupKey);
+        const panel = document.getElementById("roadEditPanel");
+        if (!panel || panel.dataset.dirty !== "true") showRoadAttributePanel(groupKey);
         await startRoadGeometryEdit(groupKey);
         if (roadGeometryEditState && roadGeometryEditState.groupKey === groupKey) {
-          const panel = document.getElementById("roadEditPanel");
-          if (panel && panel.dataset.dirty !== "true") showRoadAttributePanel(groupKey);
+          let editingPanel = document.getElementById("roadEditPanel");
+          if (!document.querySelector("body > .road-popup") && selectedRoadPopupState &&
+              selectedRoadPopupState.groupKey === groupKey) {
+            const group = groups.get(groupKey);
+            createFixedRoadPopup(groupPopup(group, getEditableRoad(groupKey)));
+            editingPanel = null;
+          }
+          if (!editingPanel || editingPanel.dataset.dirty !== "true") showRoadAttributePanel(groupKey);
           updateRoadEditPopupToolbarOffset();
         }
       }
@@ -15521,6 +15542,30 @@
         if (!payload) return false;
         if (appliedOnlineRoadEditSignatures.get(groupKey) === JSON.stringify(payload)) return false;
         return applyOnlineRoadEdits(group, payload);
+      }
+
+      async function preloadCityRoadEdits() {
+        const controller = typeof AbortController === "function" ? new AbortController() : null;
+        const timeout = controller ? setTimeout(function() { controller.abort(); }, 6000) : null;
+        try {
+          const response = await fetch(SACHEON_MEMO_REST_URL +
+            "/route_memos?route_number=like.sacheon-edit%3Acity%3A*&select=route_number,memo&limit=100",
+            { headers:SACHEON_MEMO_HEADERS, cache:"no-store", signal:controller && controller.signal });
+          if (!response.ok) throw new Error("시도 편집정보 불러오기 실패 (" + response.status + ")");
+          const rows = await response.json();
+          (rows || []).forEach(function(row) {
+            if (!row || !String(row.route_number).startsWith("sacheon-edit:city:")) return;
+            const number = String(row.route_number).slice("sacheon-edit:city:".length);
+            const group = groups.get("city::" + number);
+            if (!group || !row.memo) return;
+            try { applyOnlineRoadEdits(group, JSON.parse(row.memo)); }
+            catch (error) { console.error("시도 " + number + " 편집정보 오류", error); }
+          });
+        } catch (error) {
+          console.error("시도 편집정보 사전 로드 실패", error);
+        } finally {
+          if (timeout) clearTimeout(timeout);
+        }
       }
 
       async function saveRoadAttributes(groupKey) {
@@ -17328,9 +17373,13 @@
         // 온라인에 저장된 편집정보가 있으면 즉시 불러와 현재 노선에 반영.
         syncOnlineRoadEdits(groupKey)
           .then(function(changed) {
-            if (!changed) return;
-            if (document.getElementById("roadEditPanel")) return;
             if (!selectedRoadPopupState || selectedRoadPopupState.groupKey !== groupKey) return;
+            const editingPanel = document.getElementById("roadEditPanel");
+            if (editingPanel) {
+              if (editingPanel.dataset.dirty !== "true") showRoadAttributePanel(groupKey);
+              return;
+            }
+            if (!changed) return;
             const currentGroup = groups.get(groupKey);
             if (!currentGroup) return;
             const currentRoad = selectedRoadPopupState.road || road || currentGroup.roads[0] || null;

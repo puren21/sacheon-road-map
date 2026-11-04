@@ -242,6 +242,28 @@ test('city road status follows lane count on initial display, edit and saved seg
   assert.doesNotMatch(source('showRoadAttributePanel'), /buildRoadEditField\("개설상태", "status", statusValueFromKey\(currentStatus\), "text"/);
 });
 
+test('saved city lane and road width are loaded before the first route selection', async () => {
+  const city = { key: 'city::1', properties: { 차선: null, 도로폭: null } };
+  let fetched = 0;
+  const c = context(['preloadCityRoadEdits'], {
+    SACHEON_MEMO_REST_URL: 'https://example.invalid/rest/v1', SACHEON_MEMO_HEADERS: {},
+    groups: new Map([[city.key, city]]),
+    fetch: async url => {
+      assert.match(url, /route_number=like\.sacheon-edit%3Acity%3A\*/);
+      fetched++;
+      return { ok: true, json: async () => [{ route_number: 'sacheon-edit:city:1',
+        memo: JSON.stringify({ segmentModel: [{ properties: { 차선: '2', 도로폭: '8' } }] }) }] };
+    },
+    applyOnlineRoadEdits(group, data) {
+      Object.assign(group.properties, data.segmentModel[0].properties);
+    }
+  });
+  await c.preloadCityRoadEdits();
+  assert.equal(fetched, 1);
+  assert.equal(city.properties.차선, '2');
+  assert.equal(city.properties.도로폭, '8');
+});
+
 for (const layerId of ['city', 'rural']) {
   test(`${layerId}: choosing one divided line highlights the entire route and distinguishes its segment`, () => {
     const makeLine = () => ({ current: null, getMap() { return this.current; },
@@ -563,13 +585,14 @@ test('vertex dragging snaps to a nearby route endpoint', () => {
 test('one edit action opens both the line tools and the attribute inputs', async () => {
   const calls = [];
   let complete;
+  let editing = false;
   const panel = { dataset: { dirty: 'true' } };
   const c = context(['openRoadEditor'], {
     roadGeometryEditState: { groupKey: 'city::3' },
-    document: { getElementById: () => panel },
+    document: { getElementById: () => editing ? panel : null, querySelector: () => ({}) },
     updateRoadEditPopupToolbarOffset() {},
     startRoadGeometryEdit: key => { calls.push('line:' + key); return new Promise(resolve => { complete = resolve; }); },
-    showRoadAttributePanel: key => { calls.push('attributes:' + key); }
+    showRoadAttributePanel: key => { calls.push('attributes:' + key); editing = true; }
   });
   const opening = c.openRoadEditor('city::3');
   assert.deepEqual(calls, ['attributes:city::3', 'line:city::3']);
@@ -578,11 +601,34 @@ test('one edit action opens both the line tools and the attribute inputs', async
   assert.deepEqual(calls, ['attributes:city::3', 'line:city::3']);
 });
 
+test('editor restores the property popup if an online refresh replaced it', async () => {
+  let visible = false, created = 0, forms = 0;
+  const group = { key: 'city::1' };
+  const c = context(['openRoadEditor'], {
+    roadGeometryEditState: { groupKey: group.key },
+    selectedRoadPopupState: { groupKey: group.key },
+    groups: new Map([[group.key, group]]),
+    document: {
+      getElementById: () => null,
+      querySelector: () => visible ? {} : null
+    },
+    startRoadGeometryEdit: async () => {},
+    showRoadAttributePanel() { forms++; },
+    createFixedRoadPopup() { created++; visible = true; },
+    groupPopup: () => '<div class="road-popup"></div>',
+    getEditableRoad: () => null,
+    updateRoadEditPopupToolbarOffset() {}
+  });
+  await c.openRoadEditor(group.key);
+  assert.equal(created, 1);
+  assert.equal(forms, 2);
+});
+
 test('editing uses the existing road popup and cancel restores its attributes', () => {
   const road = { properties: { 차선: '2', 연장: 1000 } };
-  const group = { key: 'city::3', number: '3', layerId: 'city', roads: [road] };
+  const group = { key: 'city::3', number: '3', layerId: 'city', roads: [road], propertiesList: [road.properties] };
   const attributes = { innerHTML: '<p>원래 속성정보</p>' };
-  const editButton = { disabled: false };
+  const editButton = { attributes: {}, setAttribute(name, value) { this.attributes[name] = value; } };
   const offsets = {};
   const popup = {
     dataset: {}, style: { setProperty(name, value) { offsets[name] = value; } },
@@ -600,6 +646,9 @@ test('editing uses the existing road popup and cancel restores its attributes', 
     roadLengthInputValue: () => '1.0', safe: value => value == null ? '-' : String(value),
     roadEditorEscape: value => String(value == null ? '' : value),
     escapeHTML: value => String(value),
+    row: (label, value) => `<p>${label}: ${value}</p>`,
+    statusLengthSummary: () => '개설 1.0 km', rangeValues: () => '2',
+    formatRoadLength: value => String(value), roadLengthKm: () => 1,
     groupPopup: () => '<div><div class="road-attributes">복원된 속성정보</div></div>',
     document: {
       querySelector: selector => selector === 'body > .road-popup' ? popup : null,
@@ -619,12 +668,13 @@ test('editing uses the existing road popup and cancel restores its attributes', 
     ['lane', 'width', 'start', 'end', 'remark', 'extra', 'review', 'change']);
   assert.ok(editable.every(match => !match[0].includes('readonly')));
   assert.match(attributes.innerHTML, /onclick="cancelRoadGeometryEdit\(\)"/);
-  assert.equal(editButton.disabled, true);
+  assert.equal(editButton.attributes['aria-pressed'], 'true');
+  assert.match(attributes.innerHTML, /차선현황: 2/);
   assert.equal(offsets['--road-edit-toolbar-bottom'], '149px');
   c.closeRoadEditPanel();
   assert.equal(popup.id, undefined);
   assert.equal(attributes.innerHTML, '복원된 속성정보');
-  assert.equal(editButton.disabled, false);
+  assert.equal(editButton.attributes['aria-pressed'], 'false');
 });
 
 test('roadview opens a resizable lower-left panel and popout opens only on its button', () => {
