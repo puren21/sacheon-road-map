@@ -1239,28 +1239,7 @@
       height: 100%;
     }
 
-    /* 로드뷰 현재 위치 미니지도 */
-    #roadviewMiniMap {
-      position: absolute;
-      left: 10px;
-      bottom: 10px;
-      z-index: 42;
-      width: 260px;
-      height: 180px;
-      border: 3px solid #fff;
-      box-sizing: border-box;
-      background: #f4f5f7;
-      box-shadow: 0 2px 8px #0006;
-    }
-
-    #roadviewPanel.fullscreen #roadviewMiniMap {
-      width: 360px;
-      height: 230px;
-      left: 12px;
-      bottom: 12px;
-    }
-
-    /* 로드뷰 미니지도 현재 위치 + 바라보는 방향 */
+    /* 본 지도에 표시하는 로드뷰 위치와 바라보는 방향 */
     .roadview-direction-marker {
       position: relative;
       width: 54px;
@@ -1361,20 +1340,6 @@
       #roadviewPanel.fullscreen {
         width: 100%;
         height: 100%;
-      }
-
-      #roadviewMiniMap {
-        width: 190px;
-        height: 130px;
-        left: 7px;
-        bottom: 7px;
-      }
-
-      #roadviewPanel.fullscreen #roadviewMiniMap {
-        width: 230px;
-        height: 150px;
-        left: 8px;
-        bottom: 8px;
       }
 
       /* 모바일: 노선목록을 좌측 사이드바가 아닌 하단 바텀시트로 표시 */
@@ -7695,7 +7660,6 @@
     </div>
 
     <div id="roadview"></div>
-    <div id="roadviewMiniMap" aria-label="로드뷰 현재 위치 지도"></div>
   </div>
 
   <script>
@@ -10271,10 +10235,6 @@
       let roadviewOverlay = null;
       let roadviewClient = null;
       let roadview = null;
-      let roadviewMiniMap = null;
-      let roadviewMiniMarker = null;
-      let roadviewDirectionOverlay = null;
-      let roadviewDirectionCone = null;
       let roadviewMapDirectionOverlay = null;
       let roadviewMapDirectionCone = null;
       let roadviewPopupWindow = null;
@@ -17766,78 +17726,30 @@
               document.getElementById("roadview")
             );
 
-          roadviewMiniMap = new kakao.maps.Map(
-            document.getElementById("roadviewMiniMap"),
-            {
-              center: map.getCenter(),
-              level: 4
-            }
-          );
-
-          roadviewMiniMarker = new kakao.maps.Marker({
-            position: map.getCenter(),
-            map: null
-          });
-
-          const directionMarker = document.createElement("div");
-          directionMarker.className = "roadview-direction-marker";
-          directionMarker.innerHTML =
-            '<div class="roadview-direction-cone"></div>' +
-            '<div class="roadview-direction-dot"></div>';
-          roadviewDirectionCone =
-            directionMarker.querySelector(".roadview-direction-cone");
-
-          roadviewDirectionOverlay = new kakao.maps.CustomOverlay({
-            position: map.getCenter(),
-            content: directionMarker,
-            xAnchor: 0,
-            yAnchor: 0
-          });
-          roadviewDirectionOverlay.setMap(roadviewMiniMap);
-
-          const syncRoadviewMiniMap = function () {
-            if (!roadviewMiniMap || !roadviewDirectionOverlay || roadviewPopupWindow ||
-                roadviewPanel.style.display === "none") return;
+          const syncRoadviewMapDirection = function () {
+            if (roadviewPopupWindow || roadviewPanel.style.display === "none") return;
             const currentPosition = roadview.getPosition();
             if (!currentPosition) return;
-            roadviewDirectionOverlay.setPosition(currentPosition);
-            roadviewMiniMap.setCenter(currentPosition);
             const viewpoint = roadview.getViewpoint();
             showRoadviewMapDirection(currentPosition, viewpoint && viewpoint.pan);
-          };
-
-          const syncRoadviewDirection = function () {
-            if (!roadviewDirectionCone || !roadview) return;
-            const viewpoint = roadview.getViewpoint();
-            const pan = viewpoint && Number.isFinite(Number(viewpoint.pan))
-              ? Number(viewpoint.pan)
-              : 0;
-            roadviewDirectionCone.style.transform =
-              "translate(-50%, -100%) rotate(" + pan + "deg)";
-            if (!roadviewPopupWindow && roadviewPanel.style.display !== "none") {
-              showRoadviewMapDirection(roadview.getPosition(), pan);
-            }
           };
 
           kakao.maps.event.addListener(
             roadview,
             "position_changed",
-            syncRoadviewMiniMap
+            syncRoadviewMapDirection
           );
 
           kakao.maps.event.addListener(
             roadview,
             "pano_changed",
-            function () {
-              syncRoadviewMiniMap();
-              syncRoadviewDirection();
-            }
+            syncRoadviewMapDirection
           );
 
           kakao.maps.event.addListener(
             roadview,
             "viewpoint_changed",
-            syncRoadviewDirection
+            syncRoadviewMapDirection
           );
         }
 
@@ -17891,11 +17803,6 @@
           setTimeout(function() {
             if (requestId !== roadviewRequestId || !roadviewMode) return;
             roadview.relayout();
-            if (roadviewMiniMap) {
-              roadviewMiniMap.relayout();
-              roadviewMiniMap.setCenter(position);
-            }
-            if (roadviewDirectionOverlay) roadviewDirectionOverlay.setPosition(position);
             roadview.setPanoId(panoId, position);
           }, 0);
         });
@@ -17932,7 +17839,6 @@
         new ResizeObserver(function() {
           if (roadviewPanel.style.display === "none") return;
           if (roadview) roadview.relayout();
-          if (roadviewMiniMap) roadviewMiniMap.relayout();
         }).observe(roadviewPanel);
       }
 
@@ -18014,13 +17920,6 @@
           if (roadview) {
             roadview.relayout();
           }
-          if (roadviewMiniMap) {
-            roadviewMiniMap.relayout();
-            const currentPosition = roadview.getPosition();
-            if (currentPosition) {
-              roadviewMiniMap.setCenter(currentPosition);
-            }
-          }
         }, 50);
       };
 
@@ -18045,13 +17944,6 @@
 
             setTimeout(function () {
               roadview.relayout();
-              if (roadviewMiniMap) {
-                roadviewMiniMap.relayout();
-                const currentPosition = roadview.getPosition();
-                if (currentPosition) {
-                  roadviewMiniMap.setCenter(currentPosition);
-                }
-              }
             }, 50);
           }
         }

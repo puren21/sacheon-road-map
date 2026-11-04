@@ -464,6 +464,9 @@ test('roadview opens a resizable lower-left panel and popout opens only on its b
   assert.equal(panoId, 123);
   assert.match(html, /#roadviewPanel\s*\{[^}]*left:\s*15px;[^}]*bottom:\s*15px;[^}]*resize:\s*both/s);
   assert.match(html, /id="roadviewPopout"[^>]*>팝업/);
+  assert.doesNotMatch(html, /id="roadviewMiniMap"/);
+  assert.match(html, /"position_changed",\s*syncRoadviewMapDirection/);
+  assert.match(html, /"viewpoint_changed",\s*syncRoadviewMapDirection/);
   assert.match(html, /showInfo\(event\.latLng, groupKey, road\);\s*if \(roadviewMode\) openRoadview\(event\.latLng\);/);
   assert.match(fs.readFileSync(path.join(__dirname, '../roadview.html'), 'utf8'), /new kakao\.maps\.Roadview\(/);
 });
