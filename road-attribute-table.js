@@ -44,6 +44,7 @@
       '<input id="roadTableSearch" type="search" placeholder="노선·속성 검색" aria-label="노선·속성 검색">' +
       '<span id="roadTableCount" aria-live="polite"></span>' +
       '<button id="roadTableEdit" type="button" aria-pressed="false">✎ 편집</button>' +
+      '<button id="roadTableDelete" type="button" disabled>선택 행 삭제</button>' +
       '<button id="roadTableSave" type="button">저장</button>' +
       '<button id="roadTableCancel" type="button">취소</button>' +
       '<button id="roadTableClose" type="button" aria-label="속성테이블 닫기">×</button></header>' +
@@ -53,7 +54,7 @@
 
     let layer = "city", editing = false, busy = false, popup = null;
     let sortKey = "number", sortDirection = 1, requestId = 0;
-    let widths = {}, changes = new Map(), selected = new Set();
+    let widths = {}, changes = new Map(), selected = new Set(), deleted = new Set();
     const $ = selector => panel.querySelector(selector);
     const keyOf = row => row.groupKey + "::" + row.index;
     const columns = () => layer === "city" ? cityColumns : commonColumns;
@@ -71,8 +72,9 @@
     function setEditingUI() {
       $("#roadTableEdit").setAttribute("aria-pressed", String(editing));
       $("#roadTableEdit").disabled = busy;
-      $("#roadTableSave").disabled = busy || !changes.size;
-      $("#roadTableCancel").disabled = busy || !changes.size;
+      $("#roadTableDelete").disabled = busy || !editing || !selected.size;
+      $("#roadTableSave").disabled = busy || (!changes.size && !deleted.size);
+      $("#roadTableCancel").disabled = busy || (!changes.size && !deleted.size);
       panel.querySelectorAll("tbody [data-field]").forEach(control => {
         const canEdit = editing && !busy && !control.dataset.fixed;
         control.disabled = !canEdit && control.tagName === "SELECT";
@@ -82,7 +84,7 @@
     function widthFor(key) {
       const saved = Number(widths[key]);
       if (Number.isFinite(saved) && saved >= 60) return Math.min(saved, 650);
-      return key === "number" ? 125 : key === "segment" ? 65 :
+      return key === "__select" ? 62 : key === "number" ? 125 : key === "segment" ? 65 :
         ["remark", "extra", "review", "change", "start", "end"].includes(key) ? 200 : 105;
     }
     function applyWidths() {
@@ -98,8 +100,8 @@
       if (panel.hidden) return;
       const all = rows();
       const query = $("#roadTableSearch").value.trim().toLocaleLowerCase();
-      const filtered = all.filter(row => !query || columns().some(([, key]) =>
-        String(currentValue(row, key)).toLocaleLowerCase().includes(query)));
+      const filtered = all.filter(row => !deleted.has(keyOf(row)) && (!query || columns().some(([, key]) =>
+        String(currentValue(row, key)).toLocaleLowerCase().includes(query))));
       filtered.sort((a, b) => {
         const av = String(currentValue(a, sortKey)).trim(), bv = String(currentValue(b, sortKey)).trim();
         if (!av || !bv) return (!av ? 1 : 0) - (!bv ? 1 : 0);
@@ -111,19 +113,24 @@
       panel.querySelectorAll("[data-table-layer]").forEach(button => {
         button.setAttribute("aria-pressed", String(button.dataset.tableLayer === layer));
       });
-      $("#roadTableCount").textContent = filtered.length + " / " + all.length + "구간";
+      $("#roadTableCount").textContent = filtered.length + " / " + all.length + "구간" +
+        (deleted.size ? " · 삭제 예정 " + deleted.size : "");
       const cols = columns();
-      $("thead").innerHTML = "<tr>" + cols.map(([label, key]) =>
+      $("thead").innerHTML = '<tr><th scope="col">선택</th>' + cols.map(([label, key]) =>
         '<th scope="col" aria-sort="' + (sortKey === key ? (sortDirection === 1 ? "ascending" : "descending") : "none") +
         '"><button type="button" data-sort="' + escape(key) + '">' + escape(label) +
         (sortKey === key ? (sortDirection === 1 ? " ▲" : " ▼") : " ↕") +
         '</button><span class="road-table-resize" data-resize="' + escape(key) +
         '" role="separator" tabindex="0" aria-label="' + escape(label) + ' 열 너비 조절"></span></th>').join("") + "</tr>";
-      $("colgroup").innerHTML = cols.map(([, key]) => '<col data-column="' + escape(key) + '">').join("");
+      $("colgroup").innerHTML = '<col data-column="__select">' +
+        cols.map(([, key]) => '<col data-column="' + escape(key) + '">').join("");
       $("tbody").innerHTML = filtered.map(row => {
         const rowKey = keyOf(row);
         return '<tr data-row="' + escape(rowKey) + '" aria-selected="' + selected.has(rowKey) +
-          '" class="' + (changes.has(rowKey) ? "road-table-dirty" : "") + '">' + cols.map(([, key]) => {
+          '" class="' + (changes.has(rowKey) ? "road-table-dirty" : "") + '">' +
+          '<td class="road-table-select-cell"><input class="road-table-select" type="checkbox" aria-label="' +
+            escape((row.layerId === "city" ? "시도 " : "") + row.number + " " + (row.index + 1) + "구간 선택") +
+            '"' + (selected.has(rowKey) ? " checked" : "") + '></td>' + cols.map(([, key]) => {
           const value = currentValue(row, key);
           const fixed = !editable.has(key) || (row.layerId === "city" && ["gubun", "status"].includes(key));
           const opts = key === "status" ? ["개설", "미확장", "미개설"] : key === "gubun" ? ["면도", "리도", "농도"] : null;
@@ -161,7 +168,7 @@
           doc.documentElement.lang = "ko";
           const style = doc.createElement("link");
           style.rel = "stylesheet";
-          style.href = new URL("road-attribute-table.css?v=20261104-1", location.href).href;
+          style.href = new URL("road-attribute-table.css?v=20261104-2", location.href).href;
           doc.head.appendChild(style);
           doc.body.replaceChildren(panel);
           panel.classList.add("road-table-popup");
@@ -181,7 +188,7 @@
         await api.load(layer);
         if (currentRequest !== requestId) return;
         render();
-        message("행을 누르면 지도에서 해당 노선을 선택합니다. 편집 후 저장을 누르면 온라인에 반영됩니다.");
+        message("행 선택: 지도 이동 · Shift+클릭: 추가 선택 · 삭제한 행은 저장 전 취소할 수 있습니다.");
       } catch (error) {
         if (currentRequest === requestId) message("온라인 속성 확인 실패: " + error.message, true);
       }
@@ -194,7 +201,18 @@
     $("#roadTableClose").onclick = close;
     $("#roadTableEdit").onclick = () => { editing = !editing; setEditingUI(); };
     $("#roadTableSearch").oninput = render;
-    $("#roadTableCancel").onclick = () => { changes.clear(); render(); message("저장하지 않은 변경을 취소했습니다."); };
+    $("#roadTableCancel").onclick = () => {
+      changes.clear(); deleted.clear(); selected.clear(); render();
+      message("저장하지 않은 수정과 삭제를 취소했습니다.");
+    };
+    $("#roadTableDelete").onclick = () => {
+      if (!editing || busy || !selected.size) return;
+      selected.forEach(rowKey => { deleted.add(rowKey); changes.delete(rowKey); });
+      const count = selected.size;
+      selected.clear();
+      render();
+      message(count + "개 구간을 삭제 예정으로 표시했습니다. 저장하면 지도에서도 제거됩니다.");
+    };
     panel.querySelector("nav").onclick = event => {
       const button = event.target.closest("[data-table-layer]");
       if (button && button.dataset.tableLayer !== layer) open(button.dataset.tableLayer);
@@ -242,6 +260,16 @@
       setEditingUI();
     }
     $("tbody").onclick = event => {
+      if (event.target.matches(".road-table-select")) {
+        const tr = event.target.closest("tr[data-row]");
+        if (tr) {
+          if (event.target.checked) selected.add(tr.dataset.row);
+          else selected.delete(tr.dataset.row);
+          tr.setAttribute("aria-selected", String(selected.has(tr.dataset.row)));
+          setEditingUI();
+        }
+        return;
+      }
       const control = event.target.closest("input,select");
       if (control && editing && !control.readOnly && !control.disabled) return;
       const tr = event.target.closest("tr[data-row]");
@@ -251,12 +279,18 @@
       if (!event.shiftKey) selected.clear();
       selected.add(tr.dataset.row);
       panel.querySelectorAll("tbody tr").forEach(item => item.setAttribute("aria-selected", String(selected.has(item.dataset.row))));
+      panel.querySelectorAll("tbody tr").forEach(item => {
+        const checkbox = item.querySelector(".road-table-select");
+        if (checkbox) checkbox.checked = selected.has(item.dataset.row);
+      });
+      setEditingUI();
       if (!event.shiftKey) api.select(row.groupKey, row.index);
     };
     $("#roadTableSave").onclick = async () => {
-      if (!changes.size || busy) return;
+      if ((!changes.size && !deleted.size) || busy) return;
       const all = api.rows("city").concat(api.rows("rural"));
       const edits = [];
+      const removals = [];
       for (const [rowKey, values] of changes) {
         const row = all.find(item => keyOf(item) === rowKey);
         if (!row) { message("구간이 변경되었습니다. 테이블을 다시 열어 주세요.", true); return; }
@@ -268,16 +302,34 @@
         }
         edits.push({ groupKey:row.groupKey, index:row.index, values:Object.assign({}, values) });
       }
+      for (const rowKey of deleted) {
+        const row = all.find(item => keyOf(item) === rowKey);
+        if (!row) { message("삭제할 구간이 변경되었습니다. 테이블을 다시 열어 주세요.", true); return; }
+        removals.push({ groupKey:row.groupKey, index:row.index });
+      }
       busy = true;
       setEditingUI();
-      message("속성을 저장하고 있습니다.");
+      message("수정·삭제 내용을 저장하고 있습니다.");
       try {
-        await api.save(edits);
+        await api.save(edits, removals);
         changes.clear();
+        deleted.clear();
+        selected.clear();
         render();
-        message(edits.length + "개 구간의 속성을 저장했습니다.");
+        message(edits.length + "개 구간 수정, " + removals.length + "개 구간 삭제를 저장했습니다.");
       } catch (error) {
-        message("저장 실패: " + error.message, true);
+        const savedGroups = new Set(error.savedGroups || []);
+        if (savedGroups.size) {
+          for (const rowKey of changes.keys()) {
+            if (savedGroups.has(rowKey.slice(0, rowKey.lastIndexOf("::")))) changes.delete(rowKey);
+          }
+          for (const rowKey of deleted) {
+            if (savedGroups.has(rowKey.slice(0, rowKey.lastIndexOf("::")))) deleted.delete(rowKey);
+          }
+          render();
+        }
+        message((savedGroups.size ? savedGroups.size + "개 노선은 저장됨. 나머지 " : "") +
+          "저장 실패: " + error.message, true);
       } finally { busy = false; setEditingUI(); }
     };
     window.addEventListener("pagehide", () => { if (popup && !popup.closed) popup.close(); });

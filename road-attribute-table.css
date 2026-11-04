@@ -13,6 +13,7 @@
 #roadTableSearch{flex:1 1 140px;min-width:130px;max-width:230px;padding:6px 8px;border:1px solid #bfcfdc;border-radius:6px;font:inherit}
 #roadTableCount{white-space:nowrap;color:#617688}
 #roadTableSave{background:#1875c2!important;color:white!important;border-color:#1875c2!important}
+#roadTableDelete{color:#a13636!important;border-color:#dcb9b9!important}
 #roadTableClose{margin-left:auto;font-size:21px!important;line-height:1!important;padding:2px 8px!important}
 #sacheonAttributeTable .road-table-message{padding:5px 11px;color:#587185;font-size:12px;min-height:18px;flex:none}
 #sacheonAttributeTable .road-table-message.error{color:#b12727}
@@ -30,6 +31,8 @@
 #sacheonAttributeTable td input,#sacheonAttributeTable td select{box-sizing:border-box;width:100%;min-width:0;padding:4px;border:1px solid transparent;background:transparent;color:inherit;font:inherit;text-overflow:ellipsis}
 #sacheonAttributeTable td input:not([readonly]),#sacheonAttributeTable td select:not(:disabled){background:#fff;border-color:#aec9e0;border-radius:4px}
 #sacheonAttributeTable td input[readonly],#sacheonAttributeTable td select:disabled{pointer-events:none}
+#sacheonAttributeTable .road-table-select-cell{text-align:center}
+#sacheonAttributeTable td input.road-table-select{width:16px;height:16px;min-width:16px;margin:3px;vertical-align:middle;cursor:pointer;accent-color:#287bc3}
 #sacheonAttributeTable td input:focus,#sacheonAttributeTable td select:focus{outline:2px solid #2184d1;outline-offset:0}
 #sacheonAttributeTable.road-table-popup{position:relative;left:auto;bottom:auto;transform:none;width:100%;height:100dvh;min-height:0;resize:none;border:0;border-radius:0;box-shadow:none}
 @media (max-width:700px){#sacheonAttributeTable{left:6px;bottom:6px;transform:none;width:calc(100vw - 12px);height:65dvh}#sacheonAttributeTable .road-table-header{gap:5px}#sacheonAttributeTable .road-table-header strong{width:100%}#roadTableClose{position:absolute;right:9px;top:8px}}

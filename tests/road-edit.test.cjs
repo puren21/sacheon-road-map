@@ -80,6 +80,53 @@ test('attribute table preserves rural segment models when saving one field', asy
   assert.deepEqual(persisted.segmentModel[0].geometry,[[35,128],[35.1,128.1]]);
 });
 
+test('attribute table deletion saves surviving geometry and discards old index edits', async () => {
+  const group = { key:'city::12', number:'12', layerId:'city', roads:[
+    { properties:{ number:'12', 연장:2348 } }, { properties:{ number:'12', 연장:2461 } }
+  ] };
+  const persistedGeometry = [[35.07,128.06],[35.08,128.08]];
+  let persisted, listRefreshes = 0;
+  const c = context(['saveRoadTableChanges'], {
+    groups:new Map([[group.key,group]]), roadGeometryEditState:null,
+    selectedRoadPopupState:null, appliedOnlineRoadEditSignatures:new Map(),
+    fetchOnlineRoadEdits:async () => null,
+    roadGroupSegmentModel:() => [
+      { geometry:[[35.06,128.05],[35.07,128.06]], properties:{ 연장:2348 } },
+      { geometry:persistedGeometry, properties:{ 연장:2461, 비고:'남는 구간' } }
+    ],
+    saveOnlineRoadEdits:async (_group,payload) => { persisted=structuredClone(payload); },
+    applyOnlineRoadEdits:() => {}, makeLists:() => { listRefreshes++; },
+    buildGroupLabels:() => {}, updateLabels:() => {}
+  });
+  await c.saveRoadTableChanges([], [{ groupKey:group.key, index:0 }]);
+  assert.equal(persisted.version,3);
+  assert.equal(persisted.segmentModel.length,1);
+  assert.deepEqual(persisted.segmentModel[0].geometry,persistedGeometry);
+  assert.equal(persisted.segmentModel[0].properties.비고,'남는 구간');
+  assert.deepEqual(persisted.roads,{});
+  assert.deepEqual(persisted.geometries,{});
+  assert.equal(listRefreshes,1);
+});
+
+test('deleting the last attribute row persists an empty route model', async () => {
+  const group = { key:'rural::7', number:'7', layerId:'rural', roads:[{ properties:{ 연장:1.2 } }] };
+  let persisted;
+  const c = context(['saveRoadTableChanges', 'replaceRoadGroupSegments'], {
+    groups:new Map([[group.key,group]]), roadGeometryEditState:null,
+    selectedRoadPopupState:null, selectedRoadObject:null,
+    appliedOnlineRoadEditSignatures:new Map(),
+    fetchOnlineRoadEdits:async () => null,
+    roadGroupSegmentModel:() => [{ geometry:[[35,128],[35.01,128.01]], properties:{ 연장:1.2 } }],
+    saveOnlineRoadEdits:async (_group,payload) => { persisted=structuredClone(payload); },
+    applyOnlineRoadEdits:() => {}, makeLists:() => {}, buildGroupLabels:() => {}, updateLabels:() => {},
+    removeRoadSegmentVisuals:() => {}, recalcGroupBounds:() => {}
+  });
+  await c.saveRoadTableChanges([], [{ groupKey:group.key, index:0 }]);
+  assert.deepEqual(persisted.segmentModel,[]);
+  assert.equal(c.replaceRoadGroupSegments(group, persisted.segmentModel),true);
+  assert.equal(group.roads.length,0);
+});
+
 test('split preview and captured point snap to the selected road before adjacent roads', () => {
   class LatLng {
     constructor(lat, lng) { this.lat = lat; this.lng = lng; }

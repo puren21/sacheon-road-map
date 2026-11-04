@@ -7699,8 +7699,8 @@
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
   <script src="road-line-geometry.js?v=20261103-2"></script>
   <script src="road-line-draft.js?v=20261103-2"></script>
-  <link rel="stylesheet" href="road-attribute-table.css?v=20261104-1">
-  <script src="road-attribute-table.js?v=20261104-1"></script>
+  <link rel="stylesheet" href="road-attribute-table.css?v=20261104-2">
+  <script src="road-attribute-table.js?v=20261104-2"></script>
 
   <script>
     if (!window.kakao || !window.kakao.maps) {
@@ -13548,6 +13548,7 @@
               { headers:SACHEON_MEMO_HEADERS, cache:"no-store" });
             if (!response.ok) throw new Error("온라인 속성 불러오기 실패 (" + response.status + ")");
             const saved = await response.json();
+            let structureChanged = false;
             (saved || []).forEach(function(item) {
               if (!item.route_number || !item.route_number.startsWith(prefix) || !item.memo) return;
               const group = groups.get(layerId + "::" + item.route_number.slice(prefix.length));
@@ -13555,10 +13556,17 @@
               try {
                 const payload = JSON.parse(item.memo);
                 if (appliedOnlineRoadEditSignatures.get(group.key) !== JSON.stringify(payload)) {
+                  const previousCount = group.roads.length;
                   applyOnlineRoadEdits(group, payload);
+                  if (previousCount !== group.roads.length) structureChanged = true;
                 }
               } catch (error) { console.error("도로 속성테이블 온라인 자료 오류", error); }
             });
+            if (structureChanged) {
+              makeLists();
+              buildGroupLabels();
+              updateLabels();
+            }
           },
           save: saveRoadTableChanges
         });
@@ -14353,7 +14361,7 @@
 
         Array.from(groups.values())
           .filter(function (group) {
-            return group.layerId === layerId;
+            return group.layerId === layerId && group.roads.length > 0;
           })
           .sort(function (a, b) {
             return a.number.localeCompare(
@@ -15402,19 +15410,38 @@
         }
       }
 
-      async function saveRoadTableChanges(changes) {
+      async function saveRoadTableChanges(changes, deletions) {
         const grouped = new Map();
+        function entry(groupKey) {
+          if (!grouped.has(groupKey)) grouped.set(groupKey, { edits:[], removed:new Set() });
+          return grouped.get(groupKey);
+        }
         changes.forEach(function(change) {
-          if (!grouped.has(change.groupKey)) grouped.set(change.groupKey, []);
-          grouped.get(change.groupKey).push(change);
+          entry(change.groupKey).edits.push(change);
         });
-        for (const [groupKey, edits] of grouped) {
+        (deletions || []).forEach(function(change) {
+          entry(change.groupKey).removed.add(change.index);
+        });
+        let hasDeleted = false;
+        const savedGroups = [];
+        try {
+        for (const [groupKey, changesForGroup] of grouped) {
+          const edits = changesForGroup.edits;
+          const removed = changesForGroup.removed;
           const group = groups.get(groupKey);
           if (!group) throw new Error("노선을 찾을 수 없습니다: " + groupKey);
           if (roadGeometryEditState && roadGeometryEditState.groupKey === groupKey) {
             throw new Error("해당 노선의 선형 편집을 마친 뒤 속성을 저장해 주세요.");
           }
-          const payload = await fetchOnlineRoadEdits(group) || {};
+          const fetched = await fetchOnlineRoadEdits(group);
+          const payload = fetched || {};
+          if (removed.size && fetched &&
+              appliedOnlineRoadEditSignatures.get(group.key) !== JSON.stringify(fetched)) {
+            throw new Error("노선이 다른 곳에서 변경되었습니다. 테이블을 다시 열어 주세요.");
+          }
+          if (Array.isArray(payload.segmentModel) && payload.segmentModel.length !== group.roads.length) {
+            throw new Error("구간 수가 변경되었습니다. 테이블을 다시 열어 주세요.");
+          }
           edits.forEach(function(edit) {
             if (!group.roads[edit.index]) throw new Error("구간이 변경되었습니다. 테이블을 다시 열어 주세요.");
             if (Object.prototype.hasOwnProperty.call(edit.values, "length")) {
@@ -15423,7 +15450,23 @@
                 group.layerId, roadLengthInputValue(props, group.layerId));
             }
           });
-          if (Array.isArray(payload.segmentModel)) {
+          if (removed.size) {
+            const segments = roadGroupSegmentModel(group);
+            removed.forEach(function(index) {
+              if (!Number.isInteger(index) || index < 0 || index >= segments.length) {
+                throw new Error("삭제할 구간이 변경되었습니다. 테이블을 다시 열어 주세요.");
+              }
+            });
+            edits.forEach(function(edit) {
+              if (removed.has(edit.index)) return;
+              const copy = { properties:segments[edit.index].properties };
+              applyRoadEditValuesToRoad(group, copy, edit.values);
+            });
+            payload.segmentModel = segments.filter(function(segment, index) { return !removed.has(index); });
+            payload.roads = {};
+            payload.geometries = {};
+            payload.version = 3;
+          } else if (Array.isArray(payload.segmentModel)) {
             edits.forEach(function(edit) {
               const segment = payload.segmentModel[edit.index];
               if (!segment) throw new Error("저장된 구간이 변경되었습니다. 테이블을 다시 열어 주세요.");
@@ -15442,8 +15485,23 @@
           }
           payload.layerId = group.layerId;
           payload.number = String(group.number);
+          const closeEmptyPopup = removed.size === group.roads.length && !!selectedRoadPopupState &&
+            selectedRoadPopupState.groupKey === groupKey;
           await saveOnlineRoadEdits(group, payload);
           applyOnlineRoadEdits(group, payload);
+          savedGroups.push(groupKey);
+          if (removed.size) hasDeleted = true;
+          if (closeEmptyPopup) closeRoadPopup();
+        }
+        } catch (error) {
+          error.savedGroups = savedGroups;
+          throw error;
+        } finally {
+        if (hasDeleted) {
+          makeLists();
+          buildGroupLabels();
+          updateLabels();
+        }
         }
       }
 
@@ -15548,7 +15606,7 @@
       }
 
       function replaceRoadGroupSegments(group, segments) {
-        if (!group || !Array.isArray(segments) || !segments.length) return false;
+        if (!group || !Array.isArray(segments)) return false;
         if (segments.some(function(item) {
           return !item || !isRoadGeometryNearGroup(group, item.geometry);
         })) return false;
