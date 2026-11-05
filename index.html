@@ -1260,7 +1260,26 @@
       user-select: none;
     }
 
-    #roadviewPanel.fullscreen #roadviewResizeHandle { display: none; }
+    #roadviewPanel.fullscreen #roadviewResizeHandle,
+    #roadviewPanel.roadview-capturing :is(#roadviewResizeHandle, .roadview-buttons) { display: none; }
+
+    .roadview-capturing #roadview [id^="_view_"] > :is([id^="_il_"], [id^="_al_"], [id^="_atl_"]),
+    .roadview-capturing #roadview :is([id^="_mm_view_"], [id^="_mm_box_"], [id^="_box_util_"]) {
+      visibility: hidden !important;
+    }
+
+    .roadview-capture-exit {
+      position: absolute;
+      inset: 0;
+      z-index: 51;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      cursor: default;
+    }
+
+    .roadview-capture-exit:focus { outline: none; }
+
 
     /* 본 지도에 표시하는 로드뷰 위치와 바라보는 방향 */
     .roadview-direction-marker {
@@ -1321,7 +1340,8 @@
     /*
      * 로드뷰 전체화면
      */
-    #roadviewPanel.fullscreen {
+    #roadviewPanel.fullscreen,
+    #roadviewPanel.roadview-capturing {
       position: fixed;
       inset: 0;
       top: 0 !important;
@@ -7688,11 +7708,14 @@
   <div id="roadviewPanel">
     <div class="roadview-buttons">
       <button id="roadviewPopout" type="button" title="별도 창에서 열기">팝업</button>
+      <button id="roadviewCapture" type="button" disabled title="사진만 표시 · Esc 또는 화면 클릭으로 종료">화면 캡처</button>
       <button id="roadviewFullscreen">전체화면</button>
       <button id="roadviewClose">닫기</button>
     </div>
 
     <div id="roadview"></div>
+    <button class="roadview-capture-exit" id="roadviewCaptureExit" type="button"
+      aria-label="화면 캡처 모드 종료" hidden></button>
     <div id="roadviewResizeHandle" role="button" tabindex="0" aria-label="로드뷰 창 크기 조절" title="끌어서 로드뷰 창 크기 조절">◥</div>
   </div>
 
@@ -18109,6 +18132,10 @@
               document.getElementById("roadview")
             );
 
+          kakao.maps.event.addListener(roadview, "init", function () {
+            roadviewCaptureButton.disabled = false;
+          });
+
           const syncRoadviewMapDirection = function () {
             if (roadviewPopupWindow || roadviewPanel.style.display === "none") return;
             const currentPosition = roadview.getPosition();
@@ -18304,7 +18331,24 @@
         closeRoadviewPanel();
       };
 
+      const roadviewCaptureButton = document.getElementById("roadviewCapture");
+      const roadviewCaptureExit = document.getElementById("roadviewCaptureExit");
+
+      function setRoadviewCaptureMode(active) {
+        roadviewPanel.classList.toggle("roadview-capturing", active);
+        roadviewCaptureExit.hidden = !active;
+        (active ? roadviewCaptureExit : roadviewCaptureButton).focus({ preventScroll: true });
+        requestAnimationFrame(function () {
+          if (roadviewPanel.style.display !== "none") roadview.relayout();
+        });
+      }
+
+      roadviewCaptureButton.onclick = function () { setRoadviewCaptureMode(true); };
+      roadviewCaptureExit.onclick = function () { setRoadviewCaptureMode(false); };
+
       function closeRoadviewPanel() {
+        roadviewPanel.classList.remove("roadview-capturing");
+        roadviewCaptureExit.hidden = true;
         roadviewPanel.style.display = "none";
         roadviewPanel.classList.remove("fullscreen");
         fullscreenBtn.textContent = "전체화면";
@@ -18381,6 +18425,10 @@
       document.addEventListener(
         "keydown",
         function (event) {
+          if (event.key === "Escape" && !roadviewCaptureExit.hidden) {
+            setRoadviewCaptureMode(false);
+            return;
+          }
           if (
             event.key === "Escape" &&
             roadviewPanel.classList.contains(
