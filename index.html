@@ -18500,7 +18500,7 @@
       function getRoadStatusKey(properties, layerId) {
         if (layerId === "city") {
           const lanes = Number.parseFloat(String(properties["차선"] ?? "").trim().replace(/,/g, ""));
-          const requiredLanes = String(properties.number ?? "").trim() === "1" ? 4 : 2;
+          const requiredLanes = ["1", "12"].includes(String(properties.number ?? "").trim()) ? 4 : 2;
           if (lanes >= requiredLanes) return "NORMAL";
           if (lanes >= 1) return "UNEXPANDED";
           return "UNOPENED";
