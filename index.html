@@ -460,6 +460,38 @@
       font-weight: bold;
     }
 
+    #scaleForm {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      margin-top: 4px;
+      text-shadow: none;
+    }
+
+    #scaleForm input,
+    #scaleForm button {
+      box-sizing: border-box;
+      min-height: 32px;
+      padding: 4px 6px;
+      border: 1px solid #aab3bd;
+      border-radius: 4px;
+      background: #fff;
+      color: #222;
+      font-size: 16px;
+      pointer-events: auto;
+    }
+
+    #scaleForm input {
+      width: 94px;
+      text-align: right;
+    }
+
+    #scaleForm button {
+      font-size: 12px;
+      cursor: pointer;
+    }
+
     /* =========================
        노선목록
        ========================= */
@@ -7397,7 +7429,13 @@
   <div id="scaleControl">
     <div id="scaleBar"></div>
     <div id="scaleDistance">-</div>
-    <div id="scaleRatio">축척 1:-</div>
+    <div id="scaleRatio" aria-live="polite">축척 1:-</div>
+    <form id="scaleForm" title="입력한 축척과 가장 가까운 지도 확대 단계로 이동합니다.">
+      <label for="scaleInput">목표 1:</label>
+      <input id="scaleInput" type="number" min="1000" step="1000" required
+        inputmode="numeric" placeholder="45000" aria-label="목표 축척 분모 (1,000 단위)">
+      <button type="submit">적용</button>
+    </form>
   </div>
 
   <div id="mapTools" aria-label="지도 도구">
@@ -8839,6 +8877,27 @@
           return layerId + ":" + (visible ? "1" : "0");
         }).join("|");
       }
+
+      const scaleForm = document.getElementById("scaleForm");
+      const scaleInput = document.getElementById("scaleInput");
+
+      scaleForm.addEventListener("submit", function(event) {
+        event.preventDefault();
+        const targetScale = scaleInput.valueAsNumber;
+        if (!Number.isFinite(currentScaleDenominator) || !scaleInput.validity.valid) return;
+
+        const currentLevel = map.getLevel();
+        const levelOffset = Math.log2(targetScale / currentScaleDenominator);
+        const lowerLevel = Math.floor(levelOffset);
+        const lowerScale = currentScaleDenominator * 2 ** lowerLevel;
+        const nearestOffset = targetScale - lowerScale <= lowerScale * 2 - targetScale
+          ? lowerLevel
+          : lowerLevel + 1;
+        const targetLevel = Math.max(1, Math.min(14, currentLevel + nearestOffset));
+
+        map.setLevel(targetLevel, { animate: false });
+        scheduleMapRefresh();
+      });
 
       function updateScale() {
         const mapElement = document.getElementById("map");
@@ -13229,7 +13288,7 @@
         // 화면에 표시되는 축척 텍스트가 있으면 그 값을 우선 사용함.
         const scaleEl =
           document.getElementById("scaleText") ||
-          document.getElementById("scaleControl");
+          document.getElementById("scaleRatio");
 
         if (scaleEl) {
           const raw = (scaleEl.textContent || "").replace(/,/g, "");
