@@ -7,11 +7,35 @@
   <style>
     html,body,#roadview{width:100%;height:100%;margin:0}
     #status{position:absolute;top:12px;left:12px;z-index:2;padding:9px 12px;border-radius:7px;background:#fff;color:#26313b;font:14px sans-serif;box-shadow:0 2px 10px #0003}
+    .roadview-capturing #roadview [id^="_view_"] > :is([id^="_il_"], [id^="_al_"], [id^="_atl_"]),
+    .roadview-capturing #roadview :is([id^="_mm_view_"], [id^="_mm_box_"], [id^="_box_util_"]) {
+      visibility: hidden !important;
+    }
+
+    .roadview-capture-exit {
+      position: absolute;
+      inset: 0;
+      z-index: 51;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      cursor: default;
+    }
+
+    .roadview-capture-exit:focus { outline: none; }
+
+    #roadviewCapture { position: absolute; top: 12px; right: 12px; z-index: 3;
+      padding: 7px 11px; border: 0; border-radius: 4px; background: white; color: #222;
+      box-shadow: 0 1px 5px #0005; font: bold 13px sans-serif; }
+    body.roadview-capturing #roadviewCapture { display: none; }
   </style>
 </head>
 <body>
   <div id="status">로드뷰를 불러오는 중입니다.</div>
   <div id="roadview"></div>
+  <button id="roadviewCapture" type="button" disabled title="사진만 표시 · Esc 또는 화면 클릭으로 종료">화면 캡처</button>
+    <button class="roadview-capture-exit" id="roadviewCaptureExit" type="button"
+      aria-label="화면 캡처 모드 종료" hidden></button>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&autoload=false"></script>
   <script>
     const params = new URLSearchParams(location.search);
@@ -26,6 +50,19 @@
     } else kakao.maps.load(function() {
       const position = new kakao.maps.LatLng(lat, lng);
       const viewer = new kakao.maps.Roadview(document.getElementById('roadview'));
+      const capture = document.getElementById('roadviewCapture');
+      const captureExit = document.getElementById('roadviewCaptureExit');
+      function setCaptureMode(active) {
+        document.body.classList.toggle('roadview-capturing', active);
+        captureExit.hidden = !active;
+        (active ? captureExit : capture).focus({ preventScroll: true });
+      }
+      kakao.maps.event.addListener(viewer, 'init', function() { capture.disabled = false; });
+      capture.onclick = function() { setCaptureMode(true); };
+      captureExit.onclick = function() { setCaptureMode(false); };
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && !captureExit.hidden) setCaptureMode(false);
+      });
       function reportRoadviewState() {
         if (!window.opener || !channel) return;
         const current = viewer.getPosition();
