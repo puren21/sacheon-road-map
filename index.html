@@ -7862,6 +7862,12 @@
         UNEXPANDED: "shortdash"
       };
 
+      const DEFAULT_ROAD_SELECTION_STYLES = {
+        NORMAL: { color: "#0433FF", pattern: "solid" },
+        UNEXPANDED: { color: "#FF2600", pattern: "solid" },
+        UNOPENED: { color: "#FF2600", pattern: "shortdot" }
+      };
+
       const DEFAULT_LABEL_STYLES = {
         SCALE: 70,
         CITY_VISIBLE: true,
@@ -12236,14 +12242,16 @@
 
         ["NORMAL", "UNEXPANDED", "UNOPENED"].forEach(function(statusKey) {
           const style = roadSelectionStyles[statusKey] || {};
+          const defaults = DEFAULT_ROAD_SELECTION_STYLES[statusKey];
           const card = document.createElement("section");
           card.className = "layer-detail-card";
           card.innerHTML =
             '<strong>' + roadStatusLabel(statusKey) + '</strong>' +
             '<label class="layer-detail-row"><span>색상</span><div class="road-layer-color-wrap">' +
-              '<input type="color" aria-label="색상 선택"><input type="text" class="road-layer-color-code" maxlength="7" placeholder="기존 색상" aria-label="색상 코드"></div></label>' +
+              '<input type="color" aria-label="색상 선택"><input type="text" class="road-layer-color-code" maxlength="7" placeholder="' + defaults.color + '" aria-label="색상 코드"></div></label>' +
             '<label class="layer-detail-row"><span>두께</span><input type="number" min="1" max="30" step="0.5" placeholder="기본 강조 두께"></label>' +
-            '<label class="layer-detail-row"><span>선 모양</span><select><option value="">개설상태 설정</option>' +
+            '<label class="layer-detail-row"><span>선 모양</span><select><option value="">기본값 (' +
+              getStatusStyleLabel(defaults.pattern) + ')</option>' +
               statusStyleOptions(style.pattern) + '</select></label>';
           const color = card.querySelector('input[type="color"]');
           const code = card.querySelector('input[type="text"]');
@@ -12251,13 +12259,13 @@
           const pattern = card.querySelector("select");
           pattern.remove(1); // 선택 모드에서는 모든 상태를 표시함.
           code.value = normalizeHexColor(style.color) || "";
-          color.value = code.value || "#737d89";
+          color.value = code.value || defaults.color;
           width.value = style.width ?? "";
 
           function save() {
             const savedColor = normalizeHexColor(code.value);
             code.value = savedColor || "";
-            color.value = savedColor || "#737d89";
+            color.value = savedColor || defaults.color;
             if (width.value !== "") width.value = limitNumber(width.value, 1, 30);
             roadSelectionStyles[statusKey] = {
               color: savedColor,
@@ -14918,6 +14926,7 @@
 
           const statusHidden = isRoadStatusHidden(road.statusKey);
           const selectionStyle = showStatus ? roadSelectionStyles[road.statusKey] || {} : null;
+          const selectionDefaults = showStatus ? DEFAULT_ROAD_SELECTION_STYLES[road.statusKey] : null;
           const visibleLineIndex = showStatus
             ? stack.findIndex(function(config) { return config.visible !== false; })
             : -1;
@@ -14941,7 +14950,7 @@
 
             setMapOptionsIfChanged(line, {
               strokeColor: showStatus
-                ? selectionStyle.color || getRoadLayerDisplayColor(road.styleKey, config)
+                ? selectionStyle.color || selectionDefaults.color
                 : highlightRoad
                 ? highlightColor
                 : getRoadLayerDisplayColor(road.styleKey, config),
@@ -14968,9 +14977,7 @@
                     Math.min(100, Number(config.opacity) || 0)
                   ) / 100,
               strokeStyle: showStatus
-                ? selectionStyle.pattern || (statusHidden
-                  ? (road.statusKey === "UNOPENED" ? DEFAULT_STATUS_STYLES.UNOPENED_GAP : DEFAULT_STATUS_STYLES.UNEXPANDED)
-                  : getStatusStrokeStyle(road.statusKey))
+                ? selectionStyle.pattern || selectionDefaults.pattern
                 : highlightRoad
                 ? "solid"
                 : getRoadLayerStrokeStyle(road, config, index),
