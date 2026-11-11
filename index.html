@@ -16848,16 +16848,32 @@
         const projection = map.getProjection();
         if (!projection) return false;
         const candidate = marker.getPosition();
+        const coordinate = [candidate.getLng(), candidate.getLat()];
+        const isEndpoint = index === 0 || index === state.workingPath.length - 1;
         const entries = state.draft.segments.map(function(segment, segmentIndex) {
           const geometry = segmentIndex === state.roadIndex
             ? serializeRoadGeometryPath(state.workingPath) : segment.geometry;
           return { id:String(segmentIndex), part:0, path:geometry.map(function(p) { return [p[1], p[0]]; }) };
         });
-        const snap = window.SacheonLineGeometry.snapToPaths(entries,
-          [candidate.getLng(), candidate.getLat()], function(coord) {
-            const point = projection.containerPointFromCoords(new kakao.maps.LatLng(coord[1], coord[0]));
-            return [point.x, point.y];
-          }, 12, { id:String(state.roadIndex), part:0, index:index });
+        const project = function(coord) {
+          const point = projection.containerPointFromCoords(new kakao.maps.LatLng(coord[1], coord[0]));
+          return [point.x, point.y];
+        };
+        const targets = isEndpoint ? entries.filter(function(entry) {
+          return entry.id !== String(state.roadIndex);
+        }) : entries;
+        let snap = null;
+        if (isEndpoint) {
+          const endpoints = targets.flatMap(function(entry) {
+            return [entry.path[0], entry.path[entry.path.length - 1]].map(function(point) {
+              return { id:entry.id, part:0, path:[point] };
+            });
+          });
+          snap = window.SacheonLineGeometry.snapToPaths(endpoints, coordinate, project, 20);
+        }
+        snap = snap || window.SacheonLineGeometry.snapToPaths(targets,
+          coordinate, project, isEndpoint ? 20 : 12,
+          { id:String(state.roadIndex), part:0, index:index });
         if (!snap) return false;
         const position = new kakao.maps.LatLng(snap.coordinate[1], snap.coordinate[0]);
         marker.setPosition(position);
