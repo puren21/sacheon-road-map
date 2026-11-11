@@ -7734,8 +7734,8 @@
   </script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
-  <script src="road-line-geometry.js?v=20261103-2"></script>
-  <script src="road-line-draft.js?v=20261103-2"></script>
+  <script src="road-line-geometry.js?v=20261111-merge"></script>
+  <script src="road-line-draft.js?v=20261111-merge"></script>
   <link rel="stylesheet" href="road-attribute-table.css?v=20261104-2">
   <script src="road-attribute-table.js?v=20261111-rural-status"></script>
 
@@ -17153,6 +17153,7 @@
           else if (mode === "delete") state.draft.delete(ids);
           state.structuralPending = true;
           state.selectedIndices = new Set([state.draft.selected]);
+          roadGeometrySetActiveSegment(state, state.draft.selected);
           updateRoadGeometryApplyButton(state);
           const panel = document.getElementById("roadEditPanel");
           if (panel && panel.dataset.groupKey === state.groupKey) showRoadAttributePanel(state.groupKey);
