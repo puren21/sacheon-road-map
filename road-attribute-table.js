@@ -67,6 +67,13 @@
     }
     function currentValue(row, key) {
       const pending = changes.get(keyOf(row));
+      if (key === "status" && row.layerId === "rural" && api.ruralStatus) {
+        return api.ruralStatus(Object.assign({}, row.properties, {
+          GUBUN: pending && pending.gubun !== undefined ? pending.gubun : row.properties.GUBUN,
+          "차선": pending && pending.lane !== undefined ? pending.lane : row.properties["차선"],
+          "도로폭": pending && pending.width !== undefined ? pending.width : row.properties["도로폭"]
+        }));
+      }
       return pending && Object.prototype.hasOwnProperty.call(pending, key) ? pending[key] : valueOf(row, key);
     }
     function setEditingUI() {
@@ -132,7 +139,7 @@
             escape((row.layerId === "city" ? "시도 " : "") + row.number + " " + (row.index + 1) + "구간 선택") +
             '"' + (selected.has(rowKey) ? " checked" : "") + '></td>' + cols.map(([, key]) => {
           const value = currentValue(row, key);
-          const fixed = !editable.has(key) || (row.layerId === "city" && ["gubun", "status"].includes(key));
+          const fixed = !editable.has(key) || key === "status" || (row.layerId === "city" && key === "gubun");
           const opts = key === "status" ? ["개설", "미확장", "미개설"] : key === "gubun" ? ["면도", "리도", "농도"] : null;
           const control = opts && !fixed
             ? '<select data-field="' + key + '" aria-label="' + escape(key) + '">' +
@@ -257,6 +264,8 @@
       if (Object.keys(pending).length) changes.set(tr.dataset.row, pending);
       else changes.delete(tr.dataset.row);
       tr.classList.toggle("road-table-dirty", changes.has(tr.dataset.row));
+      const statusControl = tr.querySelector('[data-field="status"]');
+      if (row.layerId === "rural" && statusControl) statusControl.value = currentValue(row, "status");
       setEditingUI();
     }
     $("tbody").onclick = event => {
