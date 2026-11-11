@@ -1184,7 +1184,7 @@
     }
 
     .popup-value.wrap-status {
-      white-space: normal;
+      white-space: pre-line;
       word-break: break-word;
       overflow-wrap: anywhere;
       line-height: 1.5;
@@ -14694,7 +14694,7 @@
           totals.NORMAL ? roadStatusLabel("NORMAL", group.layerId) + " " + formatRoadLength(totals.NORMAL) + unit : "",
           totals.UNEXPANDED ? "미확장 " + formatRoadLength(totals.UNEXPANDED) + unit : "",
           totals.UNOPENED ? roadStatusLabel("UNOPENED", group.layerId) + " " + formatRoadLength(totals.UNOPENED) + unit : ""
-        ].filter(Boolean).join(" · ") || "-";
+        ].filter(Boolean).join("\n") || "-";
       }
 
 
@@ -15377,7 +15377,7 @@
           '<div class="road-edit-body">' +
             '<div class="road-edit-summary">' +
               row("노선번호", group.number) +
-              row("구간현황", statusLengthSummary(group)) +
+              row("구간현황", statusLengthSummary(group), "", "wrap-status") +
               row("차선현황", rangeValues(group.propertiesList, "차선", group.layerId === "city")) +
               row("도로폭", rangeValues(group.propertiesList, "도로폭", group.layerId === "city"),
                 rangeValues(group.propertiesList, "도로폭", group.layerId === "city") === "-" ? "" : " m") +
