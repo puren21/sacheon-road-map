@@ -89,7 +89,9 @@
       const selected = ids.map(index => this.segments[index]);
       const paths = selected.map(item => toLngLat(item.geometry));
       const result = join ? G.connectMany(paths).coordinates : G.merge(paths);
-      if (!join && result.length !== 1) throw new Error('끝점이 이어진 라인만 병합할 수 있습니다. 떨어진 라인은 연결을 사용해 주세요.');
+      if (!join && result.length !== 1) {
+        throw new Error('선택한 라인의 끝점이 0.5m 이내로 이어져야 병합할 수 있습니다. 분기점은 나누어 선택하고, 떨어진 끝점은 스냅으로 맞추거나 라인 연결을 사용하세요.');
+      }
       const mergedPath = toLatLng(join ? result : result[0]);
       if (!G.valid(toLngLat(mergedPath))) throw new Error('병합 후 라인이 유효하지 않습니다.');
       this.checkpoint();
