@@ -37,7 +37,7 @@
     for(let k=1;k<stops.length;k++) {const a=stops[k-1],b=stops[k],part=[at(a)];for(let i=Math.floor(a)+1;i<b-1e-8;i++)part.push(path[i]);part.push(at(b));const p=clean(part);if(valid(p))result.push(p);}
     return result.length?result:[copy(path)];
   }
-  function merge(input,tolerance=0.03) {
+  function merge(input,tolerance=0.5) {
     const result=input.map(p=>clean(copy(p)));let changed=true;
     while(changed) {
       changed=false;
