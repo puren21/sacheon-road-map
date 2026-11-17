@@ -7411,7 +7411,8 @@
       outline.style.fill = "none";
       outline.style.stroke = "white";
       outline.style.strokeOpacity = "1";
-      outline.style.strokeWidth = (width + 4) + "px";
+      // Round caps extend into the gap by the stroke width.
+      outline.style.strokeWidth = Math.max(width, Math.min(width + 4, gap - 1)) + "px";
       outline.style.pointerEvents = "none";
       if (outline.nextSibling !== path) path.before(outline);
     }
@@ -9280,8 +9281,7 @@
             applyRoadNormalVisualStyle(road);
 
             lines.forEach(function(line, index) {
-              const config = getRoadLayerStack(road.styleKey)[index];
-              const lineEnabled = !config || config.visible !== false;
+              const lineEnabled = isRoadLayerLineVisible(road, index);
 
               if (line) {
                 if (lineEnabled && !line.getMap()) line.setMap(map);
@@ -11468,7 +11468,7 @@
         // 여러 겹 선이 서로 다른 두께를 가질 때 패턴이 어긋나는 것을 막기 위해
         // 최상단 선만 dash/dot 패턴을 담당하고 하단 레이어는 solid casing으로 표시.
         if (
-          layerIndex > 0 &&
+          layerIndex !== getRoadLayerStack(road.styleKey).findIndex(config => config.visible !== false) &&
           requestedStyle !== "solid"
         ) {
           return "solid";
@@ -11477,10 +11477,12 @@
         return requestedStyle;
       }
 
-      function isRoadLayerLineVisible(styleKey, index) {
-        const stack = getRoadLayerStack(styleKey);
-        const config = stack[index];
-        return !config || config.visible !== false;
+      function isRoadLayerLineVisible(road, index) {
+        const stack = getRoadLayerStack(road.styleKey);
+        if (stack[index]?.visible === false) return false;
+        const topIndex = stack.findIndex(config => config.visible !== false);
+        return index === topIndex ||
+          getRoadLayerStrokeStyle(road, stack[topIndex], topIndex) === "solid";
       }
 
       function getTopVisibleRoadLineIndex(road) {
@@ -11530,7 +11532,7 @@
         lines.forEach(function(line, index) {
           if (!line) return;
           const config = stack[index];
-          const enabled = !config || config.visible !== false;
+          const enabled = isRoadLayerLineVisible(road, index);
           const shouldShow = roadVisible && enabled && !statusHidden;
           const isShown = !!line.getMap();
 
@@ -14999,7 +15001,9 @@
 
           lines.forEach(function(line, index) {
             const config = stack[index] || stack[0];
-            const layerEnabled = !config || config.visible !== false;
+            const layerEnabled = highlightRoad
+              ? config.visible !== false
+              : isRoadLayerLineVisible(road, index);
 
             const showLine = showStatus
               ? index === visibleLineIndex
