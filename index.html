@@ -7379,6 +7379,68 @@
 
 <body>
   <div id="map"></div>
+<script>
+  // Mirror Kakao's rendered dash pattern so the wider white stroke stays aligned.
+  (function () {
+    const mapElement = document.getElementById("map");
+    const shapeSelector = 'path[id^="daum-maps-shape-"]';
+    const underlays = new WeakMap();
+
+    function syncOutline(path) {
+      const width = parseFloat(path.style.strokeWidth);
+      const [dash, gap] = path.style.strokeDasharray.split(",").map(parseFloat);
+      const patterned = width > 0 && (dash === 0.5 ||
+        (dash === 3 * width && gap === 4 * width) ||
+        (dash === 2 * width && gap === 2 * width));
+      let outline = underlays.get(path);
+
+      if (!patterned || !mapElement.contains(path)) {
+        if (outline) outline.remove();
+        return;
+      }
+
+      if (!outline) {
+        outline = document.createElementNS(path.namespaceURI, "path");
+        outline.setAttribute("aria-hidden", "true");
+        underlays.set(path, outline);
+      }
+
+      outline.setAttribute("d", path.getAttribute("d") || "");
+      outline.setAttribute("transform", path.getAttribute("transform") || "");
+      outline.style.cssText = path.style.cssText;
+      outline.style.fill = "none";
+      outline.style.stroke = "white";
+      outline.style.strokeOpacity = "1";
+      outline.style.strokeWidth = (width + 4) + "px";
+      outline.style.pointerEvents = "none";
+      if (outline.nextSibling !== path) path.before(outline);
+    }
+
+    new MutationObserver(function (records) {
+      const changedPaths = new Set();
+      for (const record of records) {
+        if (record.type === "attributes" && record.target.matches(shapeSelector)) {
+          changedPaths.add(record.target);
+        }
+        for (const node of record.addedNodes) {
+          if (node.nodeType !== 1) continue;
+          if (node.matches(shapeSelector)) changedPaths.add(node);
+          node.querySelectorAll(shapeSelector).forEach(path => changedPaths.add(path));
+        }
+        for (const node of record.removedNodes) {
+          const outline = underlays.get(node);
+          if (outline && !mapElement.contains(node)) outline.remove();
+        }
+      }
+      changedPaths.forEach(syncOutline);
+    }).observe(mapElement, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["style", "d", "transform"]
+    });
+  })();
+</script>
 
   <aside id="roadMapLegend" aria-label="도로 구분 범례">
     <div class="road-legend-heading">
