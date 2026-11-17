@@ -7396,7 +7396,11 @@
       const patterned = width > 0 && (dash === 0.5 ||
         (dash === 3 * width && gap === 4 * width) ||
         (dash === 2 * width && gap === 2 * width));
-      const spacedPattern = patterned && dash !== 0.5 ? dash + "px, " + (gap + 2) + "px" : "";
+      // Match the dash and dot spacing used by the Gyeongju road map.
+      const isDot = dash === 0.5;
+      const displayDash = isDot ? dash : 3 * width;
+      const displayGap = 4 * width - (isDot ? dash : 0);
+      const spacedPattern = patterned ? displayDash + "px, " + displayGap + "px" : "";
       if (path.style.getPropertyValue("--road-dash-spacing") !== spacedPattern) {
         if (spacedPattern) path.style.setProperty("--road-dash-spacing", spacedPattern);
         else path.style.removeProperty("--road-dash-spacing");
@@ -7421,7 +7425,7 @@
       outline.style.stroke = "white";
       outline.style.strokeOpacity = "1";
       // Round caps extend into the gap by the stroke width.
-      outline.style.strokeWidth = Math.max(width, Math.min(width + 4, gap - 1)) + "px";
+      outline.style.strokeWidth = Math.max(width, Math.min(width + 4, displayGap - 1)) + "px";
       outline.style.pointerEvents = "none";
       if (outline.nextSibling !== path) path.before(outline);
     }
