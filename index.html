@@ -7,6 +7,10 @@
   <title>사천시 도로지도</title>
 
   <style>
+    #map path[style*="--road-dash-spacing:"] {
+      stroke-dasharray: var(--road-dash-spacing) !important;
+    }
+
     * {
       box-sizing: border-box;
       font-family: Arial, "Apple SD Gothic Neo", sans-serif;
@@ -7392,6 +7396,11 @@
       const patterned = width > 0 && (dash === 0.5 ||
         (dash === 3 * width && gap === 4 * width) ||
         (dash === 2 * width && gap === 2 * width));
+      const spacedPattern = patterned && dash !== 0.5 ? dash + "px, " + (gap + 2) + "px" : "";
+      if (path.style.getPropertyValue("--road-dash-spacing") !== spacedPattern) {
+        if (spacedPattern) path.style.setProperty("--road-dash-spacing", spacedPattern);
+        else path.style.removeProperty("--road-dash-spacing");
+      }
       let outline = underlays.get(path);
 
       if (!patterned || !mapElement.contains(path)) {
