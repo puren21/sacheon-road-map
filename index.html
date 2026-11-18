@@ -8062,7 +8062,7 @@
         },
 
         rural: {
-          file: "roads.geojson?v=20261111-status",
+          file: "roads.geojson?v=20261118-seopo312-removed",
           visible: true,
           shapes: [],
           labels: []
@@ -13632,7 +13632,7 @@
         let lastError = null;
         for (const file of fileCandidates) {
           try {
-            const response = await fetch(encodeURI(file), { cache: "default" });
+            const response = await fetch(encodeURI(file), { cache: "no-cache" });
             if (!response.ok) throw new Error(file + " HTTP " + response.status);
             const data = await response.json();
             if (!data || data.type !== "FeatureCollection" || !Array.isArray(data.features)) {
