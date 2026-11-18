@@ -7379,12 +7379,6 @@
 }
 </style>
 
-<style>.road-area-card{padding:16px;overflow:auto;font-size:14px;line-height:1.6}.road-area-toggle{display:flex;align-items:center;justify-content:space-between;gap:24px;font-weight:700;min-height:44px}.road-area-toggle input{width:24px;height:24px;accent-color:#007aff}.road-area-card p{color:#56616f}.road-area-card a{color:#0066cc}</style>
-<style>
-#roadMenuLayersPage.active{overflow-y:auto!important;display:block!important;overscroll-behavior:contain}
-#roadMenuLayersPage .road-area-card{overflow:visible;border-bottom:1px solid #e5e7eb}
-.zoning-wms-note{font-size:12px}
-</style>
 </head>
 
 <body>
@@ -8132,8 +8126,6 @@
         }
       );
 
-      window.sacheonMap = map;
-      window.dispatchEvent(new Event("sacheon-map-ready"));
       map.setMapTypeId(kakao.maps.MapTypeId.ROADMAP);
 
 
@@ -18810,12 +18802,6 @@
   otherPage.id = "roadMenuOtherPage";
   otherPage.className = "road-menu-page";
 
-  const layersPage = document.createElement("div");
-  layersPage.id = "roadMenuLayersPage";
-  layersPage.className = "road-menu-page";
-  layersPage.innerHTML = '<div class="road-area-card"><label class="road-area-toggle" for="roadAreaToggle"><span>실폭도로</span><input id="roadAreaToggle" type="checkbox" role="switch" aria-describedby="roadAreaStatus"></label><p id="roadAreaStatus" role="status" aria-live="polite">꺼짐 · 확대 시 도로경계 면을 표시합니다.</p><small>국토지리정보원 · 브이월드 (CC BY)</small><p><a href="https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?svcCde=MK&amp;dsId=30179" target="_blank" rel="noopener">공식 자료 안내</a></p></div>';
-  layersPage.insertAdjacentHTML("beforeend", '<section class="road-area-card zoning-wms-card" aria-label="용도지역 레이어"><label class="road-area-toggle" for="zoningWmsToggle"><span>용도지역</span><input id="zoningWmsToggle" type="checkbox" role="switch" aria-describedby="zoningWmsStatus"></label><p id="zoningWmsStatus" role="status" aria-live="polite">꺼짐 · 사천시 용도지역</p><small>도시·관리·농림·자연환경보전지역<br>출처: 국토교통부 / 브이월드</small><p class="zoning-wms-note">사천시 경계 안에만 표시합니다. 원자료 색상으로 겹쳐 표시하며, 경계 부근은 참고용입니다.</p></section>');
-
   const home = document.createElement("div");
   home.id = "roadMainMenuHome";
   home.className = "road-main-menu-home";
@@ -18867,13 +18853,11 @@
       '<span class="road-ios-chevron">›</span>' +
     '</button>';
 
-  home.insertAdjacentHTML("beforeend", '<button type="button" class="road-ios-menu-row" data-road-page="layers"><span class="road-ios-menu-left"><span class="road-ios-menu-icon" aria-hidden="true">▱</span><span class="road-ios-menu-text">레이어</span></span><span class="road-ios-chevron">›</span></button>');
   header.insertAdjacentElement("afterend", home);
   home.insertAdjacentElement("afterend", roadPage);
   roadPage.insertAdjacentElement("afterend", stylePage);
   stylePage.insertAdjacentElement("afterend", memoPage);
   memoPage.insertAdjacentElement("afterend", otherPage);
-  otherPage.insertAdjacentElement("afterend", layersPage);
 
   async function renderMemoMenu() {
     const list = document.getElementById("roadMenuMemoList");
@@ -18965,7 +18949,6 @@
     stylePage.classList.remove("active");
     memoPage.classList.remove("active");
     otherPage.classList.remove("active");
-    layersPage.classList.remove("active");
     backBtn.style.display = "inline-flex";
     backBtn.dataset.rootMenu = "1";
     title.innerHTML = '<img class="sacheon-city-symbol" src="data:image/webp;base64,UklGRgQDAABXRUJQVlA4IPgCAADwEQCdASojABwAPikQhkIhoQwFVqoMAUJbACdMoRiDzBKJ/QPv1k7fOpjV0AHmA/Xj1x/QB5s3UAc+H7IH7o/rB7LNya5Sv2Ayf7z78edEV/X/wt/KTMZf1y2pzBf9p5X/nX/d/134A/5B/Qf8F+WPGV/tUUC/xnFJfydm7y/mA15VoLbPVixCZbtjZP+SHKaWh7lcg6oAAAD+//5igeCKzXhL8tV8NUxD/xn6HJTdZfJmwWgXF9nT3dB35TuJo2+WQayCjwPSi8u9uqbA9dGec2rpHc1H6fvsVMCZuoccgkuJ/V+UmuxqfBW/oGeadAcG6wlcSrxJF0l4EF6rJiwVAiXhwOR/9/MmX+TvX7lsLVnv94o+nzKbc40CA1/xz/umf4fTVT911M6j3wu/4jmL01iltwDoPjphuszf8Vym+LCFnDO9RkiaL+kD2wpZopB6wYXP6z62/ZO5mH3+K4+OupI0i5/ULkvrDREg+bsxuYxZCV36/kI2ljihdI+4dP0XoGPb3ga5b9DD2yAbxl0YV5vEzxq4TPP8v/5fGgdzFIN9O/E/ypnGqGzv/hjDT9t3EWKf5c8oXpMPDerEPHj/mLdkrxd3iM5Cvvf+vnZI0YJFSgdr+CL5XKXf7Scb32QJFz43ZxZ0v902WXW3oxmDjOlr6FRkTslqZ+K/h3x7Jn+Oe4iKKMrJtetiAMYfx82rsN1jSr5/zwNXnMCc3iB/ueoHet6NNp//6T6wHl15HgmevXSmOmPC+EwXsG/5bRk4r1/shD2mL4eL0d+kluaXYj2Jaste5WNsCqfdoeO2+66PcEqojIP4k470UpFwo6qv0fEdHEz6U7Zz86HbwX8rbWxN+8Mcf3D6OcD91fO2r/hwn+TUv06EtPZOFytvN08ch4cpYzkp7ID4YM6/dR6vx3gAZJmcB4gxwcBLykJDECBPLW5BEUcMyNEyrVZG8xikv6gkKRRKB20uuj7K5aJGCnv0QjfSqh3vB6ATsEgEQnZH6xnwAAAA" alt="" aria-hidden="true"><span>사천시 도로현황</span>';
@@ -18980,9 +18963,8 @@
     stylePage.classList.toggle("active", name === "style");
     memoPage.classList.toggle("active", name === "memos");
     otherPage.classList.toggle("active", name === "other");
-    layersPage.classList.toggle("active", name === "layers");
     backBtn.style.display = "inline-flex";
-    title.textContent = name === "layers" ? "레이어" : name === "memos"
+    title.textContent = name === "memos"
       ? "메모"
       : name === "style"
         ? "스타일 설정"
@@ -19060,9 +19042,6 @@
   panel.dataset.mainMenuReady = "1";
 })();
 </script>
-
-<script src="road-area-layer.js?v=1"></script>
-<script src="zoning-wms-layer.js?v=2"></script>
 
 <script>
 (function() {
