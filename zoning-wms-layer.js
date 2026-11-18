@@ -1,8 +1,10 @@
-/* VWorld WMS zoning. Credentials are tab-scoped; never sent to our repository/server. */
+/* VWorld WMS zoning. Server-held credential; visitors receive only zoning images. */
 (function(root) {
   'use strict';
   const LAYERS = ['lt_c_uq111','lt_c_uq112','lt_c_uq113','lt_c_uq114'];
   const ENDPOINT = 'https://api.vworld.kr/req/wms';
+  // Public image endpoint; the VWorld credential stays in server-side secrets.
+  const SITE_CONFIG = Object.freeze({proxyUrl:'https://sacheon-zoning-wms-proxy.zamburota.chatgpt.site/zoning'});
   const R = 6378137;
   const toMercator = (lng,lat) => [R*lng*Math.PI/180,R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))];
   const fromMercator = (x,y) => [x/R*180/Math.PI,(2*Math.atan(Math.exp(y/R))-Math.PI/2)*180/Math.PI];
@@ -11,6 +13,11 @@
     return c[0]<c[2] && c[1]<c[3] ? c : null;
   }
   function buildRequest(config,bbox,width,height) {
+    if(config.proxyUrl){
+      const url=new URL(config.proxyUrl);
+      Object.entries({BBOX:bbox.map(n=>n.toFixed(3)).join(','),WIDTH:width,HEIGHT:height}).forEach(([k,v])=>url.searchParams.set(k,String(v)));
+      return url.href;
+    }
     const url = new URL(ENDPOINT);
     const params={SERVICE:'WMS',REQUEST:'GetMap',VERSION:'1.3.0',LAYERS:LAYERS.join(','),STYLES:LAYERS.join(','),CRS:'EPSG:3857',BBOX:bbox.map(n=>n.toFixed(3)).join(','),WIDTH:width,HEIGHT:height,FORMAT:'image/png',TRANSPARENT:'TRUE',EXCEPTIONS:'text/xml',KEY:config.key,DOMAIN:config.domain};
     Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,String(v)));
@@ -85,12 +92,12 @@
   function createLayer(map,sdk,status,options={}) {
     const fetcher=options.fetch || root.fetch.bind(root),loadImage=options.loadImage || imageLoader;
     const overlay=options.overlay || createOverlay(map,sdk),cache=new Map();
-    let enabled=false,config=options.config||{},boundary=null,generation=0,timer=null,controller=null,deadline=null;
+    let enabled=false,config=options.config||SITE_CONFIG,boundary=null,generation=0,timer=null,controller=null,deadline=null;
     function cancel(){generation++;clearTimeout(timer);clearTimeout(deadline);if(controller)controller.abort();overlay.clear();}
     async function update(){
       cancel();if(!enabled)return;
       const token=generation;
-      if(!config.key){status('브이월드 API 키를 설정해 주세요.');return;}
+      if(!config.key&&!config.proxyUrl){status('용도지역 연결 설정이 필요합니다.');return;}
       if(map.getLevel()>11){status('용도지역을 보려면 지도를 더 확대해 주세요.');return;}
       controller=new AbortController();const signal=controller.signal;
       deadline=setTimeout(()=>controller.abort(),20000);
@@ -115,7 +122,7 @@
       }catch(error){
         if(token!==generation)return;
         overlay.clear();
-        status(error.name==='AbortError'?'응답 시간이 초과되었습니다. 껐다 다시 켜 주세요.':'용도지역을 불러오지 못했습니다. 키·서비스 URL·네트워크를 확인해 주세요.');
+        status(error.name==='AbortError'?'응답 시간이 초과되었습니다. 껐다 다시 켜 주세요.':'용도지역을 불러오지 못했습니다. 잠시 후 다시 켜 주세요.');
       }finally{if(token===generation)clearTimeout(deadline);}
     }
     const refresh=()=>{if(!enabled)return;cancel();timer=setTimeout(update,220);};
@@ -123,9 +130,9 @@
     sdk.event.addListener(map,'zoom_start',()=>{if(enabled)cancel();});
     sdk.event.addListener(map,'idle',refresh);
     sdk.event.addListener(map,'maptypeid_changed',refresh);
-    return {setEnabled(value){enabled=!!value;if(enabled)update();else{cancel();status('꺼짐');}},setConfig(value){cancel();config={key:String(value.key||'').trim(),domain:String(value.domain||'').trim()};cache.clear();if(enabled)update();},refresh};
+    return {setEnabled(value){enabled=!!value;if(enabled)update();else{cancel();status('꺼짐');}},setConfig(value){cancel();config={key:String(value.key||'').trim(),domain:String(value.domain||'').trim(),proxyUrl:String(value.proxyUrl||'').trim()};cache.clear();if(enabled)update();},refresh};
   }
-  if(typeof module!=='undefined')module.exports={createLayer,buildRequest,intersect,toMercator,fromMercator,drawTriangle};
+  if(typeof module!=='undefined')module.exports={createLayer,buildRequest,intersect,toMercator,fromMercator,drawTriangle,SITE_CONFIG};
   if(!root.document)return;
   let layer=null;
   function init(){
@@ -133,26 +140,8 @@
     if(!input||layer)return;
     if(!root.sacheonMap){input.disabled=true;output.textContent='카카오 지도를 불러온 뒤 사용할 수 있습니다.';return;}
     input.disabled=false;input.checked=false;output.textContent='꺼짐 · 사천시 용도지역';
-    let config={key:'',domain:'https://puren21.github.io'};
-    try{const saved=JSON.parse(sessionStorage.getItem('sacheonVworldWms')||'null');if(saved)config=saved;}catch(e){}
-    const key=document.getElementById('zoningWmsKey'),domain=document.getElementById('zoningWmsDomain'),settings=document.getElementById('zoningWmsSettings');
-    key.value=config.key;domain.value=config.domain;
-    layer=createLayer(root.sacheonMap,root.kakao.maps,text=>{output.textContent=text;},{config});
-    input.addEventListener('change',()=>{layer.setEnabled(input.checked);if(input.checked&&!config.key)settings.open=true;});
-    document.getElementById('zoningWmsApply').addEventListener('click',()=>{
-      const value=key.value.trim(),address=domain.value.trim();
-      let valid=false;try{const u=new URL(address);valid=['http:','https:'].includes(u.protocol)&&!u.username&&!u.password&&!u.search&&!u.hash;}catch(e){}
-      if(!value||!valid){output.textContent='API 키와 올바른 서비스 URL을 입력해 주세요.';return;}
-      config={key:value,domain:address};
-      try{sessionStorage.setItem('sacheonVworldWms',JSON.stringify(config));}catch(e){}
-      layer.setConfig(config);settings.open=false;
-      if(!input.checked)output.textContent='꺼짐 · 키 설정 완료';
-    });
-    document.getElementById('zoningWmsForget').addEventListener('click',()=>{
-      config={key:'',domain:'https://puren21.github.io'};key.value='';domain.value=config.domain;
-      try{sessionStorage.removeItem('sacheonVworldWms');}catch(e){}
-      input.checked=false;layer.setEnabled(false);layer.setConfig(config);output.textContent='꺼짐 · 키 설정을 지웠습니다.';
-    });
+    layer=createLayer(root.sacheonMap,root.kakao.maps,text=>{output.textContent=text;});
+    input.addEventListener('change',()=>layer.setEnabled(input.checked));
   }
   init();root.addEventListener('sacheon-map-ready',init);
   root.addEventListener('resize',()=>{if(layer)layer.refresh();});
