@@ -146,9 +146,9 @@ test('zooming out immediately removes roads and labels before idle',()=>{
 });
 test('route styling cannot reattach an OFF route in overview',()=>{
   const {c}=setup();const line=overlay(),hit=overlay();line.setMap(c.map);hit.setMap(c.map);
-  const road={_visible:true,layerId:'city',groupKey:'off',statusKey:'open',hitLine:hit};
+  const road={_visible:true,layerId:'city',styleKey:'CITY',groupKey:'off',statusKey:'NORMAL',hitLine:hit};
   Object.assign(c,{hiddenRoadGroups:new Set(['off']),getRoadLayerStack:()=>[{}],getRoadVisualLines:()=>[line],isRoadStatusHidden:()=>false});
-  for(const name of ['isRoadLayerVisibleAtScale','applyRoadLineVisibility'])vm.runInContext(source(name),c);
+  for(const name of ['isRoadLayerLineVisible','isRoadLayerVisibleAtScale','applyRoadLineVisibility'])vm.runInContext(source(name),c);
   c.applyRoadLineVisibility(road);assert.equal(line.getMap(),null);assert.equal(hit.getMap(),null);
 });
 test('unchanged road paths are sent once; forced in-place edits and tier changes still update',()=>{

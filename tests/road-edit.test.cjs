@@ -322,11 +322,11 @@ test('both road types update shared properties while retaining city-specific fie
   const rural = { properties: { Opened: '미개설' } };
   c.applyRoadEditValuesToRoad({ layerId: 'rural' }, rural, { ...values, length: 4.154 });
   assert.equal(rural.properties.연장, 4.154);
-  assert.equal(rural.properties.Opened, '개설');
+  assert.equal(rural.properties.Opened, '현황');
   assert.equal(rural.properties.도로폭, '8');
 });
 
-test('city road status follows lane count on initial display, edit and saved segments', () => {
+test('city status follows lane count and rural status follows category, lanes and width', () => {
   const c = context(['getRoadStatusKey', 'roadStatusLabel', 'syncCityRoadStatus',
     'applyRoadEditValuesToRoad'], {
     setPropertyValue(props, candidates, fallback, value) {
@@ -347,7 +347,22 @@ test('city road status follows lane count on initial display, edit and saved seg
   assert.equal(city.properties.개설여부, '미확장');
   c.applyRoadEditValuesToRoad({ layerId: 'city' }, city, { lane: '', status: '개설' });
   assert.equal(city.properties.개설여부, '미개설');
-  assert.equal(c.getRoadStatusKey({ Opened: '미확장' }, 'rural'), 'UNEXPANDED');
+  // Rural status is derived from dimensions, not the previously stored Opened label.
+  for (const [props, expected] of [
+    [{ Opened: '미확장' }, 'UNOPENED'],
+    [{ GUBUN: '면도', 차선: '1', 도로폭: '8' }, 'UNEXPANDED'],
+    [{ GUBUN: '면도', 차선: '2', 도로폭: '8' }, 'NORMAL'],
+    [{ GUBUN: '리도', 차선: '1', 도로폭: '4.9' }, 'UNEXPANDED'],
+    [{ GUBUN: '리도', 차선: '1', 도로폭: '5' }, 'NORMAL'],
+    [{ GUBUN: '농도', 차선: '1', 도로폭: '2.9' }, 'UNEXPANDED'],
+    [{ GUBUN: '농도', 차선: '1', 도로폭: '3', Opened: '미확장' }, 'NORMAL'],
+    [{ GUBUN: '농도', 차선: '', 도로폭: '3' }, 'UNOPENED'],
+    [{ GUBUN: '농도', 차선: '1', 도로폭: '' }, 'UNOPENED']
+  ]) {
+    assert.equal(c.getRoadStatusKey(props, 'rural'), expected);
+  }
+  assert.equal(c.roadStatusLabel('NORMAL', 'rural'), '현황');
+  assert.equal(c.roadStatusLabel('UNOPENED', 'rural'), '신설');
   assert.doesNotMatch(source('showRoadAttributePanel'), /buildRoadEditField\("개설상태", "status", statusValueFromKey\(currentStatus\), "text"/);
 });
 
@@ -377,14 +392,16 @@ for (const layerId of ['city', 'rural']) {
   test(`${layerId}: choosing one divided line highlights the entire route and distinguishes its segment`, () => {
     const makeLine = () => ({ current: null, getMap() { return this.current; },
       setMap(value) { this.current = value; } });
-    const makeRoad = () => ({ styleKey: 'CITY', statusKey: 'OPEN', _visible: true,
+    const makeRoad = () => ({ styleKey: 'CITY', statusKey: 'NORMAL', _visible: true,
       visualLines: [makeLine()], hitLine: makeLine() });
     const roads = [makeRoad(), makeRoad(), makeRoad()];
     const group = { key: 'route', layerId, roads };
     roads[0]._visible = layerId !== 'city';
     roads[2]._visible = layerId !== 'city';
     const map = {};
-    const c = context(['setRoadGroupHighlight'], {
+    const c = context(['isRoadLayerLineVisible', 'setRoadGroupHighlight'], {
+      // Ordinary route selection, with status-color selection mode disabled.
+      roadSelectionMode: false, STATUS_STYLES: { UNOPENED_SIZE: 4 },
       groups: new Map([['route', group]]), selectedRoadObject: roads[1],
       hiddenRoadGroups: new Set(), geometryEditingGroupKey: null, map,
       getRoadLayerStack: () => [{ width: 3, opacity: 80 }],
